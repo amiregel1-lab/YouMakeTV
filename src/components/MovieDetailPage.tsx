@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { movies } from '../data/movies';
 import { formatCurrency, subscriberPrice } from '../lib/formatters';
@@ -49,6 +49,10 @@ export default function MovieDetailPage({ viewer, onPurchase, onSubscribe, onWat
   const { id } = useParams();
   const navigate = useNavigate();
   const [posterError, setPosterError] = useState(false);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [id]);
 
   const movie = useMemo(() => movies.find((item) => item.id === Number(id)), [id]);
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Movie } from '../types';
 import MovieCard from './MovieCard';
 import { getPosterUrl, fallbackGradient } from '../lib/posters';
+import SEOHead from './SEOHead';
 
 interface ViewerHomeProps {
   movies: Movie[];
@@ -277,6 +278,32 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onWatchTrail
 
   return (
     <div className="space-y-10">
+      <SEOHead
+        title="YouMakeTV.ai | Watch and Publish AI-Generated Movies"
+        description="Watch, discover, and publish AI-generated movies. Browse original AI films, support creators, and build an audience on the world's AI-native movie platform."
+        canonical="/"
+        structuredData={[
+          {
+            '@context': 'https://schema.org',
+            '@type': 'Organization',
+            name: 'YouMakeTV.ai',
+            url: 'https://youmaketv.ai',
+            description: "The world's AI-native movie platform for watching and publishing AI-generated films.",
+            logo: 'https://youmaketv.ai/favicon.svg',
+          },
+          {
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            name: 'YouMakeTV.ai',
+            url: 'https://youmaketv.ai',
+            potentialAction: {
+              '@type': 'SearchAction',
+              target: 'https://youmaketv.ai/?q={search_term_string}',
+              'query-input': 'required name=search_term_string',
+            },
+          },
+        ]}
+      />
 
       {/* ── PREMIUM BANNER ────────────────────────────────────────────────── */}
       {viewer?.premium && (

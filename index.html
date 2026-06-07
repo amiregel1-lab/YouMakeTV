@@ -3,10 +3,56 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Cinema</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🎬</text></svg>" />
+
+    <!-- Primary SEO -->
+    <title>YouMakeTV.ai | Watch and Publish AI-Generated Movies</title>
+    <meta name="description" content="Watch, discover, and publish AI-generated movies. Browse original AI films, support creators, and build an audience on the world's AI-native movie platform." />
+    <meta name="keywords" content="AI movies, AI-generated films, AI cinema, AI filmmaking, watch AI movies, publish AI films, AI creators, streaming platform" />
+    <meta name="author" content="YouMakeTV.ai" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://youmaketv.ai/" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="YouMakeTV.ai" />
+    <meta property="og:title" content="YouMakeTV.ai | Watch and Publish AI-Generated Movies" />
+    <meta property="og:description" content="Watch, discover, and publish AI-generated movies. Browse original AI films, support creators, and build an audience on the world's AI-native movie platform." />
+    <meta property="og:url" content="https://youmaketv.ai/" />
+    <meta property="og:image" content="https://picsum.photos/seed/youmaketv-og/1200/630" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="YouMakeTV.ai — The AI-native movie platform" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@YouMakeTV" />
+    <meta name="twitter:title" content="YouMakeTV.ai | Watch and Publish AI-Generated Movies" />
+    <meta name="twitter:description" content="Watch, discover, and publish AI-generated movies. Browse original AI films, support creators, and build an audience on the world's AI-native movie platform." />
+    <meta name="twitter:image" content="https://picsum.photos/seed/youmaketv-og/1200/630" />
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <meta name="theme-color" content="#8b5cf6" />
+    <meta name="msapplication-TileColor" content="#8b5cf6" />
+
+    <!-- Performance: preconnect to image CDN -->
+    <link rel="preconnect" href="https://picsum.photos" />
+    <link rel="dns-prefetch" href="https://picsum.photos" />
+
+    <!-- Google Analytics placeholder (set VITE_GA_ID in .env to activate) -->
+    <!-- GTM / GA snippet injected by src/lib/analytics.ts at runtime -->
   </head>
-  <body class="bg-slate-950 text-slate-100">
+  <body>
+    <!-- Skip to main content (accessibility) -->
+    <a
+      href="#main-content"
+      style="position:absolute;top:-40px;left:0;padding:8px 16px;background:#8b5cf6;color:#fff;font-size:14px;font-weight:600;border-radius:0 0 8px 0;transition:top .2s;z-index:9999"
+      onfocus="this.style.top='0'"
+      onblur="this.style.top='-40px'"
+    >Skip to main content</a>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

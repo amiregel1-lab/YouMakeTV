@@ -39,7 +39,7 @@ export default function Navbar({ active, viewer, onRouteChange, onSignOut }: Nav
         <div className="mx-auto flex max-w-[1560px] items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
 
           {/* Logo */}
-          <button className="flex items-center gap-3 text-left" onClick={() => onRouteChange('home')}>
+          <button className="flex items-center gap-3 text-left" onClick={() => onRouteChange('home')} aria-label="YouMakeTV.ai — go to homepage">
             <BrandLogo />
           </button>
 
@@ -96,6 +96,7 @@ export default function Navbar({ active, viewer, onRouteChange, onSignOut }: Nav
                 {/* Mobile: avatar only */}
                 <button
                   onClick={() => onRouteChange('account')}
+                  aria-label="Go to account"
                   className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-950 text-white text-sm font-bold lg:hidden"
                 >
                   {viewer.username.charAt(0).toUpperCase()}

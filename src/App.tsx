@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { movies } from './data/movies';
 import { demoCreatorProfile, demoViewerAccount } from './data/mockData';
 import { CreatorFilm, CreatorProfile, ViewerAccount } from './types';
@@ -15,6 +15,8 @@ import CreatorOnboarding from './components/CreatorOnboarding';
 import CreatorDashboard from './components/CreatorDashboard';
 import CreatorsPage from './components/CreatorsPage';
 import MockPaymentModal from './components/MockPaymentModal';
+import NotFoundPage from './components/NotFoundPage';
+import { initAnalytics, trackPageView } from './lib/analytics';
 
 export default function App() {
   const [viewer, setViewer] = useState<ViewerAccount | null>(null);
@@ -26,7 +28,12 @@ export default function App() {
   useEffect(() => {
     setViewer(loadViewer());
     setCreator(loadCreator());
+    initAnalytics();
   }, []);
+
+  useEffect(() => {
+    trackPageView(location.pathname);
+  }, [location.pathname]);
 
   useEffect(() => {
     saveViewer(viewer);
@@ -120,7 +127,7 @@ export default function App() {
         onSignOut={handleSignOut}
       />
 
-      <main className="mx-auto max-w-[1560px] px-4 pb-24 pt-8 sm:px-6 lg:px-8 lg:pb-16">
+      <main id="main-content" className="mx-auto max-w-[1560px] px-4 pb-24 pt-8 sm:px-6 lg:px-8 lg:pb-16">
         <Routes>
           <Route
             path="/"
@@ -137,7 +144,7 @@ export default function App() {
           <Route path="/creator" element={<CreatorPortal onStart={() => navigate('/creator/onboarding')} onDashboard={() => navigate('/creator/dashboard')} />} />
           <Route path="/creator/onboarding" element={<CreatorOnboarding onComplete={handleCreateCreator} />} />
           <Route path="/creator/dashboard" element={<CreatorDashboard creator={creator} onAddFilm={handleAddFilm} onDeleteFilm={handleDeleteFilm} onStartOnboarding={() => navigate('/creator/onboarding')} onCreateDemo={handleDemoCreator} />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
 

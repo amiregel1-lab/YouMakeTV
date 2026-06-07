@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { movies } from '../data/movies';
 import { Movie } from '../types';
 import { getPosterUrl, fallbackGradient } from '../lib/posters';
+import SEOHead from './SEOHead';
 
 interface Creator {
   name: string;
@@ -138,6 +139,18 @@ export default function CreatorsPage() {
 
   return (
     <div className="space-y-8">
+      <SEOHead
+        title="Creators | Turn AI Movies Into Income"
+        description="Upload AI-generated films, grow an audience, and earn revenue from viewers around the world. Join YouMakeTV.ai as a creator today."
+        canonical="/creators"
+        structuredData={{
+          '@context': 'https://schema.org',
+          '@type': 'WebPage',
+          name: 'Creators — YouMakeTV.ai',
+          description: 'Upload AI-generated films, grow an audience, and earn revenue from viewers around the world.',
+          url: 'https://youmaketv.ai/creators',
+        }}
+      />
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>

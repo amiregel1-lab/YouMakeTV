@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ViewerAccount } from '../types';
 import { formatCurrency, subscriberPrice } from '../lib/formatters';
+import SEOHead from './SEOHead';
 
 interface AccountPageProps {
   viewer?: ViewerAccount | null;
@@ -8,6 +9,20 @@ interface AccountPageProps {
 }
 
 export default function AccountPage({ viewer, onSignOut }: AccountPageProps) {
+  return (
+    <>
+      <SEOHead
+        title="My Account"
+        description="Manage your YouMakeTV.ai account, subscription, and preferences."
+        canonical="/account"
+        noIndex
+      />
+      <AccountContent viewer={viewer} onSignOut={onSignOut} />
+    </>
+  );
+}
+
+function AccountContent({ viewer, onSignOut }: AccountPageProps) {
   if (!viewer) {
     return (
       <section className="overflow-hidden rounded-[2.5rem] border border-slate-200/70 bg-white shadow-soft">

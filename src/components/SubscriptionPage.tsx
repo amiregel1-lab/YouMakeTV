@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ViewerAccount } from '../types';
+import SEOHead from './SEOHead';
 
 interface SubscriptionPageProps {
   viewer?: ViewerAccount | null;
@@ -21,6 +22,11 @@ export default function SubscriptionPage({ viewer }: SubscriptionPageProps) {
 
   return (
     <section className="mx-auto max-w-2xl space-y-10">
+      <SEOHead
+        title="YouMake+ | Unlimited AI Cinema"
+        description="Subscribe to YouMake+ and get 50% off every paid film. Support AI creators and unlock the full YouMakeTV.ai catalogue."
+        canonical="/subscribe"
+      />
 
       {/* HERO */}
       <div className="overflow-hidden rounded-[2.5rem] border border-slate-200/70 bg-white shadow-soft">

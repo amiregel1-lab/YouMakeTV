@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+# Block private/functional routes
+Disallow: /account
+Disallow: /creator/dashboard
+Disallow: /creator/onboarding
+Disallow: /login
+
+Sitemap: https://youmaketv.ai/sitemap.xml

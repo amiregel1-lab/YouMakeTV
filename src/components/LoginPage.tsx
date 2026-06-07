@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ViewerAccount } from '../types';
+import SEOHead from './SEOHead';
 
 interface LoginPageProps {
   viewer?: ViewerAccount | null;
@@ -21,6 +22,12 @@ export default function LoginPage({ viewer, onSignIn }: LoginPageProps) {
 
   return (
     <section className="overflow-hidden rounded-[2.5rem] border border-slate-200/70 bg-white shadow-soft">
+      <SEOHead
+        title="Sign In"
+        description="Sign in to your YouMakeTV.ai account to watch AI-generated films and manage your subscription."
+        canonical="/login"
+        noIndex
+      />
       <div className="relative rounded-[2.5rem] bg-brand-fade/40 p-8 sm:p-10">
         <div className="absolute inset-0 bg-brand-soft opacity-80" />
         <div className="relative grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">

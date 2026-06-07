@@ -21,7 +21,10 @@ function RelatedPosterCard({ movie }: { movie: Movie }) {
       onClick={() => navigate(`/movie/${movie.id}`)}
       className="group flex-none w-28 sm:w-36 text-left"
     >
-      <div className="aspect-[2/3] overflow-hidden rounded-xl bg-slate-900 shadow-md transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl">
+      <div
+        className="aspect-[2/3] overflow-hidden rounded-xl bg-slate-900 shadow-md transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl"
+        style={{ backgroundImage: `url(${movie.thumbnail})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+      >
         {!imgError ? (
           <img
             src={getPosterUrl(movie)}
@@ -145,7 +148,10 @@ export default function MovieDetailPage({ viewer, onPurchase, onSubscribe, onWat
             {/* Right: poster + purchase */}
             <div className="space-y-5 rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl">
               {/* Poster */}
-              <div className="overflow-hidden rounded-[1.5rem] bg-slate-900">
+              <div
+                className="overflow-hidden rounded-[1.5rem] bg-slate-900"
+                style={{ backgroundImage: `url(${movie.thumbnail})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+              >
                 {!posterError ? (
                   <img
                     src={getPosterUrl(movie)}

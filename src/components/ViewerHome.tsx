@@ -59,6 +59,7 @@ function PosterCard({ movie, onSelect, onTrailer }: PosterCardProps) {
     <div className="flex-none w-28 sm:w-36 group cursor-pointer">
       <div
         className="relative aspect-[2/3] overflow-hidden rounded-xl bg-slate-900 shadow-md transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1"
+        style={{ backgroundImage: `url(${movie.thumbnail})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
         onClick={onSelect}
       >
         {!imgError ? (
@@ -120,7 +121,10 @@ function Top10Card({ movie, rank, onSelect }: Top10CardProps) {
         {rank}
       </span>
       <button onClick={onSelect} className="group w-24 sm:w-28 text-left">
-        <div className="aspect-[2/3] overflow-hidden rounded-xl bg-slate-900 shadow-lg transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl">
+        <div
+          className="aspect-[2/3] overflow-hidden rounded-xl bg-slate-900 shadow-lg transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl"
+          style={{ backgroundImage: `url(${movie.thumbnail})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+        >
           {!imgError ? (
             <img
               src={getPosterUrl(movie)}
@@ -299,17 +303,15 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onWatchTrail
       {/* ── SECTION 1: HERO ───────────────────────────────────────────────── */}
       <section
         className="relative -mx-4 sm:-mx-6 lg:-mx-8 -mt-8 overflow-hidden bg-slate-950"
-        style={{ minHeight: '460px', height: 'min(65vh, 700px)' }}
+        style={{ minHeight: '460px', height: 'min(65vh, 700px)', backgroundImage: `url(${featured.thumbnail})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
       >
-        {!heroImgError ? (
+        {!heroImgError && (
           <img
             src={getPosterUrl(featured)}
             alt={featured.title}
             onError={() => setHeroImgError(true)}
             className="absolute inset-0 h-full w-full object-cover"
           />
-        ) : (
-          <div className="absolute inset-0" style={{ background: fallbackGradient(featured.genre) }} />
         )}
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/55 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-transparent to-slate-950/25" />

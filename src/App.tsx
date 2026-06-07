@@ -120,7 +120,7 @@ export default function App() {
         onSignOut={handleSignOut}
       />
 
-      <main className="mx-auto max-w-[1560px] px-4 pb-16 pt-8 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-[1560px] px-4 pb-24 pt-8 sm:px-6 lg:px-8 lg:pb-16">
         <Routes>
           <Route
             path="/"

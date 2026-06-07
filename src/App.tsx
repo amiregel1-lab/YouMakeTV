@@ -136,7 +136,7 @@ export default function App() {
           <Route path="/creators" element={<CreatorsPage />} />
           <Route path="/creator" element={<CreatorPortal onStart={() => navigate('/creator/onboarding')} onDashboard={() => navigate('/creator/dashboard')} onDemo={handleDemoCreator} />} />
           <Route path="/creator/onboarding" element={<CreatorOnboarding onComplete={handleCreateCreator} />} />
-          <Route path="/creator/dashboard" element={<CreatorDashboard creator={creator} viewer={viewer} onAddFilm={handleAddFilm} onDeleteFilm={handleDeleteFilm} onStartOnboarding={() => navigate('/creator/onboarding')} onCreateDemo={handleDemoCreator} />} />
+          <Route path="/creator/dashboard" element={<CreatorDashboard creator={creator} onAddFilm={handleAddFilm} onDeleteFilm={handleDeleteFilm} onStartOnboarding={() => navigate('/creator/onboarding')} onCreateDemo={handleDemoCreator} />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

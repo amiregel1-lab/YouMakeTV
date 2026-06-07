@@ -134,15 +134,21 @@ export default function CreatorsPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight text-slate-950">Creators</h1>
           <p className="mt-1 text-slate-500">Discover AI filmmakers on YouMakeTV.ai</p>
+          <p className="mt-2 text-sm text-slate-400">
+            <span className="font-semibold text-slate-950">{creators.length}</span> creators ·{' '}
+            <span className="font-semibold text-slate-950">{movies.length}</span> films
+          </p>
         </div>
-        <div className="flex items-center gap-2 text-sm text-slate-500">
-          <span className="font-semibold text-slate-950">{creators.length}</span> creators ·{' '}
-          <span className="font-semibold text-slate-950">{movies.length}</span> films
-        </div>
+        <button
+          onClick={() => navigate('/creator')}
+          className="rounded-full bg-brand-purple px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-indigo"
+        >
+          Become a Creator →
+        </button>
       </div>
 
       {/* Search */}

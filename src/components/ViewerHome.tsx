@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Movie } from '../types';
 import MovieCard from './MovieCard';
@@ -7,12 +7,42 @@ interface ViewerHomeProps {
   movies: Movie[];
   viewer?: { username: string; premium: boolean } | null;
   onSelectMovie: (movieId: number) => void;
-  onOpenPurchase: () => void;
   onWatchTrailer: () => void;
 }
 
 const FILTER_GENRES = ['All', 'Action', 'Sci-Fi', 'Drama', 'Horror', 'Comedy', 'Documentary', 'Animation', 'Fantasy', 'Thriller', 'Anime', 'Mystery'];
 const SORT_OPTIONS = ['Most Popular', 'Newest', 'Highest Rated'] as const;
+const PRICE_TIERS = [
+  { label: 'All prices', maxPrice: Infinity },
+  { label: 'Free', maxPrice: 0 },
+  { label: 'Under $1', maxPrice: 0.99 },
+  { label: 'Under $2', maxPrice: 1.99 },
+  { label: 'Under $3', maxPrice: 2.99 },
+  { label: 'Under $5', maxPrice: 4.99 },
+  { label: 'Under $8', maxPrice: 7.99 },
+];
+
+// ── Arrow button used in all scroll rows ───────────────────────────────────
+
+function ArrowBtn({ dir, onClick }: { dir: 'left' | 'right'; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={`Scroll ${dir}`}
+      className="flex h-8 w-8 flex-none items-center justify-center rounded-full border border-slate-200 bg-white shadow-sm transition hover:bg-slate-50 hover:shadow-md"
+    >
+      {dir === 'left' ? (
+        <svg className="h-4 w-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+      ) : (
+        <svg className="h-4 w-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      )}
+    </button>
+  );
+}
 
 // ── Poster card used inside horizontal movie rows ──────────────────────────
 
@@ -42,7 +72,6 @@ function PosterCard({ movie, onSelect, onTrailer }: PosterCardProps) {
             <span className="text-[10px] text-slate-400 leading-tight">{movie.title}</span>
           </div>
         )}
-        {/* Hover overlay */}
         <div className="absolute inset-0 flex flex-col items-center justify-end p-2 gap-1.5 bg-slate-950/0 group-hover:bg-slate-950/75 transition-all duration-300">
           <div className="w-full space-y-1.5 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
             <button
@@ -78,9 +107,11 @@ interface Top10CardProps {
 function Top10Card({ movie, rank, onSelect }: Top10CardProps) {
   const [imgError, setImgError] = useState(false);
   return (
-    <div className="flex-none flex items-end gap-1">
-      <span className="select-none text-right leading-none font-black text-slate-200 flex-none"
-        style={{ fontSize: 'clamp(3rem, 5vw, 5rem)', width: '2.5rem' }}>
+    <div className="flex-none flex items-end gap-0.5">
+      <span
+        className="select-none text-right leading-none font-black text-slate-200 flex-none"
+        style={{ fontSize: 'clamp(3rem, 5vw, 5rem)', width: '2.4rem' }}
+      >
         {rank}
       </span>
       <button onClick={onSelect} className="group w-24 sm:w-28">
@@ -103,7 +134,7 @@ function Top10Card({ movie, rank, onSelect }: Top10CardProps) {
   );
 }
 
-// ── Horizontal movie row section ───────────────────────────────────────────
+// ── Horizontal movie row with scroll arrows ────────────────────────────────
 
 interface MovieRowProps {
   title: string;
@@ -113,11 +144,24 @@ interface MovieRowProps {
 }
 
 function MovieRow({ title, movies, onSelectMovie, onWatchTrailer }: MovieRowProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (dir: 'left' | 'right') => {
+    scrollRef.current?.scrollBy({ left: dir === 'left' ? -480 : 480, behavior: 'smooth' });
+  };
+
   if (movies.length === 0) return null;
+
   return (
     <section>
-      <h2 className="text-lg font-semibold text-slate-950 mb-3">{title}</h2>
-      <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-lg font-semibold text-slate-950">{title}</h2>
+        <div className="flex gap-1.5">
+          <ArrowBtn dir="left" onClick={() => scroll('left')} />
+          <ArrowBtn dir="right" onClick={() => scroll('right')} />
+        </div>
+      </div>
+      <div ref={scrollRef} className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
         {movies.map((movie) => (
           <PosterCard
             key={movie.id}
@@ -133,12 +177,19 @@ function MovieRow({ title, movies, onSelectMovie, onWatchTrailer }: MovieRowProp
 
 // ── Main component ─────────────────────────────────────────────────────────
 
-export default function ViewerHome({ movies, viewer, onSelectMovie, onOpenPurchase, onWatchTrailer }: ViewerHomeProps) {
+export default function ViewerHome({ movies, viewer, onSelectMovie, onWatchTrailer }: ViewerHomeProps) {
   const navigate = useNavigate();
+  const top10ScrollRef = useRef<HTMLDivElement>(null);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('All');
+  const [priceTier, setPriceTier] = useState(0);
   const [sortBy, setSortBy] = useState<typeof SORT_OPTIONS[number]>('Most Popular');
   const [heroImgError, setHeroImgError] = useState(false);
+
+  const scrollTop10 = (dir: 'left' | 'right') => {
+    top10ScrollRef.current?.scrollBy({ left: dir === 'left' ? -480 : 480, behavior: 'smooth' });
+  };
 
   const featured = useMemo(() => movies.find((m) => m.featured) ?? movies[5], [movies]);
 
@@ -164,8 +215,17 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onOpenPurcha
   );
 
   const filteredMovies = useMemo(() => {
+    const tier = PRICE_TIERS[priceTier];
     let result = [...movies];
 
+    // Price filter
+    if (priceTier === 1) {
+      result = result.filter((m) => m.price === 0);
+    } else if (priceTier > 1) {
+      result = result.filter((m) => m.price <= tier.maxPrice);
+    }
+
+    // Search
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
@@ -178,6 +238,7 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onOpenPurcha
       );
     }
 
+    // Genre
     if (selectedGenre !== 'All') {
       const target = selectedGenre === 'Animation' ? ['anime', 'animation'] : [selectedGenre.toLowerCase()];
       result = result.filter((m) =>
@@ -185,12 +246,24 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onOpenPurcha
       );
     }
 
+    // Sort
     if (sortBy === 'Most Popular') result.sort((a, b) => (b.views ?? 0) - (a.views ?? 0));
     else if (sortBy === 'Newest') result.sort((a, b) => (b.releaseYear ?? 0) - (a.releaseYear ?? 0));
     else if (sortBy === 'Highest Rated') result.sort((a, b) => (b.trailerViews ?? 0) - (a.trailerViews ?? 0));
 
     return result;
-  }, [movies, searchQuery, selectedGenre, sortBy]);
+  }, [movies, searchQuery, selectedGenre, priceTier, sortBy]);
+
+  const activeFilterCount =
+    (searchQuery ? 1 : 0) +
+    (selectedGenre !== 'All' ? 1 : 0) +
+    (priceTier !== 0 ? 1 : 0);
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSelectedGenre('All');
+    setPriceTier(0);
+  };
 
   return (
     <div className="space-y-10">
@@ -228,11 +301,9 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onOpenPurcha
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
         )}
-        {/* Gradient overlays */}
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/55 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-transparent to-slate-950/25" />
 
-        {/* Content */}
         <div className="absolute inset-0 flex items-end pb-10 sm:pb-14 px-4 sm:px-6 lg:px-8">
           <div className="max-w-2xl">
             <span className="inline-flex rounded-full border border-brand-pink/30 bg-brand-pink/20 px-4 py-1.5 text-xs uppercase tracking-[0.32em] text-brand-pink mb-4">
@@ -271,8 +342,14 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onOpenPurcha
 
       {/* ── SECTION 2: TOP 10 THIS WEEK ───────────────────────────────────── */}
       <section>
-        <h2 className="text-lg font-semibold text-slate-950 mb-3">Top 10 This Week</h2>
-        <div className="flex items-end gap-2 overflow-x-auto pb-3 scrollbar-hide">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold text-slate-950">Top 10 This Week</h2>
+          <div className="flex gap-1.5">
+            <ArrowBtn dir="left" onClick={() => scrollTop10('left')} />
+            <ArrowBtn dir="right" onClick={() => scrollTop10('right')} />
+          </div>
+        </div>
+        <div ref={top10ScrollRef} className="flex items-end gap-2 overflow-x-auto pb-3 scrollbar-hide">
           {top10.map((movie, i) => (
             <Top10Card
               key={movie.id}
@@ -297,10 +374,20 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onOpenPurcha
       <section>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
           <h2 className="text-lg font-semibold text-slate-950">All Movies</h2>
-          <p className="text-sm text-slate-500">
-            <span className="font-semibold text-slate-950">{filteredMovies.length}</span> of{' '}
-            <span className="font-semibold text-slate-950">{movies.length}</span> titles
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-sm text-slate-500">
+              <span className="font-semibold text-slate-950">{filteredMovies.length}</span> of{' '}
+              <span className="font-semibold text-slate-950">{movies.length}</span> titles
+            </p>
+            {activeFilterCount > 0 && (
+              <button
+                onClick={clearFilters}
+                className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
+              >
+                Clear all ({activeFilterCount})
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Search */}
@@ -316,9 +403,7 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onOpenPurcha
             className="w-full rounded-full border border-slate-200 bg-white py-3 pl-11 pr-10 text-sm text-slate-950 placeholder-slate-400 outline-none focus:border-brand-cyan focus:ring-2 focus:ring-brand-cyan/20"
           />
           {searchQuery && (
-            <button onClick={() => setSearchQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-              ✕
-            </button>
+            <button onClick={() => setSearchQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">✕</button>
           )}
         </div>
 
@@ -335,6 +420,23 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onOpenPurcha
               }`}
             >
               {genre}
+            </button>
+          ))}
+        </div>
+
+        {/* Price filter chips */}
+        <div className="flex flex-wrap gap-2 mb-3">
+          {PRICE_TIERS.map((tier, i) => (
+            <button
+              key={tier.label}
+              onClick={() => setPriceTier(i)}
+              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                priceTier === i
+                  ? 'border-emerald-600 bg-emerald-600 text-white'
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              {tier.label}
             </button>
           ))}
         </div>
@@ -360,9 +462,9 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onOpenPurcha
         {filteredMovies.length === 0 ? (
           <div className="rounded-[2rem] border border-slate-200/70 bg-white shadow-soft p-12 text-center">
             <p className="text-slate-600 text-lg font-medium mb-2">No movies match your filters.</p>
-            <p className="text-slate-400 text-sm mb-6">Try adjusting your search or genre selection.</p>
+            <p className="text-slate-400 text-sm mb-6">Try adjusting your search, genre, or price selection.</p>
             <button
-              onClick={() => { setSearchQuery(''); setSelectedGenre('All'); }}
+              onClick={clearFilters}
               className="rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
             >
               Clear filters

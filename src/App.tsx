@@ -124,7 +124,7 @@ export default function App() {
         <Routes>
           <Route
             path="/"
-            element={<ViewerHome movies={movies} viewer={viewer} onSelectMovie={(movieId) => navigate(`/movie/${movieId}`)} onOpenPurchase={openPurchaseModal} onWatchTrailer={openTrailerModal} />}
+            element={<ViewerHome movies={movies} viewer={viewer} onSelectMovie={(movieId) => navigate(`/movie/${movieId}`)} onWatchTrailer={openTrailerModal} />}
           />
           <Route
             path="/movie/:id"

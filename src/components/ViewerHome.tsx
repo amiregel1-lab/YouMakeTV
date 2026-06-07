@@ -107,14 +107,14 @@ interface Top10CardProps {
 function Top10Card({ movie, rank, onSelect }: Top10CardProps) {
   const [imgError, setImgError] = useState(false);
   return (
-    <div className="flex-none flex items-end gap-0.5">
+    <div className="flex-none flex items-end gap-1">
       <span
-        className="select-none text-right leading-none font-black text-slate-200 flex-none"
-        style={{ fontSize: 'clamp(3rem, 5vw, 5rem)', width: '2.4rem' }}
+        className="select-none text-right leading-[0.85] font-black text-slate-800 flex-none"
+        style={{ fontSize: 'clamp(3.5rem, 5.5vw, 5.5rem)', width: '2.8rem' }}
       >
         {rank}
       </span>
-      <button onClick={onSelect} className="group w-24 sm:w-28">
+      <button onClick={onSelect} className="group w-24 sm:w-28 text-left">
         <div className="aspect-[2/3] overflow-hidden rounded-xl bg-slate-800 shadow-lg transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl">
           {!imgError ? (
             <img
@@ -129,6 +129,7 @@ function Top10Card({ movie, rank, onSelect }: Top10CardProps) {
             </div>
           )}
         </div>
+        <p className="mt-1.5 text-xs font-semibold text-slate-950 line-clamp-1">{movie.title}</p>
       </button>
     </div>
   );

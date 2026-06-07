@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Movie } from '../types';
+import { getPosterUrl, fallbackGradient } from '../lib/posters';
 
 interface MovieCardProps {
   movie: Movie;
@@ -12,20 +13,23 @@ export default function MovieCard({ movie, onSelect, onWatchTrailer }: MovieCard
 
   return (
     <article className="group cursor-pointer">
-      <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-slate-800 shadow-md transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1">
+      <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-slate-900 shadow-md transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1">
         {!imgError ? (
           <img
-            src={movie.thumbnail}
+            src={getPosterUrl(movie)}
             alt={movie.title}
+            loading="lazy"
             onError={() => setImgError(true)}
             className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="h-full w-full flex flex-col items-center justify-center p-4 text-center gap-2">
-            <svg className="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
-            </svg>
-            <span className="text-[10px] text-slate-400 leading-tight">{movie.title}</span>
+          <div
+            className="h-full w-full flex flex-col items-start justify-end p-3 gap-1"
+            style={{ background: fallbackGradient(movie.genre) }}
+          >
+            <span className="text-[9px] uppercase tracking-widest text-white/40 font-medium">{movie.genre}</span>
+            <p className="text-xs font-bold text-white leading-tight line-clamp-2">{movie.title}</p>
+            <p className="text-[9px] text-white/40">{movie.creator}</p>
           </div>
         )}
 

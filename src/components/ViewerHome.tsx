@@ -2,6 +2,7 @@ import { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Movie } from '../types';
 import MovieCard from './MovieCard';
+import { getPosterUrl, fallbackGradient } from '../lib/posters';
 
 interface ViewerHomeProps {
   movies: Movie[];
@@ -57,19 +58,23 @@ function PosterCard({ movie, onSelect, onTrailer }: PosterCardProps) {
   return (
     <div className="flex-none w-28 sm:w-36 group cursor-pointer">
       <div
-        className="relative aspect-[2/3] overflow-hidden rounded-xl bg-slate-800 shadow-md transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1"
+        className="relative aspect-[2/3] overflow-hidden rounded-xl bg-slate-900 shadow-md transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1"
         onClick={onSelect}
       >
         {!imgError ? (
           <img
-            src={movie.thumbnail}
+            src={getPosterUrl(movie)}
             alt={movie.title}
+            loading="lazy"
             onError={() => setImgError(true)}
             className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="h-full w-full flex items-center justify-center p-3 text-center">
-            <span className="text-[10px] text-slate-400 leading-tight">{movie.title}</span>
+          <div
+            className="h-full w-full flex flex-col items-start justify-end p-2 gap-0.5"
+            style={{ background: fallbackGradient(movie.genre) }}
+          >
+            <p className="text-[9px] font-bold text-white leading-tight line-clamp-2">{movie.title}</p>
           </div>
         )}
         <div className="absolute inset-0 flex flex-col items-center justify-end p-2 gap-1.5 bg-slate-950/0 group-hover:bg-slate-950/75 transition-all duration-300">
@@ -115,17 +120,21 @@ function Top10Card({ movie, rank, onSelect }: Top10CardProps) {
         {rank}
       </span>
       <button onClick={onSelect} className="group w-24 sm:w-28 text-left">
-        <div className="aspect-[2/3] overflow-hidden rounded-xl bg-slate-800 shadow-lg transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl">
+        <div className="aspect-[2/3] overflow-hidden rounded-xl bg-slate-900 shadow-lg transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl">
           {!imgError ? (
             <img
-              src={movie.thumbnail}
+              src={getPosterUrl(movie)}
               alt={movie.title}
+              loading="lazy"
               onError={() => setImgError(true)}
               className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
             />
           ) : (
-            <div className="h-full w-full flex items-center justify-center p-2 text-center">
-              <span className="text-[10px] text-slate-400 leading-tight">{movie.title}</span>
+            <div
+              className="h-full w-full flex flex-col items-start justify-end p-2 gap-0.5"
+              style={{ background: fallbackGradient(movie.genre) }}
+            >
+              <p className="text-[9px] font-bold text-white leading-tight line-clamp-2">{movie.title}</p>
             </div>
           )}
         </div>
@@ -294,13 +303,13 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onWatchTrail
       >
         {!heroImgError ? (
           <img
-            src={featured.thumbnail}
+            src={getPosterUrl(featured)}
             alt={featured.title}
             onError={() => setHeroImgError(true)}
             className="absolute inset-0 h-full w-full object-cover"
           />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
+          <div className="absolute inset-0" style={{ background: fallbackGradient(featured.genre) }} />
         )}
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/55 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-transparent to-slate-950/25" />

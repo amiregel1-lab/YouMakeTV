@@ -4,6 +4,7 @@ import { movies } from '../data/movies';
 import { formatCurrency, subscriberPrice } from '../lib/formatters';
 import type { Movie, ViewerAccount } from '../types';
 import PurchaseOptions from './PurchaseOptions';
+import { getPosterUrl, fallbackGradient } from '../lib/posters';
 
 interface MovieDetailPageProps {
   viewer?: ViewerAccount | null;
@@ -20,17 +21,21 @@ function RelatedPosterCard({ movie }: { movie: Movie }) {
       onClick={() => navigate(`/movie/${movie.id}`)}
       className="group flex-none w-28 sm:w-36 text-left"
     >
-      <div className="aspect-[2/3] overflow-hidden rounded-xl bg-slate-800 shadow-md transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl">
+      <div className="aspect-[2/3] overflow-hidden rounded-xl bg-slate-900 shadow-md transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl">
         {!imgError ? (
           <img
-            src={movie.thumbnail}
+            src={getPosterUrl(movie)}
             alt={movie.title}
+            loading="lazy"
             onError={() => setImgError(true)}
             className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="h-full w-full flex items-center justify-center p-3 text-center">
-            <span className="text-[10px] text-slate-400 leading-tight">{movie.title}</span>
+          <div
+            className="h-full w-full flex flex-col items-start justify-end p-2 gap-0.5"
+            style={{ background: fallbackGradient(movie.genre) }}
+          >
+            <p className="text-[9px] font-bold text-white leading-tight line-clamp-2">{movie.title}</p>
           </div>
         )}
       </div>
@@ -143,14 +148,18 @@ export default function MovieDetailPage({ viewer, onPurchase, onSubscribe, onWat
               <div className="overflow-hidden rounded-[1.5rem] bg-slate-900">
                 {!posterError ? (
                   <img
-                    src={movie.thumbnail}
+                    src={getPosterUrl(movie)}
                     alt={movie.title}
                     onError={() => setPosterError(true)}
                     className="h-72 w-full object-cover"
                   />
                 ) : (
-                  <div className="h-72 w-full flex items-center justify-center bg-slate-800">
-                    <span className="text-slate-500 text-sm">{movie.title}</span>
+                  <div
+                    className="h-72 w-full flex flex-col items-start justify-end p-4 gap-1"
+                    style={{ background: fallbackGradient(movie.genre) }}
+                  >
+                    <span className="text-[9px] uppercase tracking-widest text-white/40 font-medium">{movie.genre}</span>
+                    <p className="text-sm font-bold text-white leading-tight">{movie.title}</p>
                   </div>
                 )}
               </div>

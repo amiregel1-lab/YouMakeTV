@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { movies } from '../data/movies';
 import { Movie } from '../types';
+import { getPosterUrl, fallbackGradient } from '../lib/posters';
 
 interface Creator {
   name: string;
@@ -78,14 +79,18 @@ function CreatorCard({ creator, onSelectMovie }: { creator: Creator; onSelectMov
               <div className="aspect-[2/3] overflow-hidden rounded-lg bg-slate-800 shadow-sm transition-all duration-200 group-hover:-translate-y-1 group-hover:shadow-md">
                 {!imgErrors.has(film.id) ? (
                   <img
-                    src={film.thumbnail}
+                    src={getPosterUrl(film)}
                     alt={film.title}
+                    loading="lazy"
                     onError={() => handleImgError(film.id)}
                     className="h-full w-full object-cover transition group-hover:scale-105 duration-500"
                   />
                 ) : (
-                  <div className="h-full w-full flex items-center justify-center p-1">
-                    <span className="text-[9px] text-slate-400 text-center leading-tight">{film.title}</span>
+                  <div
+                    className="h-full w-full flex flex-col items-start justify-end p-1 gap-0.5"
+                    style={{ background: fallbackGradient(film.genre) }}
+                  >
+                    <p className="text-[8px] font-bold text-white leading-tight line-clamp-2">{film.title}</p>
                   </div>
                 )}
               </div>

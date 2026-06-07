@@ -13,6 +13,7 @@ import AccountPage from './components/AccountPage';
 import CreatorPortal from './components/CreatorPortal';
 import CreatorOnboarding from './components/CreatorOnboarding';
 import CreatorDashboard from './components/CreatorDashboard';
+import CreatorsPage from './components/CreatorsPage';
 import MockPaymentModal from './components/MockPaymentModal';
 
 export default function App() {
@@ -36,6 +37,7 @@ export default function App() {
   }, [creator]);
 
   const activeRoute = useMemo(() => {
+    if (location.pathname.startsWith('/creators')) return 'creators';
     if (location.pathname.startsWith('/creator/dashboard')) return 'dashboard';
     if (location.pathname.startsWith('/creator/onboarding')) return 'onboarding';
     if (location.pathname.startsWith('/creator')) return 'creator';
@@ -107,6 +109,7 @@ export default function App() {
             home: '/',
             subscribe: '/subscribe',
             creator: '/creator',
+            creators: '/creators',
             onboarding: '/creator/onboarding',
             dashboard: '/creator/dashboard',
             login: '/login',
@@ -130,6 +133,7 @@ export default function App() {
           <Route path="/subscribe" element={<SubscriptionPage viewer={viewer} onSubscribe={handleSubscribe} />} />
           <Route path="/login" element={<LoginPage viewer={viewer} onSignIn={handleSignIn} />} />
           <Route path="/account" element={<AccountPage viewer={viewer} onSignOut={handleSignOut} />} />
+          <Route path="/creators" element={<CreatorsPage />} />
           <Route path="/creator" element={<CreatorPortal onStart={() => navigate('/creator/onboarding')} onDashboard={() => navigate('/creator/dashboard')} onDemo={handleDemoCreator} />} />
           <Route path="/creator/onboarding" element={<CreatorOnboarding onComplete={handleCreateCreator} />} />
           <Route path="/creator/dashboard" element={<CreatorDashboard creator={creator} viewer={viewer} onAddFilm={handleAddFilm} onDeleteFilm={handleDeleteFilm} onStartOnboarding={() => navigate('/creator/onboarding')} onCreateDemo={handleDemoCreator} />} />

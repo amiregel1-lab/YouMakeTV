@@ -1,91 +1,69 @@
-import { formatCurrency, subscriberPrice } from '../lib/formatters';
-import { Movie, ViewerAccount } from '../types';
+import { useState } from 'react';
+import { Movie } from '../types';
 
 interface MovieCardProps {
   movie: Movie;
-  viewer?: ViewerAccount | null;
   onSelect: (movie: Movie) => void;
-  onPurchase: () => void;
+  onWatchTrailer: () => void;
 }
 
-export default function MovieCard({ movie, viewer, onSelect, onPurchase }: MovieCardProps) {
-  const standardPrice = formatCurrency(movie.price);
-  const premiumPrice = formatCurrency(subscriberPrice(movie.price));
-  const hasPremium = Boolean(viewer?.premium);
+export default function MovieCard({ movie, onSelect, onWatchTrailer }: MovieCardProps) {
+  const [imgError, setImgError] = useState(false);
 
   return (
-    <article className="group overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-glow">
-      <button onClick={() => onSelect(movie)} type="button" className="relative block w-full text-left">
-        <div className="overflow-hidden rounded-t-[1.75rem]">
-          <img src={movie.thumbnail} alt={movie.title} className="h-40 w-full object-cover transition duration-500 group-hover:scale-105" />
-        </div>
-        <div className="absolute left-3 top-3 flex items-center gap-1.5">
-          <span className="rounded-full bg-brand-pink/10 px-2 py-0.5 text-xs font-semibold text-brand-pink">{movie.badge}</span>
-          <div className="flex items-center gap-1">
-            {(movie.genres ?? [movie.genre]).slice(0, 1).map((g) => {
-              const map: Record<string, string> = {
-                'Sci-Fi': 'border-brand-cyan text-brand-cyan',
-                'Sci-Fi Thriller': 'border-brand-cyan text-brand-cyan',
-                'Thriller': 'border-rose-600 text-rose-600',
-                'Action': 'border-red-500 text-red-500',
-                'Adventure': 'border-amber-500 text-amber-500',
-                'Fantasy': 'border-indigo-500 text-indigo-500',
-                'Drama': 'border-slate-400 text-slate-600',
-                'Comedy': 'border-yellow-400 text-yellow-600',
-                'Romance': 'border-pink-500 text-pink-500',
-                'Horror': 'border-red-700 text-red-700',
-                'Mystery': 'border-violet-500 text-violet-500',
-                'Crime': 'border-slate-700 text-slate-700',
-                'Documentary': 'border-green-600 text-green-600',
-                'Animation': 'border-indigo-400 text-indigo-400',
-                'Anime': 'border-brand-purple text-brand-purple',
-                'Family': 'border-emerald-500 text-emerald-500',
-                'Short': 'border-slate-300 text-slate-600',
-                'Music': 'border-fuchsia-500 text-fuchsia-500',
-                'Experimental': 'border-amber-300 text-amber-600',
-                'Noir': 'border-slate-800 text-slate-800',
-                'Art': 'border-pink-300 text-pink-600',
-              };
-
-              const cls = map[g] ?? 'border-slate-300 text-slate-600';
-              return (
-                <span key={g} className={`rounded-full px-2 py-0.5 text-xs font-semibold border ${cls}`}>
-                  {g}
-                </span>
-              );
-            })}
+    <article className="group cursor-pointer">
+      <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-slate-800 shadow-md transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1">
+        {!imgError ? (
+          <img
+            src={movie.thumbnail}
+            alt={movie.title}
+            onError={() => setImgError(true)}
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="h-full w-full flex flex-col items-center justify-center p-4 text-center gap-2">
+            <svg className="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+            </svg>
+            <span className="text-[10px] text-slate-400 leading-tight">{movie.title}</span>
           </div>
-        </div>
-        <div className="absolute right-3 top-3 rounded-full bg-slate-950/80 px-2 py-0.5 text-xs font-semibold text-white">{movie.duration}</div>
-      </button>
-      <div className="space-y-3 p-4">
-        <div>
-          <h3 className="text-sm font-semibold text-slate-950 transition group-hover:text-brand-purple leading-tight">{movie.title}</h3>
-          <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{movie.description}</p>
-        </div>
-        <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 px-3 py-2.5">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              {movie.price === 0 ? (
-                <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">Free</span>
-              ) : hasPremium ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-pink-600 line-through">{standardPrice}</span>
-                  <span className="text-sm font-semibold text-brand-purple">{premiumPrice}</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-semibold text-slate-950">{standardPrice}</span>
-                  <span className="text-xs text-slate-400">/ {premiumPrice} w+</span>
-                </div>
-              )}
-            </div>
-            <button onClick={onPurchase} className="rounded-full bg-slate-950 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-800 whitespace-nowrap">
-              Rent
+        )}
+
+        {/* Hover overlay */}
+        <div className="absolute inset-0 flex flex-col items-center justify-end p-3 gap-2 bg-slate-950/0 group-hover:bg-slate-950/75 transition-all duration-300">
+          <div className="w-full space-y-2 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+            <button
+              onClick={(e) => { e.stopPropagation(); onWatchTrailer(); }}
+              className="w-full rounded-full bg-white py-2 text-xs font-semibold text-slate-950 hover:bg-slate-100 transition"
+            >
+              ▶ Watch Trailer
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onSelect(movie); }}
+              className="w-full rounded-full border border-white/50 py-2 text-xs font-semibold text-white hover:bg-white/10 transition"
+            >
+              View Details
             </button>
           </div>
         </div>
+
+        {/* Badges */}
+        <div className="absolute top-2 left-2 right-2 flex flex-wrap gap-1">
+          <span className="rounded-full bg-black/60 backdrop-blur-sm px-2 py-0.5 text-[10px] font-semibold text-white">
+            {movie.genre}
+          </span>
+          {movie.price === 0 && (
+            <span className="rounded-full bg-emerald-500/90 backdrop-blur-sm px-2 py-0.5 text-[10px] font-semibold text-white">
+              Free
+            </span>
+          )}
+        </div>
       </div>
+
+      <button onClick={() => onSelect(movie)} className="mt-2 w-full text-left">
+        <h3 className="text-xs font-semibold text-slate-950 leading-tight line-clamp-2">{movie.title}</h3>
+        <p className="text-[10px] text-slate-500 mt-0.5">{movie.creator}</p>
+      </button>
     </article>
   );
 }

@@ -4,7 +4,7 @@ import BrandLogo from './BrandLogo';
 interface NavbarProps {
   active: string;
   viewer?: ViewerAccount | null;
-  onRouteChange: (route: 'home' | 'subscribe' | 'creator' | 'onboarding' | 'dashboard' | 'login' | 'account') => void;
+  onRouteChange: (route: 'home' | 'subscribe' | 'creator' | 'creators' | 'onboarding' | 'dashboard' | 'login' | 'account') => void;
   onSignOut: () => void;
 }
 
@@ -22,7 +22,7 @@ export default function Navbar({ active, viewer, onRouteChange, onSignOut }: Nav
             onClick={() => onRouteChange('home')}
             className={`text-sm font-semibold transition ${active === 'home' ? 'text-slate-950' : 'text-slate-500 hover:text-slate-900'}`}
           >
-            Browse films
+            Movies
           </button>
           <button
             onClick={() => onRouteChange('subscribe')}
@@ -31,10 +31,10 @@ export default function Navbar({ active, viewer, onRouteChange, onSignOut }: Nav
             YouMake+
           </button>
           <button
-            onClick={() => onRouteChange('creator')}
-            className={`text-sm font-semibold transition ${active === 'creator' || active === 'dashboard' ? 'text-slate-950' : 'text-slate-500 hover:text-slate-900'}`}
+            onClick={() => onRouteChange('creators')}
+            className={`text-sm font-semibold transition ${active === 'creators' ? 'text-slate-950' : 'text-slate-500 hover:text-slate-900'}`}
           >
-            Creator studio
+            Creators
           </button>
         </nav>
 

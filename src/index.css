@@ -64,3 +64,12 @@ textarea::placeholder {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

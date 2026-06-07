@@ -14,15 +14,15 @@ export default function MovieCard({ movie, viewer, onSelect, onPurchase }: Movie
   const hasPremium = Boolean(viewer?.premium);
 
   return (
-    <article className="group overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-glow">
+    <article className="group overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-glow">
       <button onClick={() => onSelect(movie)} type="button" className="relative block w-full text-left">
         <div className="overflow-hidden rounded-t-[1.75rem]">
-          <img src={movie.thumbnail} alt={movie.title} className="h-56 w-full object-cover transition duration-500 group-hover:scale-105" />
+          <img src={movie.thumbnail} alt={movie.title} className="h-40 w-full object-cover transition duration-500 group-hover:scale-105" />
         </div>
-        <div className="absolute left-4 top-4 flex items-center gap-2">
-          <span className="rounded-full bg-brand-pink/10 px-3 py-1 text-xs font-semibold text-brand-pink">{movie.badge}</span>
-          <div className="flex items-center gap-2">
-            {(movie.genres ?? [movie.genre]).slice(0, 3).map((g) => {
+        <div className="absolute left-3 top-3 flex items-center gap-1.5">
+          <span className="rounded-full bg-brand-pink/10 px-2 py-0.5 text-xs font-semibold text-brand-pink">{movie.badge}</span>
+          <div className="flex items-center gap-1">
+            {(movie.genres ?? [movie.genre]).slice(0, 1).map((g) => {
               const map: Record<string, string> = {
                 'Sci-Fi': 'border-brand-cyan text-brand-cyan',
                 'Sci-Fi Thriller': 'border-brand-cyan text-brand-cyan',
@@ -56,45 +56,34 @@ export default function MovieCard({ movie, viewer, onSelect, onPurchase }: Movie
             })}
           </div>
         </div>
-        <div className="absolute right-4 top-4 rounded-full bg-slate-950/80 px-3 py-1 text-xs font-semibold text-white">{movie.duration}</div>
+        <div className="absolute right-3 top-3 rounded-full bg-slate-950/80 px-2 py-0.5 text-xs font-semibold text-white">{movie.duration}</div>
       </button>
-      <div className="space-y-4 p-5">
+      <div className="space-y-3 p-4">
         <div>
-          <h3 className="text-lg font-semibold text-slate-950 transition group-hover:text-brand-purple">{movie.title}</h3>
-          <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">{movie.description}</p>
+          <h3 className="text-sm font-semibold text-slate-950 transition group-hover:text-brand-purple leading-tight">{movie.title}</h3>
+          <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{movie.description}</p>
         </div>
-        <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-3">
-          <div className="flex items-center justify-between gap-4">
+        <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 px-3 py-2.5">
+          <div className="flex items-center justify-between gap-2">
             <div>
-              <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Price</p>
-              {movie.price === 0 && (
-                <div className="mt-2">
-                  <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">Free</span>
+              {movie.price === 0 ? (
+                <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">Free</span>
+              ) : hasPremium ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-pink-600 line-through">{standardPrice}</span>
+                  <span className="text-sm font-semibold text-brand-purple">{premiumPrice}</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm font-semibold text-slate-950">{standardPrice}</span>
+                  <span className="text-xs text-slate-400">/ {premiumPrice} w+</span>
                 </div>
               )}
-              <div className="mt-2 flex flex-col">
-                {hasPremium ? (
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-pink-600 line-through">{standardPrice}</span>
-                    <span className="text-lg font-semibold text-brand-purple">{premiumPrice}</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-semibold text-slate-950">{standardPrice}</span>
-                    <span className="text-sm text-slate-500">or</span>
-                    <div className="flex flex-col">
-                      <span className="text-lg font-semibold text-brand-cyan">{premiumPrice}</span>
-                      <span className="text-xs text-slate-500">With premium sub</span>
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
-            <button onClick={onPurchase} className="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">
+            <button onClick={onPurchase} className="rounded-full bg-slate-950 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-800 whitespace-nowrap">
               Rent
             </button>
           </div>
-          <p className="mt-3 text-xs text-slate-500">{hasPremium ? 'YouMake+ pricing applied' : 'Join YouMake+ for half-price access'}</p>
         </div>
       </div>
     </article>

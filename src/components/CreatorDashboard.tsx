@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { CreatorFilm, CreatorProfile, ViewerAccount } from '../types';
 import AnalyticsCards from './AnalyticsCards';
 import CreatorAnalytics from './CreatorAnalytics';
@@ -32,7 +32,7 @@ export default function CreatorDashboard({ creator, viewer, onAddFilm, onCreateD
             </span>
             <h1 className="text-4xl font-semibold text-slate-950">No creator account found.</h1>
             <p className="mx-auto max-w-2xl text-base leading-8 text-slate-600">
-              Complete onboarding to start tracking films, views, and earnings. You can also explore a demo creator workspace.
+              Complete onboarding to start tracking films, views, and earnings. Or explore a demo creator workspace.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <button onClick={onStartOnboarding} className="rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
@@ -48,37 +48,43 @@ export default function CreatorDashboard({ creator, viewer, onAddFilm, onCreateD
     );
   }
 
-  const totalFilms = creator.films.length;
-  const trailerViews = creator.films.reduce((sum, film) => sum + film.trailerViews, 0);
-  const paidWatches = creator.films.reduce((sum, film) => sum + film.paidWatches, 0);
-  const freeWatches = creator.films.reduce((sum, film) => sum + film.freeWatches, 0);
-  const totalViews = creator.films.reduce((sum, film) => sum + film.views, 0) + trailerViews;
-  const totalRevenue = creator.films.reduce((sum, film) => sum + film.price * film.paidWatches, 0);
-  const totalCreatorEarnings = creator.films.reduce((sum, film) => {
-    const share = film.paidWatches > 500 ? 0.4 : 0.3;
-    return sum + film.price * film.paidWatches * share;
+  const trailerViews = creator.films.reduce((s, f) => s + f.trailerViews, 0);
+  const paidWatches = creator.films.reduce((s, f) => s + f.paidWatches, 0);
+  const freeWatches = creator.films.reduce((s, f) => s + f.freeWatches, 0);
+  const totalViews = creator.films.reduce((s, f) => s + f.views, 0) + trailerViews;
+  const totalRevenue = creator.films.reduce((s, f) => s + f.price * f.paidWatches, 0);
+  const totalCreatorEarnings = creator.films.reduce((s, f) => {
+    const share = f.paidWatches > 500 ? 0.4 : 0.3;
+    return s + f.price * f.paidWatches * share;
   }, 0);
-  const totalPlatformFee = Math.max(0, totalRevenue - totalCreatorEarnings);
   const pendingPayout = Math.round(totalCreatorEarnings * 0.35 * 100) / 100;
-  const averageWatchPrice = paidWatches ? totalRevenue / paidWatches : 0;
   const conversionRate = trailerViews ? Math.round((paidWatches / trailerViews) * 100) : 0;
 
-  const metrics = [
-    { label: 'Total films uploaded', value: totalFilms.toString() },
-    { label: 'Total views', value: formatNumber(totalViews) },
-    { label: 'Trailer views', value: formatNumber(trailerViews) },
-    { label: 'Paid watches', value: formatNumber(paidWatches) },
-    { label: 'Free watches', value: formatNumber(freeWatches) },
-    { label: 'Total revenue', value: formatCurrency(totalRevenue) },
-    { label: 'Estimated platform fee', value: formatCurrency(totalPlatformFee) },
-    { label: 'Estimated creator earnings', value: formatCurrency(totalCreatorEarnings) },
-    { label: 'Pending payout', value: formatCurrency(pendingPayout) },
-    { label: 'Average watch price', value: formatCurrency(averageWatchPrice) },
-    { label: 'Trailer-to-paid conversion', value: `${conversionRate}%` },
+  const topFilm = [...creator.films].sort((a, b) => (b.price * b.paidWatches) - (a.price * a.paidWatches))[0];
+  const topConvertingFilm = [...creator.films].sort((a, b) => {
+    const rateA = a.trailerViews ? a.paidWatches / a.trailerViews : 0;
+    const rateB = b.trailerViews ? b.paidWatches / b.trailerViews : 0;
+    return rateB - rateA;
+  })[0];
+
+  const moneyMetrics = [
+    { label: 'Your estimated earnings', value: formatCurrency(totalCreatorEarnings), accent: 'purple' as const, hint: 'Your share after platform fee' },
+    { label: 'Pending payout', value: formatCurrency(pendingPayout), accent: 'green' as const, hint: 'Available for withdrawal' },
+    { label: 'Total gross revenue', value: formatCurrency(totalRevenue), accent: 'cyan' as const },
+    { label: 'Avg watch price', value: formatCurrency(paidWatches ? totalRevenue / paidWatches : 0), accent: 'default' as const },
+  ];
+
+  const viewMetrics = [
+    { label: 'Total views', value: formatNumber(totalViews), accent: 'cyan' as const },
+    { label: 'Paid watches', value: formatNumber(paidWatches), accent: 'purple' as const },
+    { label: 'Free watches', value: formatNumber(freeWatches), accent: 'default' as const },
+    { label: 'Trailer → paid conversion', value: `${conversionRate}%`, accent: conversionRate >= 10 ? 'green' as const : 'default' as const, hint: conversionRate >= 10 ? 'Strong conversion' : 'Room to grow' },
   ];
 
   return (
     <div className="space-y-10">
+
+      {/* STUDIO HEADER */}
       <section className="overflow-hidden rounded-[2.5rem] border border-slate-200/70 bg-white shadow-soft">
         <div className="relative rounded-[2.5rem] bg-brand-fade/40 p-10">
           <div className="absolute inset-0 bg-brand-soft opacity-70" />
@@ -86,17 +92,22 @@ export default function CreatorDashboard({ creator, viewer, onAddFilm, onCreateD
             <div>
               <p className="text-sm uppercase tracking-[0.32em] text-brand-purple">Welcome back</p>
               <h1 className="mt-3 text-4xl font-semibold text-slate-950">{creator.studioName} creator studio</h1>
-              <p className="mt-3 text-base leading-7 text-slate-600">Your account is verified and ready to manage films, pricing, and performance.</p>
+              <p className="mt-3 text-base leading-7 text-slate-600">
+                {creator.films.length} film{creator.films.length !== 1 ? 's' : ''} · Verified creator · Analytics updated live
+              </p>
               <div className="mt-4 inline-flex items-center gap-3 rounded-full bg-white/80 px-4 py-2 text-sm text-slate-950 ring-1 ring-brand-purple/20">
                 <span className="h-2 w-2 rounded-full bg-brand-cyan" /> Verified creator
               </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
-              <button onClick={() => setIsUploadOpen(true)} className="rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
-                Upload New Film
+              <button
+                onClick={() => setIsUploadOpen(true)}
+                className="rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+              >
+                + Upload new film
               </button>
               <button className="rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100">
-                View public creator page
+                View public page
               </button>
               <button className="rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100">
                 Payouts coming soon
@@ -107,35 +118,82 @@ export default function CreatorDashboard({ creator, viewer, onAddFilm, onCreateD
       </section>
 
       {creator.films.length === 0 ? (
-        <CreatorEmptyState onUpload={() => setIsUploadOpen(true)} onGuidelines={() => window.alert('Upload guidelines are coming soon for creators.')} />
+        <CreatorEmptyState onUpload={() => setIsUploadOpen(true)} onGuidelines={() => alert('Upload guidelines coming soon.')} />
       ) : (
         <>
+          {/* MONEY CARDS */}
           <section className="rounded-[2rem] border border-slate-200/70 bg-white shadow-soft p-8">
-            <AnalyticsCards metrics={metrics.slice(0, 4)} />
+            <p className="text-xs uppercase tracking-[0.28em] text-slate-400 mb-5">Earnings overview</p>
+            <AnalyticsCards metrics={moneyMetrics} />
           </section>
 
+          {/* VIEW CARDS */}
           <section className="rounded-[2rem] border border-slate-200/70 bg-white shadow-soft p-8">
-            <AnalyticsCards metrics={metrics.slice(4, 8)} />
+            <p className="text-xs uppercase tracking-[0.28em] text-slate-400 mb-5">Audience &amp; engagement</p>
+            <AnalyticsCards metrics={viewMetrics} />
           </section>
 
+          {/* WHAT'S WORKING INSIGHT */}
+          {topFilm && (
+            <section className="rounded-[2rem] border border-slate-200/70 bg-white shadow-soft p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-600 text-sm font-bold">💡</span>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.28em] text-slate-400">What's working</p>
+                  <h2 className="text-lg font-semibold text-slate-950">Studio insights</h2>
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div className="rounded-[1.75rem] border border-amber-200 bg-amber-50 p-5">
+                  <p className="text-xs uppercase tracking-[0.24em] text-amber-600 mb-2">Top earning film</p>
+                  <p className="font-semibold text-slate-950">{topFilm.title}</p>
+                  <p className="text-2xl font-semibold text-amber-600 mt-2">{formatCurrency(topFilm.price * topFilm.paidWatches)}</p>
+                  <p className="text-sm text-slate-500 mt-1">gross revenue</p>
+                </div>
+                {topConvertingFilm && (
+                  <div className="rounded-[1.75rem] border border-emerald-200 bg-emerald-50 p-5">
+                    <p className="text-xs uppercase tracking-[0.24em] text-emerald-600 mb-2">Best converting film</p>
+                    <p className="font-semibold text-slate-950">{topConvertingFilm.title}</p>
+                    <p className="text-2xl font-semibold text-emerald-600 mt-2">
+                      {topConvertingFilm.trailerViews ? Math.round((topConvertingFilm.paidWatches / topConvertingFilm.trailerViews) * 100) : 0}%
+                    </p>
+                    <p className="text-sm text-slate-500 mt-1">trailer → paid</p>
+                  </div>
+                )}
+                <div className="rounded-[1.75rem] border border-brand-purple/20 bg-brand-purple/5 p-5">
+                  <p className="text-xs uppercase tracking-[0.24em] text-brand-purple mb-2">What to upload next</p>
+                  <p className="font-semibold text-slate-950">More like "{topFilm.genre}"</p>
+                  <p className="text-sm text-slate-600 mt-2">Your {topFilm.genre} content drives the most revenue. Upload similar genres to accelerate growth.</p>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* CHARTS */}
           <section className="rounded-[2rem] border border-slate-200/70 bg-white shadow-soft p-8">
             <CreatorAnalytics creator={creator} />
           </section>
 
+          {/* FILM TABLE */}
           <section className="rounded-[2rem] border border-slate-200/70 bg-white shadow-soft p-8">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-4 mb-6">
               <div>
-                <p className="text-sm uppercase tracking-[0.28em] text-slate-500">Film management</p>
-                <h2 className="mt-2 text-2xl font-semibold text-slate-950">Your uploaded films</h2>
+                <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Film management</p>
+                <h2 className="mt-1 text-2xl font-semibold text-slate-950">Your uploaded films</h2>
               </div>
+              <button
+                onClick={() => setIsUploadOpen(true)}
+                className="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+              >
+                + Upload film
+              </button>
             </div>
-            <div className="mt-6">
-              <FilmPerformanceTable films={creator.films} onViewAnalytics={setSelectedFilm} onDelete={(film) => onDeleteFilm(film.id)} />
-            </div>
+            <FilmPerformanceTable films={creator.films} onViewAnalytics={setSelectedFilm} onDelete={(film) => onDeleteFilm(film.id)} />
           </section>
         </>
       )}
 
+      {/* Upload modal */}
       {isUploadOpen && (
         <div className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-slate-900/70 p-4 pt-20">
           <div className="w-full max-w-4xl rounded-[2rem] bg-white p-8 shadow-2xl">

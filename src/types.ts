@@ -20,6 +20,15 @@ export interface Movie {
   tools: string[];
   rating: string;
   language: string;
+  // extended catalog fields
+  tags?: string[];
+  releaseYear?: number;
+  views?: number;
+  trailerViews?: number;
+  featured?: boolean;
+  subscriberDiscountEligible?: boolean;
+  trailerUrl?: string;
+  posterPrompt?: string;
 }
 
 export interface CreatorFilm {

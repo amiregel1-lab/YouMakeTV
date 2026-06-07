@@ -82,9 +82,21 @@ export const demoCreatorProfile: CreatorProfile = {
   ],
 };
 
-export const featuredMovieIds = [0, 1, 2, 6];
+export const featuredMovieIds = [0, 1, 5, 6, 8, 9, 30, 60, 68, 80];
 
 export const movieSections = [
-  { title: 'Featured AI films', ids: [0, 2, 4, 6] },
-  { title: 'Short films for quick watch', ids: [7, 8, 9, 10] },
-  { title: 'New creator releases', ids: [1, 3, 5, 11] },  { title: 'Free cinema picks', ids: [18, 19, 20, 23, 30, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42] },];
+  { title: 'Featured films', ids: [1, 5, 6, 8, 30, 60, 68, 80, 88, 98] },
+  { title: 'Free to watch', ids: [0, 10, 20, 21, 30, 31, 40, 41, 50, 51, 60, 61, 70, 71, 80, 81, 90, 91] },
+  { title: 'New releases', ids: [2, 12, 22, 32, 42, 52, 62, 72, 82, 92] },
+  { title: 'Trending now', ids: [3, 13, 23, 33, 43, 53, 63, 73, 83, 93] },
+  { title: 'Sci-Fi', ids: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] },
+  { title: 'Drama', ids: [10, 11, 12, 13, 14, 15, 16, 17, 18, 19] },
+  { title: 'Comedy', ids: [20, 21, 22, 23, 24, 25, 26, 27, 28, 29] },
+  { title: 'Action', ids: [30, 31, 32, 33, 34, 35, 36, 37, 38, 39] },
+  { title: 'Thriller', ids: [40, 41, 42, 43, 44, 45, 46, 47, 48, 49] },
+  { title: 'Horror', ids: [50, 51, 52, 53, 54, 55, 56, 57, 58, 59] },
+  { title: 'Fantasy', ids: [60, 61, 62, 63, 64, 65, 66, 67, 68, 69] },
+  { title: 'Anime', ids: [70, 71, 72, 73, 74, 75, 76, 77, 78, 79] },
+  { title: 'Documentary', ids: [80, 81, 82, 83, 84, 85, 86, 87, 88, 89] },
+  { title: 'Mystery', ids: [90, 91, 92, 93, 94, 95, 96, 97, 98, 99] },
+];

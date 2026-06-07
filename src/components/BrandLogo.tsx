@@ -1,32 +1,58 @@
 export default function BrandLogo() {
   return (
     <div className="flex items-center gap-3">
-      <div className="relative flex h-14 w-14 items-center justify-center rounded-[2rem] bg-gradient-to-br from-brand-pink via-brand-purple to-brand-cyan text-white shadow-cinematic">
-        <div className="absolute inset-2 rounded-[1.4rem] bg-slate-950/95" />
-        <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-slate-950/0">
-          <svg viewBox="0 0 64 64" className="h-8 w-8" fill="none" aria-hidden="true">
-            <defs>
-              <linearGradient id="brandGradient" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#ff4aad" />
-                <stop offset="50%" stopColor="#8b5cf6" />
-                <stop offset="100%" stopColor="#22d3ee" />
-              </linearGradient>
-            </defs>
-            <path d="M14 18c0-6.627 5.373-12 12-12h12c6.627 0 12 5.373 12 12v20c0 6.627-5.373 12-12 12H26c-6.627 0-12-5.373-12-12V18Z" fill="#030712" stroke="url(#brandGradient)" strokeWidth="4" />
-            <path d="M16 18l-6 8v10l6 8" stroke="url(#brandGradient)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M21 20l17 12-17 12V20Z" fill="url(#brandGradient)" />
-            <path d="M46 12l6-6" stroke="#fff" strokeWidth="4" strokeLinecap="round" />
-            <path d="M38 10l10-8" stroke="#fff" strokeWidth="4" strokeLinecap="round" opacity="0.8" />
-          </svg>
-        </div>
-      </div>
+      {/* Retro TV icon */}
+      <svg viewBox="0 0 122 112" className="h-10 w-10 flex-shrink-0" fill="none" aria-hidden="true">
+        <defs>
+          {/* Clip screen to rounded rect */}
+          <clipPath id="ymtv-screen">
+            <rect x="10" y="28" width="82" height="52" rx="8" />
+          </clipPath>
+        </defs>
 
-      <div className="text-left">
-        <div className="flex items-end gap-1 text-sm font-semibold tracking-[0.16em] text-slate-900 uppercase sm:text-base">
-          <span>YouMakeTV</span>
-          <span className="text-brand-cyan">.ai</span>
-        </div>
-        <p className="text-sm text-slate-500 sm:text-base">Creator-first AI film marketplace</p>
+        {/* ── Antennas ── */}
+        {/* Left antenna: from upper-left of TV body, angling up-left */}
+        <line x1="30" y1="24" x2="11" y2="2" stroke="#0d1b2e" strokeWidth="5" strokeLinecap="round" />
+        <circle cx="11" cy="2" r="4" fill="#0d1b2e" />
+        {/* Right antenna: from upper-right, angling up-right */}
+        <line x1="72" y1="24" x2="91" y2="2" stroke="#0d1b2e" strokeWidth="5" strokeLinecap="round" />
+        <circle cx="91" cy="2" r="4" fill="#0d1b2e" />
+
+        {/* ── TV body — rounded rect + chat-bubble tail ── */}
+        {/*
+          Path: top-left → top-right (arc) → bottom-right (arc)
+          → part of bottom → tail down → tail back up → rest of bottom → bottom-left (arc) → left side (arc) → close
+        */}
+        <path
+          d="M15,24 H87 a13,13 0 0 1 13,13 V81 a13,13 0 0 1 -13,13 H52 L43,108 L40,94 H15 a13,13 0 0 1 -13,-13 V37 a13,13 0 0 1 13,-13 Z"
+          fill="#0d1b2e"
+        />
+
+        {/* ── Screen: vertical colour bands clipped to rounded rect ── */}
+        <g clipPath="url(#ymtv-screen)">
+          <rect x="10"  y="28" width="17" height="52" fill="#ff4aad" />
+          <rect x="27"  y="28" width="17" height="52" fill="#d946ef" />
+          <rect x="44"  y="28" width="17" height="52" fill="#a855f7" />
+          <rect x="61"  y="28" width="17" height="52" fill="#60a5fa" />
+          <rect x="78"  y="28" width="14" height="52" fill="#22d3ee" />
+        </g>
+
+        {/* ── Play triangle (white, centred in screen) ── */}
+        <polygon points="44,41 76,54 44,67" fill="white" />
+
+        {/* ── Sparkle stars ── */}
+        {/* Pink sparkle — large, just right of right antenna tip */}
+        <path d="M99,14 L101.2,20 L107,22 L101.2,24 L99,30 L96.8,24 L91,22 L96.8,20 Z" fill="#ff4aad" />
+        {/* Blue sparkle — medium, upper-right of pink */}
+        <path d="M112,5 L113.5,9.5 L118,11 L113.5,12.5 L112,17 L110.5,12.5 L106,11 L110.5,9.5 Z" fill="#3b82f6" />
+        {/* Purple sparkle — small, between pink and blue */}
+        <path d="M106,21 L107.2,24.5 L110.5,25.5 L107.2,26.5 L106,30 L104.8,26.5 L101.5,25.5 L104.8,24.5 Z" fill="#a855f7" />
+      </svg>
+
+      {/* ── Wordmark ── */}
+      <div className="flex items-baseline leading-none">
+        <span className="text-xl font-extrabold tracking-tight text-[#0d1b2e]">YouMakeTV</span>
+        <span className="text-xl font-extrabold tracking-tight text-[#2563eb]">.ai</span>
       </div>
     </div>
   );

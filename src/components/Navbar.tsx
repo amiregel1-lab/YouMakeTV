@@ -64,12 +64,20 @@ export default function Navbar({ active, viewer, onRouteChange, onSignOut }: Nav
               Sign out
             </button>
           ) : (
-            <button
-              onClick={() => onRouteChange('login')}
-              className="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
-            >
-              Sign in
-            </button>
+            <>
+              <button
+                onClick={() => onRouteChange('subscribe')}
+                className="rounded-full bg-brand-purple px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-indigo"
+              >
+                Sign up
+              </button>
+              <button
+                onClick={() => onRouteChange('login')}
+                className="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+              >
+                Sign in
+              </button>
+            </>
           )}
         </div>
       </div>

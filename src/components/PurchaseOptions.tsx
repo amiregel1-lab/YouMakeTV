@@ -107,7 +107,7 @@ export default function PurchaseOptions({ movie, viewer, onPurchase, onSubscribe
             onClick={onSubscribe}
             className="rounded-full bg-brand-purple px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-indigo"
           >
-            Start YouMake+
+            Try YouMake+
           </button>
         </div>
       </div>

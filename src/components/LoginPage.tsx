@@ -79,7 +79,7 @@ export default function LoginPage({ viewer, onSignIn }: LoginPageProps) {
               {buttonLabel}
             </button>
             <p className="text-sm text-slate-600">
-              Don’t have a premium account? <Link to="/subscribe" className="font-semibold text-slate-950 hover:text-brand-purple">Start YouMake+</Link> for instant savings.
+              Don’t have a premium account? <Link to="/subscribe" className="font-semibold text-brand-purple hover:text-brand-indigo">Try YouMake+</Link> for instant savings.
             </p>
           </form>
         </div>

@@ -13,10 +13,7 @@ export default function MovieCard({ movie, onSelect, onWatchTrailer }: MovieCard
 
   return (
     <article className="group cursor-pointer">
-      <div
-        className="relative aspect-[2/3] overflow-hidden rounded-xl bg-slate-900 shadow-md transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1"
-        style={{ backgroundImage: `url(${movie.thumbnail})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
-      >
+      <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-slate-900 shadow-md transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1">
         {!imgError ? (
           <img
             src={getPosterUrl(movie)}

@@ -76,10 +76,7 @@ function CreatorCard({ creator, onSelectMovie }: { creator: Creator; onSelectMov
               title={film.title}
               className="group flex-none w-16 sm:w-20"
             >
-              <div
-                className="aspect-[2/3] overflow-hidden rounded-lg bg-slate-800 shadow-sm transition-all duration-200 group-hover:-translate-y-1 group-hover:shadow-md"
-                style={{ backgroundImage: `url(${film.thumbnail})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
-              >
+              <div className="aspect-[2/3] overflow-hidden rounded-lg bg-slate-800 shadow-sm transition-all duration-200 group-hover:-translate-y-1 group-hover:shadow-md">
                 {!imgErrors.has(film.id) ? (
                   <img
                     src={getPosterUrl(film)}

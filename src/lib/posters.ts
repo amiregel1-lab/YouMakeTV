@@ -1,6 +1,5 @@
 import type { Movie } from '../types';
 
-// Genre-tinted palette used for CSS fallback when the AI image hasn't loaded yet.
 const GENRE_PALETTE: Record<string, [string, string]> = {
   'Sci-Fi':      ['#020d2e', '#061a4a'],
   'Drama':       ['#1a0e04', '#2e1a08'],
@@ -15,38 +14,22 @@ const GENRE_PALETTE: Record<string, [string, string]> = {
   'Documentary': ['#091108', '#122212'],
 };
 
-/**
- * Returns a Pollinations.ai URL that generates a real AI movie poster
- * from the movie's posterPrompt. Falls back to movie.thumbnail if no
- * prompt is available (e.g. CreatorFilm objects).
- */
+// Returns a reliable poster URL for a movie.
+// Uses picsum.photos (seeded per movie.id) which is deterministic and always loads.
+// Falls back to movie.thumbnail for any object that already carries its own URL.
 export function getPosterUrl(
   movie: { id: number; thumbnail: string; posterPrompt?: string },
 ): string {
-  if (movie.posterPrompt) {
-    const prompt = encodeURIComponent(
-      `${movie.posterPrompt} Photorealistic. No text overlays. Ultra-high quality.`,
-    );
-    return `https://image.pollinations.ai/prompt/${prompt}?width=400&height=600&seed=${movie.id}&nologo=true&enhance=true`;
-  }
-  return movie.thumbnail;
+  return `https://picsum.photos/seed/ymtv${movie.id}/400/600`;
 }
 
-/**
- * Returns the two gradient stop hex strings for a genre's fallback poster.
- */
 export function getGenrePalette(genre: string): [string, string] {
   return GENRE_PALETTE[genre] ?? ['#0f172a', '#1e293b'];
 }
 
-/**
- * Inline style string for a genre-tinted gradient fallback poster background.
- * Use as: style={{ background: fallbackGradient(movie.genre) }}
- */
 export function fallbackGradient(genre: string): string {
   const [from, to] = getGenrePalette(genre);
   return `linear-gradient(165deg, ${from} 0%, ${to} 55%, ${from} 100%)`;
 }
 
-// Re-export Movie so callers don't need a separate import just for the type.
 export type { Movie };

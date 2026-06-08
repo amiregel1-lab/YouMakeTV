@@ -17,6 +17,8 @@ interface CreatorDashboardProps {
   onCreateDemo: () => void;
   onStartOnboarding: () => void;
   onDeleteFilm: (filmId: string) => void;
+  showWelcome?: boolean;
+  onDismissWelcome?: () => void;
 }
 
 // ── Sidebar icons ─────────────────────────────────────────────────────────────
@@ -190,7 +192,7 @@ function buildPayouts(totalEarnings: number) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onStartOnboarding, onDeleteFilm }: CreatorDashboardProps) {
+export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onStartOnboarding, onDeleteFilm, showWelcome, onDismissWelcome }: CreatorDashboardProps) {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedFilm, setSelectedFilm] = useState<CreatorFilm | null>(null);
@@ -362,6 +364,36 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
           {/* ── DASHBOARD ──────────────────────────────────────────────────────── */}
           {activeTab === 'dashboard' && (
             <div className="space-y-8">
+              {/* Welcome banner — shown once after account creation */}
+              {showWelcome && (
+                <div className="relative rounded-[1.75rem] border border-brand-purple/30 bg-gradient-to-r from-brand-purple/10 via-brand-indigo/5 to-brand-cyan/10 p-6 sm:p-8">
+                  <button
+                    onClick={onDismissWelcome}
+                    aria-label="Dismiss"
+                    className="absolute top-4 right-4 flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition text-lg"
+                  >
+                    ×
+                  </button>
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-11 w-11 flex-none items-center justify-center rounded-2xl bg-brand-purple text-white text-xl">
+                      🎬
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-slate-950 text-lg">Welcome to YouMakeTV.</h3>
+                      <p className="mt-1 text-sm text-slate-600">
+                        Your creator account is active. Upload your first film to start building your audience.
+                      </p>
+                      <button
+                        onClick={() => { setIsUploadOpen(true); onDismissWelcome?.(); }}
+                        className="mt-4 rounded-full bg-brand-purple px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-indigo"
+                      >
+                        Upload Your First Film →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-[0.32em] text-brand-purple">Welcome back</p>

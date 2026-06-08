@@ -1,418 +1,803 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CreatorFilm, CreatorProfile } from '../types';
-import PricingSlider from './PricingSlider';
+import { CreatorProfile } from '../types';
 
 interface CreatorOnboardingProps {
   onComplete: (profile: CreatorProfile) => void;
 }
 
-const steps = ['Agreement', 'Account', 'KYC', 'Creator rights', 'Optional upload'];
+const STEPS = ['Create Account', 'Verify Identity', 'Creator Agreement'];
+
+const COUNTRIES = [
+  'Afghanistan', 'Albania', 'Algeria', 'Angola', 'Argentina', 'Armenia', 'Australia',
+  'Austria', 'Azerbaijan', 'Bahrain', 'Bangladesh', 'Belarus', 'Belgium', 'Bolivia',
+  'Bosnia and Herzegovina', 'Brazil', 'Bulgaria', 'Cambodia', 'Canada', 'Chile',
+  'China', 'Colombia', 'Costa Rica', 'Croatia', 'Cuba', 'Cyprus', 'Czech Republic',
+  'Denmark', 'Dominican Republic', 'Ecuador', 'Egypt', 'El Salvador', 'Estonia',
+  'Ethiopia', 'Finland', 'France', 'Georgia', 'Germany', 'Ghana', 'Greece',
+  'Guatemala', 'Honduras', 'Hong Kong', 'Hungary', 'Iceland', 'India', 'Indonesia',
+  'Iran', 'Iraq', 'Ireland', 'Israel', 'Italy', 'Jamaica', 'Japan', 'Jordan',
+  'Kazakhstan', 'Kenya', 'Kuwait', 'Latvia', 'Lebanon', 'Libya', 'Lithuania',
+  'Luxembourg', 'Malaysia', 'Malta', 'Mexico', 'Moldova', 'Mongolia', 'Morocco',
+  'Myanmar', 'Nepal', 'Netherlands', 'New Zealand', 'Nicaragua', 'Nigeria',
+  'Norway', 'Oman', 'Pakistan', 'Palestine', 'Panama', 'Paraguay', 'Peru',
+  'Philippines', 'Poland', 'Portugal', 'Qatar', 'Romania', 'Russia',
+  'Saudi Arabia', 'Serbia', 'Singapore', 'Slovakia', 'Slovenia', 'South Africa',
+  'South Korea', 'Spain', 'Sri Lanka', 'Sudan', 'Sweden', 'Switzerland', 'Syria',
+  'Taiwan', 'Tanzania', 'Thailand', 'Tunisia', 'Turkey', 'Uganda', 'Ukraine',
+  'United Arab Emirates', 'United Kingdom', 'United States', 'Uruguay',
+  'Uzbekistan', 'Venezuela', 'Vietnam', 'Yemen', 'Zimbabwe',
+];
+
+const BENEFITS = [
+  'Keep 70% on every paid watch',
+  'Revenue rises to 80% after 500 watches',
+  'Real-time earnings dashboard',
+  'Upload, edit, and manage your films',
+  'Monthly payouts direct to your account',
+  'Full IP ownership retained',
+];
+
+const CREATOR_STATS = [
+  { label: 'Avg. monthly earnings', value: '$1,240' },
+  { label: 'Top creator this month', value: '$8,900' },
+  { label: 'Active creators', value: '3,200+' },
+  { label: 'Films published', value: '12,400+' },
+];
 
 const AGREEMENT_TEXT = `CREATOR AGREEMENT — YouMakeTV.ai
-
 Effective date: January 1, 2026
 
-By completing creator onboarding, you ("Creator") agree to this Creator Agreement with YouMakeTV.ai ("YouMakeTV"). Read this Agreement carefully before continuing.
+PREAMBLE
+
+This Creator Agreement ("Agreement") governs your use of the YouMakeTV.ai creator tools, dashboard, and content distribution platform. By completing creator onboarding, uploading any content, or accessing creator-specific features, you agree to be legally bound by this Agreement. Read it carefully before continuing.
 
 1. CONTENT OWNERSHIP
-You retain full intellectual property ownership of all content you upload. This Agreement does not transfer ownership of your content to YouMakeTV.
+
+You retain full intellectual property ownership of all content you upload to the platform. This Agreement does not transfer ownership of your content to YouMakeTV. YouMakeTV acquires only the license rights expressly granted below.
+
+You are solely responsible for ensuring that you hold all necessary rights, licenses, and permissions required to upload, distribute, and monetize your content, including rights to any AI tools, generative models, voice performances, musical compositions, sound recordings, visual assets, scripts, and other elements incorporated into your content.
 
 2. LICENSE GRANTED TO YOUMAKETV
-By uploading content, you grant YouMakeTV a worldwide, non-exclusive, royalty-free, sublicensable, and transferable license to: host, store, stream, display, promote, market, and distribute your content on and in connection with the platform; reproduce clips or excerpts for promotional purposes; adapt or reformat your content for technical compatibility.
+
+By uploading content to the platform, you grant YouMakeTV a worldwide, non-exclusive, royalty-free, sublicensable, and transferable license to: host, store, and transmit your content; stream and deliver your content to viewers; display your content including title, description, and thumbnail; reproduce clips or excerpts for promotional purposes; promote and market your content through platform interfaces, emails, and advertising channels; distribute your content to viewers who have purchased access or hold an active subscription; adapt or reformat your content for technical compatibility with platform infrastructure; and use your content, title, studio name, and likeness in promotional materials.
+
+This license continues for as long as your content remains on the platform and for a reasonable period thereafter to allow YouMakeTV to fulfill existing viewer access obligations.
 
 3. CREATOR WARRANTIES AND REPRESENTATIONS
-You represent and warrant that: (a) you own the content or hold all necessary rights to upload and monetize it; (b) the content does not infringe any third-party copyright, trademark, right of publicity, privacy right, or other legal right; (c) the content complies with all applicable laws; (d) any AI-generated elements were produced using tools that permit commercial use; (e) you are at least 18 years of age and legally capable of entering into binding contracts.
+
+By uploading content, you represent and warrant that: (a) you own the content or hold all necessary rights to upload and monetize it; (b) the content does not infringe any third-party copyright, trademark, trade secret, patent, right of publicity, privacy right, or any other proprietary right; (c) the content complies with all applicable laws, including laws regarding obscenity, defamation, and content ratings; (d) any AI-generated elements were produced using tools and services that permit commercial use and monetization; (e) you have not depicted real, identifiable individuals without their consent in a manner that is false, defamatory, or violates their rights; (f) all content metadata including title, description, and rating is accurate and not misleading; (g) you are at least 18 years of age and legally capable of entering into binding contracts. These warranties are continuous. If you become aware that any warranty is no longer accurate, you must notify YouMakeTV immediately and remove or correct the affected content.
 
 4. AI-GENERATED CONTENT
-You accept sole responsibility for ensuring all AI tools used permit commercial distribution. You may not use AI tools to create content depicting real, identifiable individuals in a harmful or unauthorized manner. You acknowledge that the legal status of AI-generated content varies by jurisdiction.
+
+YouMakeTV is a platform designed for AI-generated and AI-assisted films. You acknowledge that the legal status of copyright in AI-generated content varies by jurisdiction and is subject to change. You accept sole responsibility for monitoring and complying with applicable legal developments. You must ensure that all AI tools and generative models you use permit commercial use and distribution of outputs. You may not use AI tools to generate content depicting real, identifiable individuals in a false, harmful, or unauthorized manner, including deepfake content created without the subject's explicit consent.
 
 5. CONTENT MODERATION
-YouMakeTV reserves the right, in its sole and absolute discretion, to remove, disable, suspend, or restrict access to any content at any time, for any reason, with or without notice. Content removal does not entitle you to compensation for lost earnings.
+
+YouMakeTV reserves the right, in its sole and absolute discretion, to review, reject, remove, disable, suspend, or restrict access to any content at any time, for any reason or no reason, with or without prior notice. Reasons for content action include but are not limited to: violation of this Agreement or platform policies; receipt of a valid DMCA notice; complaints from viewers or third parties; platform quality standards; legal requirements or court orders; risk of reputational harm. Content removal does not entitle you to compensation for lost earnings. YouMakeTV shall not be liable for any loss of revenue arising from content removal, suspension, or restriction.
 
 6. PROHIBITED CONTENT
-You may not upload content that: depicts child sexual abuse material; promotes violence, terrorism, or illegal activity; infringes third-party intellectual property; constitutes targeted harassment; depicts real individuals without their consent in a harmful manner; or violates any applicable law.
+
+You may not upload content that: depicts child sexual abuse material or sexual content involving minors; promotes, glorifies, or facilitates violence, terrorism, or illegal activity; constitutes targeted harassment, hate speech, or incitement to discrimination; is defamatory, fraudulent, or intentionally deceptive; infringes any third-party intellectual property rights; depicts real individuals without their consent in a sexual, humiliating, or defamatory manner; violates any applicable export control laws; or violates any applicable local, national, or international law or regulation. Uploading prohibited content may result in immediate account termination and reporting to law enforcement authorities.
 
 7. REVENUE SHARE AND PAYMENTS
-Subject to your compliance with platform policies, YouMakeTV will pay you: 70% of Net Revenue for the first 500 paid watches per film; 80% of Net Revenue thereafter. Payouts are processed monthly with a $25 minimum threshold. Revenue share rates are subject to change on 30 days' notice. Chargebacks will be deducted from your earnings. Payouts may be delayed for fraud review.
+
+Subject to this Agreement and your compliance with all platform policies, YouMakeTV will pay you: 70% of Net Revenue for the first 500 paid watches per film; 80% of Net Revenue for paid watches after the first 500 per film. Payouts are processed monthly on or around the 1st of each month for earnings accumulated in the prior calendar month. Payouts are subject to a minimum threshold of $25.00 USD. Earnings below the threshold will be carried forward.
+
+You acknowledge that: revenue share rates are subject to change upon 30 days' written notice; platform fees, transaction fees, and processing costs may be deducted before revenue share is calculated; payouts may be delayed by up to 60 days for fraud review, dispute resolution, or regulatory compliance; YouMakeTV may withhold payment if it reasonably suspects fraudulent activity, including artificially inflated view counts; chargebacks initiated by viewers will be deducted from your earnings regardless of reason; YouMakeTV reserves the right to offset future earnings against any amounts you owe.
 
 8. TAXES AND COMPLIANCE
-You are solely responsible for all taxes arising from your earnings. You may be required to provide tax documentation before payouts are processed. YouMakeTV may report earnings to tax authorities as required by law.
 
-9. TERMINATION
-YouMakeTV may terminate your creator account at any time for policy violations. Pending earnings at termination may be forfeited in YouMakeTV's sole discretion.
+You are solely responsible for all taxes, levies, and duties arising from your earnings, including income taxes, self-employment taxes, and VAT. You may be required to provide tax identification documentation before payouts are processed. Failure to provide required tax documentation may delay or suspend payouts. YouMakeTV may report your earnings to tax authorities as required by law.
 
-10. LIMITATION OF LIABILITY
-TO THE MAXIMUM EXTENT PERMITTED BY LAW, YOUMAKETV SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING FROM YOUR USE OF THE PLATFORM OR YOUR CONTENT. YOUMAKETV'S TOTAL LIABILITY SHALL NOT EXCEED THE GREATER OF (A) REVENUE SHARE PAID TO YOU IN THE PRIOR THREE MONTHS OR (B) $100 USD.
+9. CREATOR ACCOUNT
 
-11. INDEMNIFICATION
-You agree to defend, indemnify, and hold harmless YouMakeTV and its officers, directors, employees, agents, and affiliates from any claims, damages, and costs arising from: your content; your violations of this Agreement; infringement of third-party rights by your content; and any tax liability arising from your earnings.
+You are responsible for maintaining the confidentiality of your account credentials. You may not share, sell, or transfer your creator account. YouMakeTV reserves the right to require re-verification of your identity at any time.
 
-12. DISPUTE RESOLUTION
-Any dispute arising under this Agreement shall be resolved by binding arbitration under AAA Commercial Arbitration Rules in Delaware. You waive any right to participate in class action proceedings against YouMakeTV.
+10. TERMINATION
 
-13. GOVERNING LAW
-This Agreement is governed by the laws of the State of Delaware, United States.
+YouMakeTV may terminate your creator account at any time, with or without notice, if you: violate any provision of this Agreement; upload content that violates applicable law or platform policies; are found to be a repeat copyright infringer; engage in fraudulent activity; or engage in conduct harmful to the platform, other creators, or viewers. Upon termination for cause, pending earnings may be forfeited in YouMakeTV's sole discretion.
 
-14. MODIFICATION
-YouMakeTV may modify this Agreement on 30 days' notice. Continued use after modification constitutes acceptance.
+11. LIMITATION OF LIABILITY
 
-By continuing onboarding, you confirm you have read and agree to this Creator Agreement in its entirety.
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, YOUMAKETV AND ITS OFFICERS, DIRECTORS, EMPLOYEES, AGENTS, LICENSORS, AND AFFILIATES SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS, REVENUES, DATA, EARNINGS, OR GOODWILL, ARISING OUT OF OR IN CONNECTION WITH THIS AGREEMENT OR YOUR USE OF THE PLATFORM, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. YOUMAKETV'S TOTAL CUMULATIVE LIABILITY SHALL NOT EXCEED THE GREATER OF (A) REVENUE SHARE PAID TO YOU IN THE THREE MONTHS PRECEDING THE CLAIM, OR (B) ONE HUNDRED U.S. DOLLARS ($100.00 USD).
 
-Full agreement available at: youmaketv.ai/creator-agreement`;
+12. INDEMNIFICATION
 
-export default function CreatorOnboarding({ onComplete }: CreatorOnboardingProps) {
-  const [activeStep, setActiveStep] = useState(0);
-  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
-  const [agreement, setAgreement] = useState({ agreeTerms: false, agreeRights: false, agreePolicy: false });
-  const [account, setAccount] = useState({ fullName: '', studioName: '', email: '', password: '' });
-  const [kyc, setKyc] = useState({ legalName: '', dob: '', residence: '', agreeAccuracy: false });
-  const [rights, setRights] = useState({ confirmAi: false, confirmRights: false, confirmMonetize: false, confirmDisplay: false, understandPrototype: false });
-  const [film, setFilm] = useState({ title: '', description: '', category: 'Sci-Fi', duration: '10m', language: 'English', tools: '', rating: 'PG-13', price: 3.99 });
-  const [showComplete, setShowComplete] = useState(false);
-  const agreementRef = useRef<HTMLDivElement>(null);
+You agree to defend, indemnify, and hold harmless YouMakeTV and its officers, directors, employees, contractors, agents, licensors, affiliates, successors, and assigns from and against any claims, damages, liabilities, losses, costs, and expenses (including reasonable attorneys' fees) arising out of or relating to: your content; your use of the platform in violation of this Agreement; any claim that your content infringes any third-party intellectual property right; any tax liability arising from your earnings; and any claim related to AI-generated elements of your content.
 
-  // Check if agreement box fits without scrolling (e.g. very large display)
-  useEffect(() => {
-    if (activeStep === 0 && agreementRef.current) {
-      const el = agreementRef.current;
-      if (el.scrollHeight <= el.clientHeight + 4) {
-        setHasScrolledToBottom(true);
-      }
-    }
-  }, [activeStep]);
+13. DISPUTE RESOLUTION
 
-  const handleAgreementScroll = () => {
-    const el = agreementRef.current;
-    if (!el) return;
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 20) {
-      setHasScrolledToBottom(true);
-    }
-  };
+Any dispute arising out of or relating to this Agreement shall be resolved by binding arbitration administered by the American Arbitration Association under its Commercial Arbitration Rules. The arbitration shall be conducted in the State of Delaware. You waive any right to participate in a class action lawsuit or class-wide arbitration against YouMakeTV.
 
-  const canContinue = useMemo(() => {
-    if (activeStep === 0) {
-      return hasScrolledToBottom && agreement.agreeTerms && agreement.agreeRights && agreement.agreePolicy;
-    }
-    if (activeStep === 1) {
-      return account.fullName.trim() !== '' && account.studioName.trim() !== '' && account.email.trim() !== '' && account.password.trim() !== '';
-    }
-    if (activeStep === 2) {
-      return kyc.legalName.trim() !== '' && kyc.dob !== '' && kyc.residence.trim() !== '' && kyc.agreeAccuracy;
-    }
-    if (activeStep === 3) {
-      return Object.values(rights).every(Boolean);
-    }
-    return true;
-  }, [activeStep, hasScrolledToBottom, agreement, account, kyc, rights]);
+14. GOVERNING LAW
 
-  const createProfile = (includeFilm: boolean) => {
-    const dateLabel = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-    const profile: CreatorProfile = {
-      fullName: account.fullName.trim(),
-      studioName: account.studioName.trim(),
-      email: account.email.trim(),
-      verified: true,
-      kycCompleted: true,
-      createdAt: dateLabel,
-      films: includeFilm && film.title.trim().length > 0
-        ? [
-            {
-              id: `film-${Date.now()}`,
-              title: film.title.trim(),
-              subtitle: film.description.trim().slice(0, 70),
-              description: film.description.trim(),
-              genre: film.category,
-              duration: film.duration,
-              creator: account.studioName.trim(),
-              category: film.category,
-              price: film.price,
-              thumbnail: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80',
-              status: 'Pending Review',
-              views: 0,
-              trailerViews: 0,
-              paidWatches: 0,
-              freeWatches: 0,
-              rating: film.rating,
-              language: film.language,
-              tools: film.tools.split(',').map((tool) => tool.trim()).filter(Boolean),
-              uploadDate: dateLabel,
-              updatedDate: dateLabel,
-            },
-          ]
-        : [],
-    };
+This Agreement is governed by the laws of the State of Delaware, United States, without regard to its conflict of law provisions.
 
-    onComplete(profile);
-    setShowComplete(true);
-  };
+15. MODIFICATION
 
-  if (showComplete) {
+YouMakeTV reserves the right to modify this Agreement at any time. Material changes will be notified via email or platform notice at least 30 days before taking effect. Continued use of the platform after modification constitutes acceptance.
+
+CONTACT
+Creator Support: creators@youmaketv.ai
+Legal: legal@youmaketv.ai
+Full agreement: youmaketv.ai/creator-agreement
+
+By clicking "Create Creator Account," you confirm that you have read, understood, and agree to this Creator Agreement in its entirety.`;
+
+// ── Right panel content per step ──────────────────────────────────────────────
+
+function RightPanel({ step }: { step: number }) {
+  if (step === 0) {
     return (
-      <section className="rounded-[2rem] border border-slate-200/80 bg-white shadow-soft p-10">
-        <div className="space-y-6 text-center">
-          <p className="text-sm uppercase tracking-[0.32em] text-cyan-700">Onboarding complete</p>
-          <h1 className="text-4xl font-semibold text-slate-950">Your creator account is verified.</h1>
-          <p className="mx-auto max-w-2xl text-base leading-8 text-slate-600">
-            You can now access your creator dashboard. Upload can be completed later if you skipped it now.
-          </p>
-          <button onClick={() => createProfile(false)} className="rounded-full bg-cyan-500 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400">
-            Go to creator dashboard
-          </button>
+      <div className="hidden lg:flex flex-col justify-between bg-slate-950 px-10 py-12 text-white">
+        <div className="space-y-8">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400 mb-3">Why creators choose us</p>
+            <h2 className="text-xl font-bold text-white leading-snug">Your films. Your revenue.<br />Your dashboard.</h2>
+          </div>
+          <ul className="space-y-3">
+            {BENEFITS.map((b) => (
+              <li key={b} className="flex items-start gap-3 text-sm text-slate-300">
+                <svg className="h-5 w-5 text-brand-cyan flex-none mt-0.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                {b}
+              </li>
+            ))}
+          </ul>
+          <div className="h-px bg-white/10" />
+          <div className="grid grid-cols-2 gap-3">
+            {CREATOR_STATS.map((s) => (
+              <div key={s.label} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 space-y-1">
+                <p className="text-lg font-bold text-white">{s.value}</p>
+                <p className="text-xs text-slate-400">{s.label}</p>
+              </div>
+            ))}
+          </div>
         </div>
-      </section>
+        <div className="mt-8 space-y-3">
+          <div className="h-px bg-white/10" />
+          <p className="text-xs text-slate-500 leading-relaxed">Creators retain full IP ownership. Revenue share is based on your original film price.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 1) {
+    return (
+      <div className="hidden lg:flex flex-col justify-between bg-slate-950 px-10 py-12 text-white">
+        <div className="space-y-8">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400 mb-3">Security & Trust</p>
+            <h2 className="text-xl font-bold text-white leading-snug">Your information is<br />protected.</h2>
+          </div>
+          <ul className="space-y-4">
+            {[
+              { icon: '🔒', title: 'Encrypted at rest', desc: 'All identity documents are encrypted using AES-256.' },
+              { icon: '🛡️', title: 'GDPR & CCPA compliant', desc: 'We comply with major privacy regulations worldwide.' },
+              { icon: '📋', title: 'Minimum required', desc: 'We only collect what is legally required for creator payouts.' },
+              { icon: '🗑️', title: 'Deletion on request', desc: 'Close your account and your data is deleted within 90 days.' },
+            ].map((item) => (
+              <li key={item.title} className="flex items-start gap-3">
+                <span className="text-lg flex-none mt-0.5">{item.icon}</span>
+                <div>
+                  <p className="text-sm font-semibold text-white">{item.title}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{item.desc}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="mt-8 space-y-3">
+          <div className="h-px bg-white/10" />
+          <p className="text-xs text-slate-500 leading-relaxed">
+            Identity verification is required by payment processors for creator payouts. Your data is never sold to third parties.
+          </p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <section className="rounded-[2rem] border border-slate-200/80 bg-white shadow-soft p-10">
+    <div className="hidden lg:flex flex-col justify-between bg-slate-950 px-10 py-12 text-white">
       <div className="space-y-8">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.32em] text-cyan-700">Creator onboarding</p>
-            <h1 className="text-4xl font-semibold text-slate-950">Complete your creator onboarding in {steps.length} steps</h1>
-          </div>
-          <div className="text-sm text-slate-600">Step {activeStep + 1} of {steps.length}</div>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400 mb-3">Almost there</p>
+          <h2 className="text-xl font-bold text-white leading-snug">What happens after<br />you sign up.</h2>
         </div>
-
-        <div className="grid gap-3 sm:grid-cols-5">
-          {steps.map((label, index) => (
-            <div key={label} className={`rounded-3xl border px-4 py-3 text-center text-xs uppercase tracking-[0.25em] ${index <= activeStep ? 'border-cyan-500 bg-cyan-50 text-slate-900' : 'border-slate-200 bg-slate-100 text-slate-500'}`}>
-              {label}
-            </div>
-          ))}
-        </div>
-
-        <div className="rounded-[1.75rem] border border-slate-200/80 bg-slate-50 p-8">
-
-          {/* ── Step 0: Agreement ─────────────────────────────────────────── */}
-          {activeStep === 0 && (
-            <div className="space-y-5">
+        <ul className="space-y-4">
+          {[
+            { num: '1', title: 'Dashboard access', desc: 'Instant access to your creator workspace.' },
+            { num: '2', title: 'Upload your first film', desc: 'Use the dashboard upload tool to publish your first AI film.' },
+            { num: '3', title: 'Start earning', desc: 'Earn 70% of every paid watch from day one.' },
+            { num: '4', title: 'Get paid monthly', desc: 'Payouts are processed on the 1st of each month.' },
+          ].map((item) => (
+            <li key={item.num} className="flex items-start gap-4">
+              <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full border border-white/20 bg-white/10 text-xs font-bold text-white">
+                {item.num}
+              </span>
               <div>
-                <p className="font-semibold text-slate-900">Creator Agreement</p>
-                <p className="mt-1 text-sm text-slate-500">
-                  Read the full agreement below and scroll to the bottom to enable the required checkboxes.
-                  You can also{' '}
-                  <a href="/creator-agreement" target="_blank" rel="noopener noreferrer" className="text-brand-purple hover:underline">
-                    view the full agreement in a new tab
-                  </a>.
-                </p>
+                <p className="text-sm font-semibold text-white">{item.title}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{item.desc}</p>
               </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="mt-8 space-y-3">
+        <div className="h-px bg-white/10" />
+        <p className="text-xs text-slate-500 leading-relaxed">
+          Creators retain full IP ownership. Revenue share is based on your original film price. Payouts require $25 minimum.
+        </p>
+      </div>
+    </div>
+  );
+}
 
-              {/* Scrollable agreement box */}
-              <div className="relative">
-                <div
-                  ref={agreementRef}
-                  onScroll={handleAgreementScroll}
-                  className="h-72 overflow-y-auto rounded-2xl border border-slate-300 bg-white p-5 text-xs leading-6 text-slate-600 font-mono whitespace-pre-wrap"
-                >
-                  {AGREEMENT_TEXT}
+// ── Main component ────────────────────────────────────────────────────────────
+
+export default function CreatorOnboarding({ onComplete }: CreatorOnboardingProps) {
+  const [activeStep, setActiveStep] = useState(0);
+
+  // Step 0 — Account
+  const [account, setAccount] = useState({ studioName: '', email: '', password: '', confirmPassword: '' });
+
+  // Step 1 — KYC
+  const [kyc, setKyc] = useState({ legalName: '', dob: '', country: '', agreeAccuracy: false });
+  const [countrySearch, setCountrySearch] = useState('');
+  const [showCountryList, setShowCountryList] = useState(false);
+  const [govIdFile, setGovIdFile] = useState<File | null>(null);
+  const [selfieDataUrl, setSelfieDataUrl] = useState<string | null>(null);
+  const [cameraState, setCameraState] = useState<'idle' | 'active' | 'captured' | 'error'>('idle');
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const countryRef = useRef<HTMLDivElement>(null);
+
+  // Step 2 — Agreement
+  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
+  const [agreement, setAgreement] = useState({
+    agreeTerms: false,
+    agreeRights: false,
+    agreePolicy: false,
+    agreePayments: false,
+    agreeAccuracy: false,
+  });
+  const agreementRef = useRef<HTMLDivElement>(null);
+
+  // Camera: set srcObject after state update causes video to render
+  useEffect(() => {
+    if (cameraState === 'active' && streamRef.current && videoRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+    }
+  }, [cameraState]);
+
+  // Stop camera when leaving step 1
+  useEffect(() => {
+    if (activeStep !== 1) stopCamera();
+  }, [activeStep]);
+
+  // Stop camera on unmount
+  useEffect(() => () => stopCamera(), []);
+
+  // Check if agreement box needs scrolling
+  useEffect(() => {
+    if (activeStep === 2 && agreementRef.current) {
+      const el = agreementRef.current;
+      if (el.scrollHeight <= el.clientHeight + 4) setHasScrolledToBottom(true);
+    }
+  }, [activeStep]);
+
+  // Close country dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (countryRef.current && !countryRef.current.contains(e.target as Node)) {
+        setShowCountryList(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const today = new Date().toISOString().split('T')[0];
+  const minDob = new Date(new Date().getFullYear() - 100, 0, 1).toISOString().split('T')[0];
+
+  const filteredCountries = useMemo(
+    () => COUNTRIES.filter((c) => c.toLowerCase().includes(countrySearch.toLowerCase())),
+    [countrySearch]
+  );
+
+  const passwordChecks = useMemo(() => ({
+    length: account.password.length >= 6,
+    match: account.password.length > 0 && account.password === account.confirmPassword,
+  }), [account.password, account.confirmPassword]);
+
+  const canContinue = useMemo(() => {
+    if (activeStep === 0) {
+      return (
+        account.studioName.trim().length > 0 &&
+        account.email.trim().includes('@') &&
+        passwordChecks.length &&
+        passwordChecks.match
+      );
+    }
+    if (activeStep === 1) {
+      return (
+        kyc.legalName.trim().length > 0 &&
+        kyc.dob !== '' &&
+        kyc.country !== '' &&
+        govIdFile !== null &&
+        kyc.agreeAccuracy
+      );
+    }
+    return hasScrolledToBottom && Object.values(agreement).every(Boolean);
+  }, [activeStep, account, passwordChecks, kyc, govIdFile, hasScrolledToBottom, agreement]);
+
+  // Camera helpers
+  const stopCamera = () => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+  };
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+      streamRef.current = stream;
+      setCameraState('active');
+    } catch {
+      setCameraState('error');
+    }
+  };
+
+  const capturePhoto = () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return;
+    canvas.width = video.videoWidth || 320;
+    canvas.height = video.videoHeight || 240;
+    canvas.getContext('2d')?.drawImage(video, 0, 0);
+    setSelfieDataUrl(canvas.toDataURL('image/jpeg', 0.85));
+    stopCamera();
+    setCameraState('captured');
+  };
+
+  const retakePhoto = () => {
+    setSelfieDataUrl(null);
+    setCameraState('idle');
+  };
+
+  const handleGoogleContinue = () => {
+    // Google auth — prototype: auto-fill and advance
+    setAccount((prev) => ({
+      ...prev,
+      email: prev.email || 'creator@gmail.com',
+      studioName: prev.studioName || 'My Studio',
+      password: 'google-auth',
+      confirmPassword: 'google-auth',
+    }));
+    setActiveStep(1);
+  };
+
+  const handleAgreementScroll = () => {
+    const el = agreementRef.current;
+    if (!el) return;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 20) setHasScrolledToBottom(true);
+  };
+
+  const createProfile = () => {
+    const dateLabel = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    const profile: CreatorProfile = {
+      fullName: kyc.legalName.trim() || account.studioName.trim(),
+      studioName: account.studioName.trim() || 'My Studio',
+      email: account.email.trim(),
+      verified: true,
+      kycCompleted: true,
+      createdAt: dateLabel,
+      films: [],
+    };
+    onComplete(profile);
+  };
+
+  const inputClass = 'w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 placeholder-slate-400 outline-none focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/20';
+  const labelClass = 'block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 mb-2';
+
+  return (
+    <div className="min-h-[calc(100vh-200px)] flex items-center justify-center py-10">
+      <div className="w-full max-w-5xl">
+
+        {/* Progress indicator */}
+        <div className="mb-5 flex items-center justify-between px-1">
+          <p className="text-sm text-slate-500">Step {activeStep + 1} of {STEPS.length}</p>
+          <div className="flex gap-1.5">
+            {STEPS.map((_, i) => (
+              <div
+                key={i}
+                className={`h-1 w-12 rounded-full transition-colors duration-300 ${i <= activeStep ? 'bg-brand-purple' : 'bg-slate-200'}`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Card */}
+        <div className="rounded-[2rem] overflow-hidden border border-slate-200/70 shadow-2xl lg:grid lg:grid-cols-2">
+
+          {/* Left — Form */}
+          <div className="bg-white px-8 py-12 sm:px-12 space-y-7">
+
+            {/* ── STEP 0: Create Account ──────────────────────────────────── */}
+            {activeStep === 0 && (
+              <>
+                <div>
+                  <span className="inline-flex rounded-full bg-brand-purple/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] text-brand-purple mb-4">
+                    Creator Portal
+                  </span>
+                  <h1 className="text-2xl font-bold tracking-tight text-slate-950">Create Your Creator Account</h1>
+                  <p className="mt-2 text-sm text-slate-500">Start publishing AI-generated films and earning revenue from viewers worldwide.</p>
                 </div>
-                {!hasScrolledToBottom && (
-                  <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-12 rounded-b-2xl bg-gradient-to-t from-white/90 to-transparent flex items-end justify-center pb-2">
-                    <span className="text-xs text-slate-400">↓ Scroll to read the full agreement</span>
-                  </div>
-                )}
-              </div>
 
-              {/* Checkboxes — disabled until scrolled to bottom */}
-              <div className={`space-y-3 transition-opacity ${hasScrolledToBottom ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
-                {[
-                  { key: 'agreeTerms' as const, label: 'I have read and agree to the Creator Agreement.' },
-                  { key: 'agreeRights' as const, label: 'I confirm that I own or control all rights necessary for the content I upload.' },
-                  { key: 'agreePolicy' as const, label: 'I understand that YouMakeTV may remove content or suspend accounts for policy violations.' },
-                ].map((item) => (
-                  <label key={item.key} className="flex items-start gap-3 text-sm text-slate-700 cursor-pointer">
+                {/* Google — primary CTA */}
+                <button
+                  type="button"
+                  onClick={handleGoogleContinue}
+                  className="w-full flex items-center justify-center gap-3 rounded-full bg-slate-950 py-3.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
+                  Continue with Google
+                </button>
+
+                {/* Divider */}
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 h-px bg-slate-200" />
+                  <span className="text-xs text-slate-400">or sign up manually</span>
+                  <div className="flex-1 h-px bg-slate-200" />
+                </div>
+
+                {/* Manual form */}
+                <div className="space-y-4">
+                  <div>
+                    <label className={labelClass}>Studio Name</label>
+                    <input
+                      type="text"
+                      placeholder="Neon Horizon Films"
+                      value={account.studioName}
+                      onChange={(e) => setAccount((p) => ({ ...p, studioName: e.target.value }))}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Email Address</label>
+                    <input
+                      type="email"
+                      placeholder="creator@example.com"
+                      value={account.email}
+                      onChange={(e) => setAccount((p) => ({ ...p, email: e.target.value }))}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Password</label>
+                    <input
+                      type="password"
+                      placeholder="Minimum 6 characters"
+                      value={account.password}
+                      onChange={(e) => setAccount((p) => ({ ...p, password: e.target.value }))}
+                      className={inputClass}
+                    />
+                    {account.password.length > 0 && (
+                      <p className={`mt-1.5 text-xs font-medium ${passwordChecks.length ? 'text-emerald-600' : 'text-red-500'}`}>
+                        {passwordChecks.length ? '✓ Minimum 6 characters' : '✗ Password must be at least 6 characters'}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className={labelClass}>Confirm Password</label>
+                    <input
+                      type="password"
+                      placeholder="Repeat password"
+                      value={account.confirmPassword}
+                      onChange={(e) => setAccount((p) => ({ ...p, confirmPassword: e.target.value }))}
+                      className={inputClass}
+                    />
+                    {account.confirmPassword.length > 0 && (
+                      <p className={`mt-1.5 text-xs font-medium ${passwordChecks.match ? 'text-emerald-600' : 'text-red-500'}`}>
+                        {passwordChecks.match ? '✓ Passwords match' : '✗ Passwords do not match'}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={!canContinue}
+                  onClick={() => setActiveStep(1)}
+                  className="w-full rounded-full bg-brand-purple py-3.5 text-sm font-semibold text-white transition hover:bg-brand-indigo disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Continue →
+                </button>
+
+                <p className="text-center text-xs text-slate-500">
+                  Already have an account?{' '}
+                  <a href="/creatorsLogin" className="text-brand-purple hover:underline font-semibold">Sign in</a>
+                </p>
+              </>
+            )}
+
+            {/* ── STEP 1: Verify Identity ─────────────────────────────────── */}
+            {activeStep === 1 && (
+              <>
+                <div>
+                  <span className="inline-flex rounded-full bg-brand-purple/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] text-brand-purple mb-4">
+                    Identity Verification
+                  </span>
+                  <h1 className="text-2xl font-bold tracking-tight text-slate-950">Verify Your Identity</h1>
+                  <p className="mt-2 text-sm text-slate-500">Required by payment processors to enable creator payouts. Your data is encrypted and never sold.</p>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className={labelClass}>Legal Full Name</label>
+                    <input
+                      type="text"
+                      placeholder="As it appears on your government ID"
+                      value={kyc.legalName}
+                      onChange={(e) => setKyc((p) => ({ ...p, legalName: e.target.value }))}
+                      className={inputClass}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>Date of Birth</label>
+                    <input
+                      type="date"
+                      min={minDob}
+                      max={today}
+                      value={kyc.dob}
+                      onChange={(e) => setKyc((p) => ({ ...p, dob: e.target.value }))}
+                      className={inputClass}
+                    />
+                  </div>
+
+                  {/* Searchable country dropdown */}
+                  <div>
+                    <label className={labelClass}>Country of Residence</label>
+                    <div ref={countryRef} className="relative">
+                      <input
+                        type="text"
+                        placeholder="Search country…"
+                        value={kyc.country || countrySearch}
+                        onFocus={() => {
+                          setCountrySearch('');
+                          setShowCountryList(true);
+                        }}
+                        onChange={(e) => {
+                          setCountrySearch(e.target.value);
+                          setKyc((p) => ({ ...p, country: '' }));
+                          setShowCountryList(true);
+                        }}
+                        className={inputClass}
+                      />
+                      {showCountryList && filteredCountries.length > 0 && (
+                        <ul className="absolute z-10 mt-1 max-h-52 w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-lg">
+                          {filteredCountries.map((country) => (
+                            <li key={country}>
+                              <button
+                                type="button"
+                                className="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-brand-purple/5 hover:text-brand-purple transition"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  setKyc((p) => ({ ...p, country }));
+                                  setCountrySearch(country);
+                                  setShowCountryList(false);
+                                }}
+                              >
+                                {country}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {showCountryList && filteredCountries.length === 0 && (
+                        <div className="absolute z-10 mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-400 shadow-lg">
+                          No country found
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Government ID upload */}
+                  <div>
+                    <label className={labelClass}>Upload Government ID</label>
+                    <p className="text-xs text-slate-400 mb-2">Passport, Driver License, or National ID</p>
+                    <label className="cursor-pointer block">
+                      <input
+                        type="file"
+                        accept="image/*,.pdf"
+                        className="sr-only"
+                        onChange={(e) => setGovIdFile(e.target.files?.[0] ?? null)}
+                      />
+                      <div className={`flex items-center gap-3 rounded-2xl border border-dashed px-5 py-4 transition ${govIdFile ? 'border-emerald-300 bg-emerald-50' : 'border-slate-300 bg-slate-50 hover:border-brand-purple hover:bg-brand-purple/5'}`}>
+                        <div className={`flex h-8 w-8 items-center justify-center rounded-full flex-none ${govIdFile ? 'bg-emerald-100' : 'bg-slate-200'}`}>
+                          {govIdFile ? (
+                            <svg className="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                          ) : (
+                            <svg className="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                          )}
+                        </div>
+                        <span className={`text-sm truncate ${govIdFile ? 'font-medium text-emerald-700' : 'text-slate-500'}`}>
+                          {govIdFile ? govIdFile.name : 'Click to upload document'}
+                        </span>
+                      </div>
+                    </label>
+                  </div>
+
+                  {/* Selfie */}
+                  <div>
+                    <label className={labelClass}>Take Selfie <span className="normal-case font-normal text-slate-400">(optional)</span></label>
+                    <canvas ref={canvasRef} className="hidden" />
+
+                    {cameraState === 'idle' && !selfieDataUrl && (
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={startCamera}
+                          className="flex-1 flex items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 py-3.5 text-sm font-semibold text-slate-600 hover:border-brand-purple hover:text-brand-purple transition"
+                        >
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><circle cx="12" cy="13" r="3" /></svg>
+                          Open Camera
+                        </button>
+                        <label className="flex-1 cursor-pointer">
+                          <input type="file" accept="image/*" className="sr-only" onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const url = URL.createObjectURL(file);
+                              setSelfieDataUrl(url);
+                              setCameraState('captured');
+                            }
+                          }} />
+                          <div className="flex h-full items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 py-3.5 text-sm font-semibold text-slate-600 hover:border-brand-purple hover:text-brand-purple transition">
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                            Upload selfie
+                          </div>
+                        </label>
+                      </div>
+                    )}
+
+                    {cameraState === 'active' && (
+                      <div className="space-y-2">
+                        <video ref={videoRef} autoPlay playsInline className="w-full rounded-2xl object-cover aspect-video" />
+                        <button type="button" onClick={capturePhoto} className="w-full rounded-full bg-slate-950 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition">
+                          Take Photo
+                        </button>
+                      </div>
+                    )}
+
+                    {cameraState === 'captured' && selfieDataUrl && (
+                      <div className="space-y-2">
+                        <img src={selfieDataUrl} alt="Selfie preview" className="w-full rounded-2xl object-cover aspect-video" />
+                        <button type="button" onClick={retakePhoto} className="w-full rounded-full border border-slate-300 bg-white py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">
+                          Retake
+                        </button>
+                      </div>
+                    )}
+
+                    {cameraState === 'error' && (
+                      <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                        Camera not available. Please upload a selfie photo instead.
+                      </div>
+                    )}
+                  </div>
+
+                  <label className="flex items-start gap-3 text-sm text-slate-700 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={agreement[item.key]}
-                      onChange={(e) => setAgreement((prev) => ({ ...prev, [item.key]: e.target.checked }))}
-                      className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-cyan-600 flex-none"
+                      checked={kyc.agreeAccuracy}
+                      onChange={(e) => setKyc((p) => ({ ...p, agreeAccuracy: e.target.checked }))}
+                      className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-brand-purple flex-none"
                     />
-                    <span>{item.label}</span>
+                    I confirm that all information I have provided is accurate and matches my government-issued ID.
                   </label>
-                ))}
-              </div>
-
-              {!hasScrolledToBottom && (
-                <p className="text-xs text-slate-400">
-                  Scroll to the bottom of the agreement above to enable the required checkboxes.
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* ── Step 1: Account ───────────────────────────────────────────── */}
-          {activeStep === 1 && (
-            <div className="space-y-5">
-              <p className="text-slate-600">Create your creator account and studio profile. Real authentication will be added later.</p>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {[
-                  { label: 'Full name', value: account.fullName, key: 'fullName' },
-                  { label: 'Studio name', value: account.studioName, key: 'studioName' },
-                  { label: 'Email', value: account.email, key: 'email', type: 'email' },
-                  { label: 'Password', value: account.password, key: 'password', type: 'password' },
-                ].map((field) => (
-                  <label key={field.label} className="space-y-2 text-sm text-slate-700">
-                    {field.label}
-                    <input
-                      type={field.type ?? 'text'}
-                      value={field.value}
-                      onChange={(event) => setAccount((current) => ({ ...current, [field.key]: event.target.value }))}
-                      className="input-field"
-                      placeholder={field.label}
-                    />
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ── Step 2: KYC ──────────────────────────────────────────────── */}
-          {activeStep === 2 && (
-            <div className="space-y-5">
-              <p className="text-slate-600">Mock verification gives your creator account a verified status in the prototype.</p>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {[
-                  { label: 'Legal full name', value: kyc.legalName, key: 'legalName' },
-                  { label: 'Date of birth', value: kyc.dob, key: 'dob', type: 'date' },
-                  { label: 'Country of residence', value: kyc.residence, key: 'residence' },
-                ].map((field) => (
-                  <label key={field.label} className="space-y-2 text-sm text-slate-700">
-                    {field.label}
-                    <input
-                      type={(field.type as 'date') ?? 'text'}
-                      value={field.value}
-                      onChange={(event) => setKyc((current) => ({ ...current, [field.key]: event.target.value }))}
-                      className="input-field"
-                    />
-                  </label>
-                ))}
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-5 text-sm text-slate-600">
-                  <p className="font-semibold text-slate-900">Government ID placeholder</p>
-                  <p className="mt-2">Real document upload will be connected to a KYC provider later.</p>
                 </div>
-                <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-5 text-sm text-slate-600">
-                  <p className="font-semibold text-slate-900">Selfie placeholder</p>
-                  <p className="mt-2">This step is mocked to demonstrate identity verification flow.</p>
+
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setActiveStep(0)} className="rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!canContinue}
+                    onClick={() => setActiveStep(2)}
+                    className="flex-1 rounded-full bg-brand-purple py-3 text-sm font-semibold text-white transition hover:bg-brand-indigo disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Continue →
+                  </button>
                 </div>
-              </div>
-              <label className="flex items-start gap-3 text-sm text-slate-700">
-                <input type="checkbox" checked={kyc.agreeAccuracy} onChange={(event) => setKyc((current) => ({ ...current, agreeAccuracy: event.target.checked }))} className="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-600" />
-                I confirm the information above is accurate.
-              </label>
-            </div>
-          )}
-
-          {/* ── Step 3: Creator rights ────────────────────────────────────── */}
-          {activeStep === 3 && (
-            <div className="space-y-5">
-              <p className="text-slate-600">Confirm the rights and permissions for your content before publishing.</p>
-              {[
-                { key: 'confirmAi', label: 'I confirm this film/content is AI-generated or AI-assisted.' },
-                { key: 'confirmRights', label: 'I confirm I own or have rights to all visuals, audio, music, voices, likenesses, prompts, and assets used.' },
-                { key: 'confirmMonetize', label: 'I confirm I am allowed to monetize this content.' },
-                { key: 'confirmDisplay', label: 'I agree that YouMakeTV.ai may display, promote, and monetize uploaded content.' },
-                { key: 'understandPrototype', label: 'I understand real legal and payment systems will be added later.' },
-              ].map((item) => (
-                <label key={item.key} className="flex items-start gap-3 text-sm text-slate-700">
-                  <input type="checkbox" checked={rights[item.key as keyof typeof rights]} onChange={(event) => setRights((current) => ({ ...current, [item.key]: event.target.checked }))} className="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-600" />
-                  <span>{item.label}</span>
-                </label>
-              ))}
-            </div>
-          )}
-
-          {/* ── Step 4: Optional upload ───────────────────────────────────── */}
-          {activeStep === 4 && (
-            <div className="space-y-6">
-              <p className="text-slate-600">Upload your first film details now, or finish onboarding and upload later from the dashboard.</p>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="space-y-2 text-sm text-slate-700">
-                  Film title
-                  <input value={film.title} onChange={(event) => setFilm((current) => ({ ...current, title: event.target.value }))} className="input-field" placeholder="Eternal Credits" />
-                </label>
-                <label className="space-y-2 text-sm text-slate-700">
-                  Runtime
-                  <input value={film.duration} onChange={(event) => setFilm((current) => ({ ...current, duration: event.target.value }))} className="input-field" placeholder="10m" />
-                </label>
-              </div>
-              <label className="space-y-2 text-sm text-slate-700">
-                Short description
-                <textarea value={film.description} onChange={(event) => setFilm((current) => ({ ...current, description: event.target.value }))} className="input-field min-h-[120px]" placeholder="A cinematic AI journey through a neon skyline." />
-              </label>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <label className="space-y-2 text-sm text-slate-700">
-                  Genre
-                  <select value={film.category} onChange={(event) => setFilm((current) => ({ ...current, category: event.target.value }))} className="input-field">
-                    <option>Sci-Fi</option>
-                    <option>Action</option>
-                    <option>Drama</option>
-                    <option>Short</option>
-                    <option>Experimental</option>
-                  </select>
-                </label>
-                <label className="space-y-2 text-sm text-slate-700">
-                  Language
-                  <select value={film.language} onChange={(event) => setFilm((current) => ({ ...current, language: event.target.value }))} className="input-field">
-                    <option>English</option>
-                    <option>Spanish</option>
-                    <option>French</option>
-                    <option>Japanese</option>
-                  </select>
-                </label>
-                <label className="space-y-2 text-sm text-slate-700">
-                  Rating
-                  <select value={film.rating} onChange={(event) => setFilm((current) => ({ ...current, rating: event.target.value }))} className="input-field">
-                    <option>G</option>
-                    <option>PG</option>
-                    <option>PG-13</option>
-                    <option>R</option>
-                  </select>
-                </label>
-              </div>
-              <div className="rounded-3xl border border-slate-200/80 bg-white p-6">
-                <p className="text-sm uppercase tracking-[0.28em] text-slate-500">Price</p>
-                <div className="mt-4">
-                  <PricingSlider value={film.price} onChange={(next) => setFilm((current) => ({ ...current, price: next }))} />
-                </div>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-5 text-sm text-slate-600">Full film upload placeholder</div>
-                <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-5 text-sm text-slate-600">Thumbnail upload placeholder</div>
-                <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-5 text-sm text-slate-600">Trailer upload placeholder</div>
-              </div>
-              <div className="rounded-3xl border border-slate-200/80 bg-slate-100 p-5 text-sm text-slate-600">
-                <p className="font-semibold text-slate-900">Tip</p>
-                <p className="mt-2">You can skip upload now and finish your creator setup in the dashboard later.</p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
-          <button onClick={() => setActiveStep((current) => Math.max(0, current - 1))} disabled={activeStep === 0} className="rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50">
-            Back
-          </button>
-          <div className="flex flex-wrap gap-3">
-            {activeStep === steps.length - 1 ? (
-              <>
-                <button onClick={() => createProfile(false)} className="rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100">
-                  Skip upload and finish
-                </button>
-                <button onClick={() => createProfile(true)} className="rounded-full bg-cyan-500 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400">
-                  Submit creator profile
-                </button>
               </>
-            ) : (
-              <button onClick={() => canContinue && setActiveStep((current) => current + 1)} disabled={!canContinue} className="rounded-full bg-cyan-500 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50">
-                Continue
-              </button>
+            )}
+
+            {/* ── STEP 2: Creator Agreement ───────────────────────────────── */}
+            {activeStep === 2 && (
+              <>
+                <div>
+                  <span className="inline-flex rounded-full bg-brand-purple/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] text-brand-purple mb-4">
+                    Final Step
+                  </span>
+                  <h1 className="text-2xl font-bold tracking-tight text-slate-950">Creator Agreement</h1>
+                  <p className="mt-2 text-sm text-slate-500">
+                    Read the agreement below and scroll to the bottom to enable sign-up.{' '}
+                    <a href="/creator-agreement" target="_blank" rel="noopener noreferrer" className="text-brand-purple hover:underline">
+                      Open full agreement ↗
+                    </a>
+                  </p>
+                </div>
+
+                {/* Scrollable agreement */}
+                <div className="relative">
+                  <div
+                    ref={agreementRef}
+                    onScroll={handleAgreementScroll}
+                    className="h-[500px] overflow-y-auto rounded-2xl border border-slate-200 bg-slate-50 p-5 text-xs leading-6 text-slate-600 whitespace-pre-wrap"
+                    style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}
+                  >
+                    {AGREEMENT_TEXT}
+                  </div>
+                  {!hasScrolledToBottom && (
+                    <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-14 rounded-b-2xl bg-gradient-to-t from-white to-transparent flex items-end justify-center pb-2">
+                      <span className="text-xs text-slate-400">↓ Scroll to read full agreement</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Checkboxes */}
+                <div className={`space-y-3 transition-opacity duration-300 ${hasScrolledToBottom ? 'opacity-100' : 'opacity-30 pointer-events-none select-none'}`}>
+                  {[
+                    { key: 'agreeTerms' as const,    label: 'I have read and agree to the Creator Agreement.' },
+                    { key: 'agreeRights' as const,   label: 'I confirm that I own or control all rights necessary for the content I upload.' },
+                    { key: 'agreePolicy' as const,   label: 'I understand that YouMakeTV may remove content or suspend accounts for policy violations.' },
+                    { key: 'agreePayments' as const, label: 'I understand that creator payouts, fees, and platform terms may change over time.' },
+                    { key: 'agreeAccuracy' as const, label: 'I confirm that all information provided during onboarding is accurate.' },
+                  ].map((item) => (
+                    <label key={item.key} className="flex items-start gap-3 text-sm text-slate-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={agreement[item.key]}
+                        onChange={(e) => setAgreement((p) => ({ ...p, [item.key]: e.target.checked }))}
+                        className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-brand-purple flex-none"
+                      />
+                      <span>{item.label}</span>
+                    </label>
+                  ))}
+                </div>
+
+                {!hasScrolledToBottom && (
+                  <p className="text-xs text-slate-400">Scroll to the bottom of the agreement to enable the required checkboxes.</p>
+                )}
+
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setActiveStep(1)} className="rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!canContinue}
+                    onClick={createProfile}
+                    className="flex-1 rounded-full bg-brand-purple py-3 text-sm font-semibold text-white transition hover:bg-brand-indigo disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Create Creator Account →
+                  </button>
+                </div>
+              </>
             )}
           </div>
+
+          {/* Right — Dynamic panel */}
+          <RightPanel step={activeStep} />
         </div>
       </div>
-    </section>
+    </div>
   );
 }

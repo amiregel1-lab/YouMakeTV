@@ -29,6 +29,7 @@ import { initAnalytics, trackPageView } from './lib/analytics';
 export default function App() {
   const [viewer, setViewer] = useState<ViewerAccount | null>(null);
   const [creator, setCreator] = useState<CreatorProfile | null>(null);
+  const [newCreatorSession, setNewCreatorSession] = useState(false);
   const [modal, setModal] = useState<{ type: 'transaction' | 'subscription' | 'trailer'; title: string; details: string } | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
@@ -83,6 +84,7 @@ export default function App() {
 
   const handleCreateCreator = (profile: CreatorProfile) => {
     setCreator(profile);
+    setNewCreatorSession(true);
     navigate('/creator/dashboard');
   };
 
@@ -154,7 +156,7 @@ export default function App() {
           <Route path="/creator" element={<CreatorPortal onStart={() => navigate('/creator/onboarding')} onDashboard={() => navigate('/creator/dashboard')} onViewDemo={handleDemoCreator} onSignIn={() => navigate('/creatorsLogin')} />} />
           <Route path="/creatorsLogin" element={<CreatorLoginPage onSignIn={() => navigate('/creator/dashboard')} onStart={() => navigate('/creator/onboarding')} onViewDemo={handleDemoCreator} />} />
           <Route path="/creator/onboarding" element={<CreatorOnboarding onComplete={handleCreateCreator} />} />
-          <Route path="/creator/dashboard" element={<CreatorDashboard creator={creator} onAddFilm={handleAddFilm} onDeleteFilm={handleDeleteFilm} onStartOnboarding={() => navigate('/creator/onboarding')} onCreateDemo={handleDemoCreator} />} />
+          <Route path="/creator/dashboard" element={<CreatorDashboard creator={creator} onAddFilm={handleAddFilm} onDeleteFilm={handleDeleteFilm} onStartOnboarding={() => navigate('/creator/onboarding')} onCreateDemo={handleDemoCreator} showWelcome={newCreatorSession} onDismissWelcome={() => setNewCreatorSession(false)} />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/terms" element={<TermsPage />} />

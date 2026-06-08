@@ -28,10 +28,6 @@ export interface Movie {
   featured?: boolean;
   subscriberDiscountEligible?: boolean;
   trailerUrl?: string;
-  // PROTOTYPE NOTE: trailerDataUrl stores the trailer as a base64 data URL for
-  // localStorage persistence. Production must use Cloudflare R2, AWS S3,
-  // Supabase Storage, or Mux — never base64 in localStorage for real video.
-  trailerDataUrl?: string;
   posterPrompt?: string;
 }
 
@@ -125,12 +121,6 @@ export interface AdminFilm {
   uploadDate: string;
   moderationNotes: string;
   trailerUrl?: string;
-  // PROTOTYPE NOTE: base64 data URL for localStorage persistence.
-  // Production: replace with a real video storage URL from R2 / S3 / Mux.
-  trailerDataUrl?: string;
-  trailerFileName?: string;
-  trailerMimeType?: string;
-  trailerUpdatedAt?: string;
 }
 
 export interface AuditLogEntry {

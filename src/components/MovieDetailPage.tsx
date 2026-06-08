@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getMergedMovies, getMovieById } from '../lib/movieStore';
-import { loadMediaOverrides } from '../lib/storage';
 import { formatCurrency, subscriberPrice } from '../lib/formatters';
 import type { Movie, ViewerAccount } from '../types';
 import PurchaseOptions from './PurchaseOptions';
@@ -74,23 +73,9 @@ export default function MovieDetailPage({ viewer, onPurchase, onSubscribe, onWat
   }, [movie]);
 
   const handleWatchTrailer = () => {
-    if (movie) {
-      // Priority 1: base64 data URL — persists across reloads
-      if (movie.trailerDataUrl) {
-        setTrailerPlayerUrl(movie.trailerDataUrl);
-        return;
-      }
-      // Priority 2: non-blob external trailer URL
-      if (movie.trailerUrl && !movie.trailerUrl.startsWith('blob:')) {
-        setTrailerPlayerUrl(movie.trailerUrl);
-        return;
-      }
-      // Priority 3: session-scoped blob URLs from legacy media overrides
-      const legacyUrl = loadMediaOverrides()[movie.title]?.trailerUrl;
-      if (legacyUrl) {
-        setTrailerPlayerUrl(legacyUrl);
-        return;
-      }
+    if (movie?.trailerUrl) {
+      setTrailerPlayerUrl(movie.trailerUrl);
+      return;
     }
     onWatchTrailer();
   };

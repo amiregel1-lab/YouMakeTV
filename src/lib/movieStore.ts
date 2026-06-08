@@ -82,9 +82,7 @@ export function applyAdminFilmToMovieStore(adminFilm: AdminFilm, originalTitle?:
     ...(adminFilm.tags
       ? { tags: adminFilm.tags.split(',').map((t) => t.trim()).filter(Boolean) }
       : {}),
-    // trailerDataUrl is a base64 data URL — safe to persist in localStorage
-    ...(adminFilm.trailerDataUrl ? { trailerDataUrl: adminFilm.trailerDataUrl } : {}),
-    // Only persist non-blob external trailer URLs
+    // Only persist non-blob external trailer URLs (file paths like /trailers/film.mp4)
     ...(adminFilm.trailerUrl && !adminFilm.trailerUrl.startsWith('blob:')
       ? { trailerUrl: adminFilm.trailerUrl }
       : {}),

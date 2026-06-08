@@ -125,25 +125,10 @@ export default function App() {
   const openTrailerModal = (title?: string) => {
     if (title) {
       const mergedMovie = getMergedMovies().find((m) => m.title === title);
-      // Priority 1: base64 data URL — persists across reloads
-      if (mergedMovie?.trailerDataUrl) {
-        setTrailerModal({ title, url: mergedMovie.trailerDataUrl });
-        return;
-      }
-      // Priority 2: non-blob external trailer URL
-      if (mergedMovie?.trailerUrl && !mergedMovie.trailerUrl.startsWith('blob:')) {
+      if (mergedMovie?.trailerUrl) {
         setTrailerModal({ title, url: mergedMovie.trailerUrl });
         return;
       }
-      // Priority 3: session-scoped blob URLs from legacy media overrides
-      try {
-        const raw = localStorage.getItem('youmake_media_overrides');
-        if (raw) {
-          const overrides = JSON.parse(raw) as Record<string, { trailerUrl?: string }>;
-          const url = overrides[title]?.trailerUrl;
-          if (url) { setTrailerModal({ title, url }); return; }
-        }
-      } catch {}
     }
     setModal({
       type: 'trailer',

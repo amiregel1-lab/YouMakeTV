@@ -908,7 +908,6 @@ function CreatorEditModal({ creator, onSave, onClose }: { creator: AdminCreator;
 // ── Film Edit Modal ───────────────────────────────────────────────────────────
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
 
 function FilmEditModal({ film, onSave, onReset, onClose }: {
   film: AdminFilm;
@@ -924,10 +923,8 @@ function FilmEditModal({ film, onSave, onReset, onClose }: {
   const [coverError, setCoverError] = useState('');
   const coverInputRef = useRef<HTMLInputElement>(null);
 
-  const [trailerPreview, setTrailerPreview] = useState<string | null>(null);
-  const [trailerFileName, setTrailerFileName] = useState('');
-  const [trailerError, setTrailerError] = useState('');
-  const trailerInputRef = useRef<HTMLInputElement>(null);
+  const [trailerTestUrl, setTrailerTestUrl] = useState<string | null>(draft.trailerUrl ?? null);
+  const [trailerStatus, setTrailerStatus] = useState<'idle' | 'found' | 'not-found'>('idle');
 
   const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -947,45 +944,6 @@ function FilmEditModal({ film, onSave, onReset, onClose }: {
     reader.readAsDataURL(file);
   };
 
-  const handleTrailerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setTrailerError('');
-    if (!ALLOWED_VIDEO_TYPES.includes(file.type)) {
-      setTrailerError('Please upload an MP4, WebM, or MOV video.');
-      e.target.value = '';
-      return;
-    }
-    // 25 MB limit — base64 expands ~33%, so ~33 MB in localStorage
-    if (file.size > 25 * 1024 * 1024) {
-      setTrailerError('Trailer file too large for prototype storage. Use a shorter demo trailer (max 25 MB).');
-      e.target.value = '';
-      return;
-    }
-    // PROTOTYPE NOTE: Converting to base64 data URL for localStorage persistence.
-    // Production must use real video storage: Cloudflare R2, AWS S3, Supabase Storage, or Mux.
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const dataUrl = ev.target?.result as string;
-      setTrailerPreview(dataUrl);
-      setTrailerFileName(file.name);
-      setDraft(p => ({
-        ...p,
-        trailerDataUrl: dataUrl,
-        trailerFileName: file.name,
-        trailerMimeType: file.type,
-        trailerUpdatedAt: new Date().toISOString(),
-      }));
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleRemoveTrailer = () => {
-    setTrailerPreview(null);
-    setTrailerFileName('');
-    if (trailerInputRef.current) trailerInputRef.current.value = '';
-    setDraft(p => ({ ...p, trailerDataUrl: undefined, trailerFileName: undefined, trailerMimeType: undefined, trailerUpdatedAt: undefined, trailerUrl: undefined }));
-  };
 
   const handleSave = () => {
     onSave(draft, originalTitle);
@@ -1033,59 +991,48 @@ function FilmEditModal({ film, onSave, onReset, onClose }: {
         {/* ── Trailer ── */}
         <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-4 space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Trailer</p>
-
-          {/* Show video preview if new upload or previously saved base64 */}
-          {(trailerPreview ?? draft.trailerDataUrl) ? (
-            <>
-              <video
-                src={trailerPreview ?? draft.trailerDataUrl}
-                controls
-                playsInline
-                preload="metadata"
-                className="w-full rounded-xl bg-slate-900"
-                style={{ maxHeight: '160px' }}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 mb-1.5">Trailer File URL</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={draft.trailerUrl ?? ''}
+                onChange={e => {
+                  set('trailerUrl', e.target.value || undefined);
+                  setTrailerTestUrl(null);
+                  setTrailerStatus('idle');
+                }}
+                placeholder="/trailers/parallax-station.mp4"
+                className="flex-1 rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-sm text-white outline-none focus:border-brand-purple placeholder:text-slate-600"
               />
-              <p className="text-xs text-slate-300 truncate">
-                {trailerFileName || draft.trailerFileName || 'Saved trailer'}
-                {draft.trailerUpdatedAt && !trailerPreview && (
-                  <span className="ml-2 text-slate-500">
-                    · saved {new Date(draft.trailerUpdatedAt).toLocaleDateString()}
-                  </span>
-                )}
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => trailerInputRef.current?.click()}
-                  className="flex-1 rounded-xl bg-slate-700 border border-slate-600 px-3 py-2 text-sm text-white hover:bg-slate-600 transition"
-                >
-                  Replace trailer
-                </button>
-                <button
-                  onClick={handleRemoveTrailer}
-                  className="rounded-xl border border-red-700 px-3 py-2 text-sm text-red-400 hover:bg-red-900/30 transition"
-                >
-                  Remove
-                </button>
-              </div>
-            </>
-          ) : (
-            <button
-              onClick={() => trailerInputRef.current?.click()}
-              className="rounded-xl bg-slate-700 border border-slate-600 px-3 py-2 text-sm text-white hover:bg-slate-600 transition w-full text-left"
-            >
-              Upload trailer
-            </button>
+              <button
+                type="button"
+                onClick={() => { if (draft.trailerUrl) setTrailerTestUrl(draft.trailerUrl); }}
+                disabled={!draft.trailerUrl}
+                className="rounded-xl bg-slate-700 border border-slate-600 px-3 py-2 text-sm text-white hover:bg-slate-600 transition whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Test Trailer
+              </button>
+            </div>
+            <p className="mt-1.5 text-xs text-slate-500">
+              Place MP4 files in <span className="text-slate-400 font-mono">public/trailers/</span> and enter the path here.
+            </p>
+            {trailerStatus === 'found' && <p className="mt-1 text-xs text-emerald-400 font-semibold">✓ Trailer Found</p>}
+            {trailerStatus === 'not-found' && <p className="mt-1 text-xs text-red-400">✗ Trailer Not Found — check the path or add the file to public/trailers/</p>}
+          </div>
+          {trailerTestUrl && (
+            <video
+              key={trailerTestUrl}
+              src={trailerTestUrl}
+              controls
+              playsInline
+              preload="metadata"
+              onCanPlay={() => setTrailerStatus('found')}
+              onError={() => setTrailerStatus('not-found')}
+              className="w-full rounded-xl bg-slate-900"
+              style={{ maxHeight: '160px' }}
+            />
           )}
-
-          <input
-            ref={trailerInputRef}
-            type="file"
-            accept="video/mp4,video/webm,video/quicktime"
-            onChange={handleTrailerUpload}
-            className="hidden"
-          />
-          <p className="text-xs text-slate-500">MP4, WebM, MOV · max 25 MB for prototype</p>
-          {trailerError && <p className="text-xs text-red-400">{trailerError}</p>}
         </div>
 
         {/* ── Text fields ── */}

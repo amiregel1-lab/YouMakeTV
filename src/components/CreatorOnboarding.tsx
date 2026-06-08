@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CreatorProfile } from '../types';
 
 interface CreatorOnboardingProps {
@@ -237,6 +238,7 @@ function RightPanel({ step }: { step: number }) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function CreatorOnboarding({ onComplete }: CreatorOnboardingProps) {
+  const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState(0);
 
   // Step 0 — Account
@@ -597,7 +599,7 @@ export default function CreatorOnboarding({ onComplete }: CreatorOnboardingProps
 
                 <p className="text-center text-xs text-slate-500">
                   Already have an account?{' '}
-                  <a href="/creatorsLogin" className="text-brand-purple hover:underline font-semibold">Sign in</a>
+                  <button type="button" onClick={() => navigate('/creatorsLogin')} className="text-brand-purple hover:underline font-semibold">Sign in</button>
                 </p>
               </>
             )}

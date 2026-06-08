@@ -124,13 +124,18 @@ export default function App() {
 
   const openTrailerModal = (title?: string) => {
     if (title) {
-      // Check merged movie data first (persisted non-blob trailer URLs)
       const mergedMovie = getMergedMovies().find((m) => m.title === title);
+      // Priority 1: base64 data URL — persists across reloads
+      if (mergedMovie?.trailerDataUrl) {
+        setTrailerModal({ title, url: mergedMovie.trailerDataUrl });
+        return;
+      }
+      // Priority 2: non-blob external trailer URL
       if (mergedMovie?.trailerUrl && !mergedMovie.trailerUrl.startsWith('blob:')) {
         setTrailerModal({ title, url: mergedMovie.trailerUrl });
         return;
       }
-      // Fall back to legacy media overrides (session-scoped blob URLs)
+      // Priority 3: session-scoped blob URLs from legacy media overrides
       try {
         const raw = localStorage.getItem('youmake_media_overrides');
         if (raw) {
@@ -142,8 +147,8 @@ export default function App() {
     }
     setModal({
       type: 'trailer',
-      title: 'Trailer experience coming soon',
-      details: 'Trailer playback is a placeholder in this prototype. Real video streaming will be integrated later.',
+      title: 'Trailer coming soon',
+      details: 'No trailer has been uploaded for this film yet.',
     });
   };
 
@@ -234,7 +239,7 @@ export default function App() {
               <p className="text-sm font-semibold text-white">{trailerModal.title} — Trailer</p>
               <button onClick={() => setTrailerModal(null)} className="text-slate-400 hover:text-white transition text-xl leading-none">×</button>
             </div>
-            <video src={trailerModal.url} controls autoPlay className="w-full" style={{ maxHeight: '60vh' }} />
+            <video src={trailerModal.url} controls playsInline preload="metadata" className="w-full" style={{ maxHeight: '60vh' }} />
           </div>
         </div>
       )}

@@ -12,7 +12,7 @@ import {
   DEFAULT_SETTINGS, MOCK_AUDIT_LOG, MOCK_CREATORS, MOCK_FILMS,
   MOCK_PAYOUTS, MONTHLY_METRICS,
 } from '../data/adminMockData';
-import { clearAdminSession, loadAdminSession, saveMediaOverride } from '../lib/storage';
+import { clearAdminSession, loadAdminSession } from '../lib/storage';
 import {
   applyAdminFilmToMovieStore,
   loadAdminFilms,
@@ -956,18 +956,38 @@ function FilmEditModal({ film, onSave, onReset, onClose }: {
       e.target.value = '';
       return;
     }
-    const blobUrl = URL.createObjectURL(file);
-    setTrailerPreview(blobUrl);
-    setTrailerFileName(file.name);
-    set('trailerUrl', blobUrl);
+    // 25 MB limit — base64 expands ~33%, so ~33 MB in localStorage
+    if (file.size > 25 * 1024 * 1024) {
+      setTrailerError('Trailer file too large for prototype storage. Use a shorter demo trailer (max 25 MB).');
+      e.target.value = '';
+      return;
+    }
+    // PROTOTYPE NOTE: Converting to base64 data URL for localStorage persistence.
+    // Production must use real video storage: Cloudflare R2, AWS S3, Supabase Storage, or Mux.
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      setTrailerPreview(dataUrl);
+      setTrailerFileName(file.name);
+      setDraft(p => ({
+        ...p,
+        trailerDataUrl: dataUrl,
+        trailerFileName: file.name,
+        trailerMimeType: file.type,
+        trailerUpdatedAt: new Date().toISOString(),
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveTrailer = () => {
+    setTrailerPreview(null);
+    setTrailerFileName('');
+    if (trailerInputRef.current) trailerInputRef.current.value = '';
+    setDraft(p => ({ ...p, trailerDataUrl: undefined, trailerFileName: undefined, trailerMimeType: undefined, trailerUpdatedAt: undefined, trailerUrl: undefined }));
   };
 
   const handleSave = () => {
-    // Keep session-scoped blob trailer URL in legacy media overrides so App.tsx
-    // openTrailerModal can still find it within the current browser session.
-    if (trailerPreview) {
-      saveMediaOverride(draft.title, { trailerUrl: trailerPreview });
-    }
     onSave(draft, originalTitle);
   };
 
@@ -1013,19 +1033,50 @@ function FilmEditModal({ film, onSave, onReset, onClose }: {
         {/* ── Trailer ── */}
         <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-4 space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Trailer</p>
-          {trailerPreview ? (
-            <video
-              src={trailerPreview}
-              controls
-              className="w-full rounded-xl bg-slate-900"
-              style={{ maxHeight: '150px' }}
-            />
-          ) : draft.trailerUrl ? (
-            <p className="text-xs text-slate-500 truncate">Current: {draft.trailerUrl}</p>
-          ) : null}
-          {trailerFileName && (
-            <p className="text-xs text-slate-300 truncate">Selected: {trailerFileName}</p>
+
+          {/* Show video preview if new upload or previously saved base64 */}
+          {(trailerPreview ?? draft.trailerDataUrl) ? (
+            <>
+              <video
+                src={trailerPreview ?? draft.trailerDataUrl}
+                controls
+                playsInline
+                preload="metadata"
+                className="w-full rounded-xl bg-slate-900"
+                style={{ maxHeight: '160px' }}
+              />
+              <p className="text-xs text-slate-300 truncate">
+                {trailerFileName || draft.trailerFileName || 'Saved trailer'}
+                {draft.trailerUpdatedAt && !trailerPreview && (
+                  <span className="ml-2 text-slate-500">
+                    · saved {new Date(draft.trailerUpdatedAt).toLocaleDateString()}
+                  </span>
+                )}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => trailerInputRef.current?.click()}
+                  className="flex-1 rounded-xl bg-slate-700 border border-slate-600 px-3 py-2 text-sm text-white hover:bg-slate-600 transition"
+                >
+                  Replace trailer
+                </button>
+                <button
+                  onClick={handleRemoveTrailer}
+                  className="rounded-xl border border-red-700 px-3 py-2 text-sm text-red-400 hover:bg-red-900/30 transition"
+                >
+                  Remove
+                </button>
+              </div>
+            </>
+          ) : (
+            <button
+              onClick={() => trailerInputRef.current?.click()}
+              className="rounded-xl bg-slate-700 border border-slate-600 px-3 py-2 text-sm text-white hover:bg-slate-600 transition w-full text-left"
+            >
+              Upload trailer
+            </button>
           )}
+
           <input
             ref={trailerInputRef}
             type="file"
@@ -1033,13 +1084,7 @@ function FilmEditModal({ film, onSave, onReset, onClose }: {
             onChange={handleTrailerUpload}
             className="hidden"
           />
-          <button
-            onClick={() => trailerInputRef.current?.click()}
-            className="rounded-xl bg-slate-700 border border-slate-600 px-3 py-2 text-sm text-white hover:bg-slate-600 transition w-full text-left"
-          >
-            Upload new trailer
-          </button>
-          <p className="text-xs text-slate-500">MP4, WebM, MOV accepted</p>
+          <p className="text-xs text-slate-500">MP4, WebM, MOV · max 25 MB for prototype</p>
           {trailerError && <p className="text-xs text-red-400">{trailerError}</p>}
         </div>
 

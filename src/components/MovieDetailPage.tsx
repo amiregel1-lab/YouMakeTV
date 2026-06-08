@@ -75,15 +75,20 @@ export default function MovieDetailPage({ viewer, onPurchase, onSubscribe, onWat
 
   const handleWatchTrailer = () => {
     if (movie) {
-      // Prefer non-blob trailer URL from merged movie store (persists across reloads)
+      // Priority 1: base64 data URL — persists across reloads
+      if (movie.trailerDataUrl) {
+        setTrailerPlayerUrl(movie.trailerDataUrl);
+        return;
+      }
+      // Priority 2: non-blob external trailer URL
       if (movie.trailerUrl && !movie.trailerUrl.startsWith('blob:')) {
         setTrailerPlayerUrl(movie.trailerUrl);
         return;
       }
-      // Fall back to session-scoped blob URLs from media overrides
-      const trailerUrl = loadMediaOverrides()[movie.title]?.trailerUrl;
-      if (trailerUrl) {
-        setTrailerPlayerUrl(trailerUrl);
+      // Priority 3: session-scoped blob URLs from legacy media overrides
+      const legacyUrl = loadMediaOverrides()[movie.title]?.trailerUrl;
+      if (legacyUrl) {
+        setTrailerPlayerUrl(legacyUrl);
         return;
       }
     }
@@ -309,7 +314,8 @@ export default function MovieDetailPage({ viewer, onPurchase, onSubscribe, onWat
             <video
               src={trailerPlayerUrl}
               controls
-              autoPlay
+              playsInline
+              preload="metadata"
               className="w-full"
               style={{ maxHeight: '60vh' }}
             />

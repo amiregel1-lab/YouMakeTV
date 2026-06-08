@@ -3,8 +3,10 @@ import type { AdminFilm, Movie } from '../types';
 
 const OVERRIDES_KEY = 'youmake_movie_overrides';
 const ADMIN_FILMS_KEY = 'youmake_admin_films';
+// Thumbnails stored per-movie so a large base64 image never bloats the shared overrides JSON
+const THUMB_PREFIX = 'youmake_thumb_';
 
-type MovieOverride = Partial<Omit<Movie, 'id'>>;
+type MovieOverride = Partial<Omit<Movie, 'id' | 'thumbnail'>>;
 type OverridesMap = Record<number, MovieOverride>;
 
 export function loadMovieOverrides(): OverridesMap {
@@ -30,20 +32,41 @@ export function resetMovieOverride(movieId: number) {
     delete overrides[movieId];
     localStorage.setItem(OVERRIDES_KEY, JSON.stringify(overrides));
   } catch {}
+  // Also clear the per-movie thumbnail
+  try { localStorage.removeItem(`${THUMB_PREFIX}${movieId}`); } catch {}
+}
+
+// Thumbnail stored separately so it never inflates the shared overrides JSON.
+export function saveThumbnailOverride(movieId: number, dataUrl: string) {
+  try {
+    localStorage.setItem(`${THUMB_PREFIX}${movieId}`, dataUrl);
+  } catch {}
+}
+
+export function loadThumbnailOverride(movieId: number): string | null {
+  try {
+    return localStorage.getItem(`${THUMB_PREFIX}${movieId}`);
+  } catch {
+    return null;
+  }
 }
 
 export function getMergedMovies(): Movie[] {
   const overrides = loadMovieOverrides();
-  return movies.map((m) =>
-    overrides[m.id] ? { ...m, ...overrides[m.id] } : m,
-  );
+  return movies.map((m) => {
+    const base = overrides[m.id] ? { ...m, ...overrides[m.id] } : m;
+    const thumb = loadThumbnailOverride(m.id);
+    return thumb ? { ...base, thumbnail: thumb } : base;
+  });
 }
 
 export function getMovieById(id: number): Movie | undefined {
   const overrides = loadMovieOverrides();
   const base = movies.find((m) => m.id === id);
   if (!base) return undefined;
-  return overrides[base.id] ? { ...base, ...overrides[base.id] } : base;
+  const merged = overrides[base.id] ? { ...base, ...overrides[base.id] } : base;
+  const thumb = loadThumbnailOverride(base.id);
+  return thumb ? { ...merged, thumbnail: thumb } : merged;
 }
 
 export function saveAdminFilms(films: AdminFilm[]) {
@@ -68,6 +91,11 @@ export function applyAdminFilmToMovieStore(adminFilm: AdminFilm, originalTitle?:
   const movie = movies.find((m) => m.title.toLowerCase() === lookupTitle);
   if (!movie) return; // admin-only film not in public catalog
 
+  // Thumbnail stored per-movie (separate key) to avoid bloating the shared overrides JSON
+  if (adminFilm.thumbnail) {
+    saveThumbnailOverride(movie.id, adminFilm.thumbnail);
+  }
+
   const patch: MovieOverride = {
     title: adminFilm.title,
     subtitle: adminFilm.subtitle,
@@ -75,7 +103,6 @@ export function applyAdminFilmToMovieStore(adminFilm: AdminFilm, originalTitle?:
     genre: adminFilm.genre,
     duration: adminFilm.duration,
     price: adminFilm.price,
-    thumbnail: adminFilm.thumbnail,
     rating: adminFilm.rating,
     releaseYear: adminFilm.releaseYear,
     featured: adminFilm.featured,

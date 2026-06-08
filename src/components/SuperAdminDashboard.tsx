@@ -15,6 +15,7 @@ import {
 import { clearAdminSession, loadAdminSession } from '../lib/storage';
 import {
   applyAdminFilmToMovieStore,
+  getMergedMovies,
   loadAdminFilms,
   resetMovieOverride,
   saveAdminFilms,
@@ -1153,6 +1154,34 @@ const NAV: { key: AdminSection; label: string; emoji: string }[] = [
   { key: 'auditlog', label: 'Audit Log', emoji: '≡' },
 ];
 
+// ── Admin film init ───────────────────────────────────────────────────────────
+// Merges stored admin metadata (status, flags, views) with the latest movie
+// store overrides (thumbnail, trailerUrl, price, title, etc.) so the admin
+// table and edit modal always reflect the current public movie state on load.
+function buildAdminFilms(): AdminFilm[] {
+  const base = loadAdminFilms() ?? MOCK_FILMS;
+  const merged = getMergedMovies();
+  return base.map(af => {
+    const m = merged.find(mv => mv.title.toLowerCase() === af.title.toLowerCase());
+    if (!m) return af;
+    return {
+      ...af,
+      title: m.title,
+      subtitle: m.subtitle,
+      description: m.description,
+      genre: m.genre,
+      duration: m.duration,
+      price: m.price,
+      thumbnail: m.thumbnail,
+      rating: m.rating,
+      releaseYear: m.releaseYear ?? af.releaseYear,
+      trailerUrl: m.trailerUrl,
+      featured: m.featured ?? af.featured,
+      tags: Array.isArray(m.tags) ? m.tags.join(', ') : af.tags,
+    };
+  });
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function SuperAdminDashboard() {
@@ -1166,7 +1195,7 @@ export default function SuperAdminDashboard() {
 
   const [section, setSection] = useState<AdminSection>('overview');
   const [creators, setCreators] = useState<AdminCreator[]>(MOCK_CREATORS);
-  const [films, setFilms] = useState<AdminFilm[]>(() => loadAdminFilms() ?? MOCK_FILMS);
+  const [films, setFilms] = useState<AdminFilm[]>(() => buildAdminFilms());
   const [payouts, setPayouts] = useState<PayoutRecord[]>(MOCK_PAYOUTS);
   const [settings, setSettings] = useState<PlatformSettings>(DEFAULT_SETTINGS);
   const [auditLog, setAuditLog] = useState<AuditLogEntry[]>(MOCK_AUDIT_LOG);

@@ -120,6 +120,7 @@ export interface AdminFilm {
   revenue: number;
   uploadDate: string;
   moderationNotes: string;
+  trailerUrl?: string;
 }
 
 export interface AuditLogEntry {

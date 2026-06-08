@@ -14,12 +14,24 @@ const GENRE_PALETTE: Record<string, [string, string]> = {
   'Documentary': ['#091108', '#122212'],
 };
 
-// Returns a reliable poster URL for a movie.
-// Uses picsum.photos (seeded per movie.id) which is deterministic and always loads.
-// Falls back to movie.thumbnail for any object that already carries its own URL.
+// Returns the poster URL for a movie.
+// Checks localStorage for an admin-uploaded cover override first (keyed by title).
+// Falls back to picsum seeded by movie.id for deterministic placeholder art.
 export function getPosterUrl(
-  movie: { id: number; thumbnail: string; posterPrompt?: string },
+  movie: { id: number; thumbnail: string; title?: string; posterPrompt?: string },
 ): string {
+  if (movie.title) {
+    try {
+      const raw = localStorage.getItem('youmake_media_overrides');
+      if (raw) {
+        const overrides = JSON.parse(raw) as Record<string, { thumbnail?: string }>;
+        const t = overrides[movie.title]?.thumbnail;
+        if (t) return t;
+      }
+    } catch {
+      // ignore
+    }
+  }
   return `https://picsum.photos/seed/ymtv${movie.id}/400/600`;
 }
 

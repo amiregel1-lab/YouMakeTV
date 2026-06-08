@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
@@ -12,7 +12,7 @@ import {
   DEFAULT_SETTINGS, MOCK_AUDIT_LOG, MOCK_CREATORS, MOCK_FILMS,
   MOCK_PAYOUTS, MONTHLY_METRICS,
 } from '../data/adminMockData';
-import { clearAdminSession, loadAdminSession } from '../lib/storage';
+import { clearAdminSession, loadAdminSession, saveMediaOverride } from '../lib/storage';
 
 // PROTOTYPE NOTE: Admin session is verified client-side only.
 // Production requires server-side JWT validation on every protected route.
@@ -900,13 +900,138 @@ function CreatorEditModal({ creator, onSave, onClose }: { creator: AdminCreator;
 
 // ── Film Edit Modal ───────────────────────────────────────────────────────────
 
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
+
 function FilmEditModal({ film, onSave, onClose }: { film: AdminFilm; onSave: (f: AdminFilm) => void; onClose: () => void }) {
   const [draft, setDraft] = useState({ ...film });
   const set = (key: keyof AdminFilm, value: unknown) => setDraft(p => ({ ...p, [key]: value }));
 
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [coverError, setCoverError] = useState('');
+  const coverInputRef = useRef<HTMLInputElement>(null);
+
+  const [trailerPreview, setTrailerPreview] = useState<string | null>(null);
+  const [trailerFileName, setTrailerFileName] = useState('');
+  const [trailerError, setTrailerError] = useState('');
+  const trailerInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCoverError('');
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setCoverError('Please upload a JPG, PNG, or WebP image.');
+      e.target.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      setCoverPreview(dataUrl);
+      set('thumbnail', dataUrl);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleTrailerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setTrailerError('');
+    if (!ALLOWED_VIDEO_TYPES.includes(file.type)) {
+      setTrailerError('Please upload an MP4, WebM, or MOV video.');
+      e.target.value = '';
+      return;
+    }
+    const blobUrl = URL.createObjectURL(file);
+    setTrailerPreview(blobUrl);
+    setTrailerFileName(file.name);
+    set('trailerUrl', blobUrl);
+  };
+
+  const handleSave = () => {
+    if (coverPreview || trailerPreview) {
+      saveMediaOverride(draft.title, {
+        ...(coverPreview ? { thumbnail: coverPreview } : {}),
+        ...(trailerPreview ? { trailerUrl: trailerPreview } : {}),
+      });
+    }
+    onSave(draft);
+  };
+
   return (
     <Modal title={`Edit: ${film.title}`} onClose={onClose}>
-      <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+      <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
+
+        {/* ── Cover Photo ── */}
+        <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-4 space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Cover Photo / Poster</p>
+          <div className="flex gap-4 items-start">
+            <div className="flex-none relative">
+              <img
+                src={coverPreview ?? draft.thumbnail}
+                alt="Cover preview"
+                className="h-28 w-20 rounded-xl object-cover bg-slate-700"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+              />
+              {coverPreview && (
+                <span className="absolute -top-1 -right-1 text-[9px] font-bold bg-emerald-500 text-white rounded-full px-1.5 py-0.5">NEW</span>
+              )}
+            </div>
+            <div className="flex-1 space-y-2">
+              <input
+                ref={coverInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleCoverUpload}
+                className="hidden"
+              />
+              <button
+                onClick={() => coverInputRef.current?.click()}
+                className="rounded-xl bg-slate-700 border border-slate-600 px-3 py-2 text-sm text-white hover:bg-slate-600 transition w-full text-left"
+              >
+                Upload new cover photo
+              </button>
+              <p className="text-xs text-slate-500">JPG, PNG, WebP accepted</p>
+              {coverError && <p className="text-xs text-red-400">{coverError}</p>}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Trailer ── */}
+        <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-4 space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Trailer</p>
+          {trailerPreview ? (
+            <video
+              src={trailerPreview}
+              controls
+              className="w-full rounded-xl bg-slate-900"
+              style={{ maxHeight: '150px' }}
+            />
+          ) : draft.trailerUrl ? (
+            <p className="text-xs text-slate-500 truncate">Current: {draft.trailerUrl}</p>
+          ) : null}
+          {trailerFileName && (
+            <p className="text-xs text-slate-300 truncate">Selected: {trailerFileName}</p>
+          )}
+          <input
+            ref={trailerInputRef}
+            type="file"
+            accept="video/mp4,video/webm,video/quicktime"
+            onChange={handleTrailerUpload}
+            className="hidden"
+          />
+          <button
+            onClick={() => trailerInputRef.current?.click()}
+            className="rounded-xl bg-slate-700 border border-slate-600 px-3 py-2 text-sm text-white hover:bg-slate-600 transition w-full text-left"
+          >
+            Upload new trailer
+          </button>
+          <p className="text-xs text-slate-500">MP4, WebM, MOV accepted</p>
+          {trailerError && <p className="text-xs text-red-400">{trailerError}</p>}
+        </div>
+
+        {/* ── Text fields ── */}
         {[
           { label: 'Title', key: 'title' as const, type: 'text' },
           { label: 'Subtitle', key: 'subtitle' as const, type: 'text' },
@@ -962,7 +1087,7 @@ function FilmEditModal({ film, onSave, onClose }: { film: AdminFilm; onSave: (f:
         </div>
         <div className="flex gap-3 pt-2">
           <button onClick={onClose} className="flex-1 rounded-xl border border-slate-700 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-800 transition">Cancel</button>
-          <button onClick={() => onSave(draft)} className="flex-1 rounded-xl bg-brand-purple py-2.5 text-sm font-semibold text-white hover:bg-brand-indigo transition">Save Changes</button>
+          <button onClick={handleSave} className="flex-1 rounded-xl bg-brand-purple py-2.5 text-sm font-semibold text-white hover:bg-brand-indigo transition">Save Changes</button>
         </div>
       </div>
     </Modal>

@@ -74,3 +74,30 @@ export function clearAdminSession() {
     // ignore
   }
 }
+
+// ── Media overrides ───────────────────────────────────────────────────────
+// Stores admin-uploaded cover photos (base64) and trailer URLs keyed by film title.
+// Cover photos persist across sessions; trailer blob URLs are session-only.
+const MEDIA_OVERRIDES_KEY = 'youmake_media_overrides';
+
+export type MediaOverride = { thumbnail?: string; trailerUrl?: string };
+export type MediaOverrides = Record<string, MediaOverride>;
+
+export function loadMediaOverrides(): MediaOverrides {
+  try {
+    const raw = localStorage.getItem(MEDIA_OVERRIDES_KEY);
+    return raw ? (JSON.parse(raw) as MediaOverrides) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveMediaOverride(title: string, patch: Partial<MediaOverride>) {
+  try {
+    const overrides = loadMediaOverrides();
+    overrides[title] = { ...overrides[title], ...patch };
+    localStorage.setItem(MEDIA_OVERRIDES_KEY, JSON.stringify(overrides));
+  } catch {
+    // ignore storage errors in prototype
+  }
+}

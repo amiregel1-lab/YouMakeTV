@@ -14,6 +14,7 @@ import CreatorPortal from './components/CreatorPortal';
 import CreatorOnboarding from './components/CreatorOnboarding';
 import CreatorDashboard from './components/CreatorDashboard';
 import CreatorsPage from './components/CreatorsPage';
+import CreatorLoginPage from './components/CreatorLoginPage';
 import Footer from './components/Footer';
 import AboutPage from './components/AboutPage';
 import ContactPage from './components/ContactPage';
@@ -49,6 +50,7 @@ export default function App() {
   }, [creator]);
 
   const activeRoute = useMemo(() => {
+    if (location.pathname.startsWith('/creatorsLogin')) return 'creatorsLogin';
     if (location.pathname.startsWith('/creators')) return 'creators';
     if (location.pathname.startsWith('/creator/dashboard')) return 'dashboard';
     if (location.pathname.startsWith('/creator/onboarding')) return 'onboarding';
@@ -126,6 +128,7 @@ export default function App() {
             dashboard: '/creator/dashboard',
             login: '/login',
             account: '/account',
+            creatorsLogin: '/creatorsLogin',
           };
           navigate(routeMap[route]);
         }}
@@ -146,7 +149,8 @@ export default function App() {
           <Route path="/login" element={<LoginPage viewer={viewer} onSignIn={handleSignIn} />} />
           <Route path="/account" element={<AccountPage viewer={viewer} onSignOut={handleSignOut} />} />
           <Route path="/creators" element={<CreatorsPage />} />
-          <Route path="/creator" element={<CreatorPortal onStart={() => navigate('/creator/onboarding')} onDashboard={() => navigate('/creator/dashboard')} onViewDemo={handleDemoCreator} />} />
+          <Route path="/creator" element={<CreatorPortal onStart={() => navigate('/creator/onboarding')} onDashboard={() => navigate('/creator/dashboard')} onViewDemo={handleDemoCreator} onSignIn={() => navigate('/creatorsLogin')} />} />
+          <Route path="/creatorsLogin" element={<CreatorLoginPage onSignIn={() => navigate('/creator/dashboard')} onStart={() => navigate('/creator/onboarding')} onViewDemo={handleDemoCreator} />} />
           <Route path="/creator/onboarding" element={<CreatorOnboarding onComplete={handleCreateCreator} />} />
           <Route path="/creator/dashboard" element={<CreatorDashboard creator={creator} onAddFilm={handleAddFilm} onDeleteFilm={handleDeleteFilm} onStartOnboarding={() => navigate('/creator/onboarding')} onCreateDemo={handleDemoCreator} />} />
           <Route path="/about" element={<AboutPage />} />

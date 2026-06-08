@@ -4,7 +4,7 @@ import BrandLogo from './BrandLogo';
 interface NavbarProps {
   active: string;
   viewer?: ViewerAccount | null;
-  onRouteChange: (route: 'home' | 'subscribe' | 'creator' | 'creators' | 'onboarding' | 'dashboard' | 'login' | 'account') => void;
+  onRouteChange: (route: 'home' | 'subscribe' | 'creator' | 'creators' | 'onboarding' | 'dashboard' | 'login' | 'account' | 'creatorsLogin') => void;
   onSignOut: () => void;
 }
 

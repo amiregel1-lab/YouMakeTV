@@ -4,6 +4,7 @@ interface CreatorPortalProps {
   onStart: () => void;
   onDashboard: () => void;
   onViewDemo?: () => void;
+  onSignIn?: () => void;
 }
 
 // ── AI Tool badges ────────────────────────────────────────────────────────────
@@ -257,7 +258,7 @@ function DashboardPreview() {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function CreatorPortal({ onStart, onDashboard, onViewDemo }: CreatorPortalProps) {
+export default function CreatorPortal({ onStart, onDashboard, onViewDemo, onSignIn }: CreatorPortalProps) {
   const [showSticky, setShowSticky] = useState(false);
   const [openFaq, setOpenFaq]       = useState<number | null>(null);
 
@@ -327,7 +328,7 @@ export default function CreatorPortal({ onStart, onDashboard, onViewDemo }: Crea
                   Start Creator Onboarding →
                 </button>
                 <button
-                  onClick={onDashboard}
+                  onClick={onSignIn ?? onDashboard}
                   className="w-full text-center text-sm text-slate-500 hover:text-brand-purple transition font-medium py-2"
                 >
                   Already a creator? Sign in
@@ -551,7 +552,7 @@ export default function CreatorPortal({ onStart, onDashboard, onViewDemo }: Crea
                 Start Creator Onboarding →
               </button>
               <button
-                onClick={onDashboard}
+                onClick={onSignIn ?? onDashboard}
                 className="text-sm text-slate-500 hover:text-brand-purple transition font-medium py-1"
               >
                 Already a creator? Sign in
@@ -579,7 +580,7 @@ export default function CreatorPortal({ onStart, onDashboard, onViewDemo }: Crea
               Start Creator Onboarding
             </button>
             <button
-              onClick={onDashboard}
+              onClick={onSignIn ?? onDashboard}
               className="flex-none text-sm text-slate-400 hover:text-white transition font-medium"
             >
               Sign in

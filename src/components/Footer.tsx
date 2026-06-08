@@ -44,7 +44,7 @@ export default function Footer() {
             <h4 className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 mb-4">Creators</h4>
             <ul className="space-y-3">
               {link('Become a Creator', '/creator')}
-              {link('Creator Sign In', '/creator/dashboard')}
+              {link('Creator Sign In', '/creatorsLogin')}
               {link('Creator Guidelines', '/terms#creator-agreement')}
             </ul>
           </div>

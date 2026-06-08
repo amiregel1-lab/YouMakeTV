@@ -264,6 +264,16 @@ export default function CreatorOnboarding({ onComplete }: CreatorOnboardingProps
     agreeAccuracy: false,
   });
   const agreementRef = useRef<HTMLDivElement>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const pendingProfileRef = useRef<CreatorProfile | null>(null);
+
+  useEffect(() => {
+    if (!showSuccess) return;
+    const timer = setTimeout(() => {
+      if (pendingProfileRef.current) onComplete(pendingProfileRef.current);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [showSuccess, onComplete]);
 
   // Camera: set srcObject after state update causes video to render
   useEffect(() => {
@@ -395,11 +405,44 @@ export default function CreatorOnboarding({ onComplete }: CreatorOnboardingProps
       createdAt: dateLabel,
       films: [],
     };
-    onComplete(profile);
+    pendingProfileRef.current = profile;
+    setShowSuccess(true);
   };
 
   const inputClass = 'w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 placeholder-slate-400 outline-none focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/20';
   const labelClass = 'block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 mb-2';
+
+  if (showSuccess) {
+    return (
+      <div className="min-h-[calc(100vh-200px)] flex items-center justify-center py-10">
+        <div className="text-center space-y-6 animate-fade-in">
+          <div className="flex justify-center">
+            <div className="flex h-24 w-24 items-center justify-center rounded-full border-2 border-brand-purple/30 bg-brand-purple/10">
+              <svg className="h-12 w-12 text-brand-purple" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-brand-purple">
+              ✓ Creator Account Created
+            </p>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-950">Welcome to YouMakeTV.</h1>
+            <p className="text-sm text-slate-500">Redirecting to your dashboard…</p>
+          </div>
+          <div className="flex justify-center gap-1.5 pt-2">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="h-2 w-2 rounded-full bg-brand-purple animate-bounce"
+                style={{ animationDelay: `${i * 0.15}s` }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[calc(100vh-200px)] flex items-center justify-center py-10">

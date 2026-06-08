@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { CreatorFilm, CreatorProfile } from '../types';
 import AnalyticsCards from './AnalyticsCards';
@@ -193,6 +194,7 @@ function buildPayouts(totalEarnings: number) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onStartOnboarding, onDeleteFilm, showWelcome, onDismissWelcome }: CreatorDashboardProps) {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedFilm, setSelectedFilm] = useState<CreatorFilm | null>(null);
@@ -213,10 +215,13 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <button onClick={onStartOnboarding} className="rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
-                Start onboarding
+                Start Creator Onboarding
               </button>
               <button onClick={onCreateDemo} className="rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100">
                 View demo creator workspace
+              </button>
+              <button onClick={() => navigate('/creatorsLogin')} className="rounded-full border border-brand-purple/40 bg-white px-6 py-3 text-sm font-semibold text-brand-purple transition hover:bg-brand-purple/5">
+                Back to Creator Login
               </button>
             </div>
           </div>

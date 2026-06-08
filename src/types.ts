@@ -28,6 +28,7 @@ export interface Movie {
   featured?: boolean;
   subscriberDiscountEligible?: boolean;
   trailerUrl?: string;
+  backdropUrl?: string;
   posterPrompt?: string;
 }
 
@@ -121,6 +122,7 @@ export interface AdminFilm {
   uploadDate: string;
   moderationNotes: string;
   trailerUrl?: string;
+  backdropUrl?: string;
 }
 
 export interface AuditLogEntry {

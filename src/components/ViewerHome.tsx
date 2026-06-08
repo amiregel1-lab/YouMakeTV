@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Movie } from '../types';
-import { getPosterUrl, fallbackGradient } from '../lib/posters';
+import { getPosterUrl, getBackdropUrl, fallbackGradient } from '../lib/posters';
 import SEOHead from './SEOHead';
 
 interface ViewerHomeProps {
@@ -435,10 +435,11 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onWatchTrail
       >
         {!heroImgError ? (
           <img
-            src={getPosterUrl(featured)}
+            src={getBackdropUrl(featured)}
             alt={featured.title}
             onError={() => setHeroImgError(true)}
-            className="absolute inset-0 h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-cover object-center"
+            style={{ imageRendering: 'auto' }}
           />
         ) : (
           <div className="absolute inset-0" style={{ background: fallbackGradient(featured.genre) }} />

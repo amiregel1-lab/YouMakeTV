@@ -44,6 +44,33 @@ export async function uploadCover(filmKey: string, dataUrl: string): Promise<str
 }
 
 /**
+ * Upload a backdrop/hero image base64 data URL to the `covers` bucket.
+ * Uses signed upload URLs. Returns the public URL for storing as backdrop_url.
+ */
+export async function uploadBackdrop(filmKey: string, dataUrl: string): Promise<string> {
+  const { blob, mimeType } = dataUrlToBlob(dataUrl);
+  const filename = `backdrop-${filmKey}-${Date.now()}.${mimeToExt(mimeType)}`;
+
+  const { data: signed, error: signErr } = await supabase.storage
+    .from('covers')
+    .createSignedUploadUrl(filename);
+
+  if (signErr) throw new Error(`Failed to get signed upload URL: ${signErr.message}`);
+
+  const { data, error } = await supabase.storage
+    .from('covers')
+    .uploadToSignedUrl(signed.path, signed.token, blob, { contentType: mimeType });
+
+  if (error) throw new Error(`Backdrop upload failed: ${error.message}`);
+
+  const { data: { publicUrl } } = supabase.storage
+    .from('covers')
+    .getPublicUrl(data.path);
+
+  return publicUrl;
+}
+
+/**
  * Upload a trailer video File to the `trailers` bucket.
  * Uses signed upload URLs — works without a user session (anon key only).
  * Returns the public URL suitable for storing as trailer_url in the movies table.

@@ -1,5 +1,10 @@
 import type { Movie } from '../types';
 
+// Wide landscape picsum for hero fallback — different seed from poster so it's a different image.
+function picsumBackdrop(id: number) {
+  return `https://picsum.photos/seed/ymtvbg${id}/1920/1080`;
+}
+
 const GENRE_PALETTE: Record<string, [string, string]> = {
   'Sci-Fi':      ['#020d2e', '#061a4a'],
   'Drama':       ['#1a0e04', '#2e1a08'],
@@ -38,6 +43,23 @@ export function getPosterUrl(
     }
   }
   return `https://picsum.photos/seed/ymtv${movie.id}/400/600`;
+}
+
+/**
+ * Returns the wide 16:9 backdrop URL for a movie — used in the homepage hero.
+ * Priority: backdropUrl set by admin → non-picsum thumbnail → 1920×1080 landscape picsum.
+ * Falls back gracefully so any movie can be featured without a manual backdrop upload.
+ */
+export function getBackdropUrl(
+  movie: { id: number; thumbnail: string; backdropUrl?: string },
+): string {
+  if (movie.backdropUrl && !movie.backdropUrl.includes('picsum.photos')) {
+    return movie.backdropUrl;
+  }
+  if (movie.thumbnail && !movie.thumbnail.includes('picsum.photos')) {
+    return movie.thumbnail;
+  }
+  return picsumBackdrop(movie.id);
 }
 
 export function getGenrePalette(genre: string): [string, string] {

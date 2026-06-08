@@ -28,6 +28,7 @@ function rowToMovie(row: Record<string, any>): Movie {
     featured: (row.featured as boolean) ?? false,
     subscriberDiscountEligible: (row.subscriber_discount_eligible as boolean) ?? false,
     trailerUrl: (row.trailer_url as string) || undefined,
+    backdropUrl: (row.backdrop_url as string) || undefined,
     posterPrompt: (row.poster_prompt as string) || undefined,
   };
 }
@@ -55,6 +56,7 @@ function movieToRow(movie: Movie, status = 'Approved'): Record<string, unknown> 
     trailer_views: movie.trailerViews ?? 0,
     featured: movie.featured ?? false,
     subscriber_discount_eligible: movie.subscriberDiscountEligible ?? false,
+    backdrop_url: movie.backdropUrl?.startsWith('data:') ? null : (movie.backdropUrl ?? null),
     poster_prompt: movie.posterPrompt ?? null,
     status,
     updated_at: new Date().toISOString(),

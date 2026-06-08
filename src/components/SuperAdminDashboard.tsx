@@ -20,10 +20,10 @@ import {
   resetMovieOverride,
   saveAdminFilms,
 } from '../lib/movieStore';
-import { compressPosterImage } from '../lib/imageUtils';
+import { compressPosterImage, compressBackdropImage } from '../lib/imageUtils';
 import { movies as sourceMovies } from '../data/movies';
 import { getMovies, upsertMovie } from '../lib/movieService';
-import { uploadCover, uploadTrailer } from '../lib/storageService';
+import { uploadCover, uploadBackdrop, uploadTrailer } from '../lib/storageService';
 import { useMovies } from '../lib/MovieContext';
 
 // PROTOTYPE NOTE: Admin session is verified client-side only.
@@ -937,6 +937,11 @@ function FilmEditModal({ film, onSave, onReset, onClose }: {
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [coverError, setCoverError] = useState('');
   const [coverCompressing, setCoverCompressing] = useState(false);
+
+  const [backdropPreview, setBackdropPreview] = useState<string | null>(null);
+  const [backdropError, setBackdropError] = useState('');
+  const [backdropCompressing, setBackdropCompressing] = useState(false);
+  const backdropInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
   // Derive suggested deployment filename from the numeric movie id in the admin film id string.
@@ -1007,8 +1012,38 @@ function FilmEditModal({ film, onSave, onReset, onClose }: {
   };
 
 
+  const handleBackdropUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBackdropError('');
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setBackdropError('Please upload a JPG, PNG, or WebP image.');
+      e.target.value = '';
+      return;
+    }
+    setBackdropCompressing(true);
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const raw = ev.target?.result as string;
+      try {
+        const compressed = await compressBackdropImage(raw);
+        setBackdropPreview(compressed);
+        set('backdropUrl', compressed);
+      } catch {
+        setBackdropError('Image processing failed. Please try a different file.');
+      } finally {
+        setBackdropCompressing(false);
+      }
+    };
+    reader.onerror = () => {
+      setBackdropError('Could not read the file. Please try again.');
+      setBackdropCompressing(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSave = async () => {
-    if (coverCompressing || saving) return;
+    if (coverCompressing || backdropCompressing || saving) return;
     setSaving(true);
     setSaveError('');
 
@@ -1030,7 +1065,20 @@ function FilmEditModal({ film, onSave, onReset, onClose }: {
       }
     }
 
-    // 3. Upload trailer file to Supabase Storage if one was selected
+    // 3. Upload backdrop image to Supabase Storage if one was selected
+    if (finalDraft.backdropUrl?.startsWith('data:')) {
+      try {
+        const filmKey = film.id.replace(/[^a-z0-9]/gi, '-');
+        const publicUrl = await uploadBackdrop(filmKey, finalDraft.backdropUrl);
+        finalDraft = { ...finalDraft, backdropUrl: publicUrl };
+      } catch (err) {
+        setSaveError(`Backdrop upload failed: ${err instanceof Error ? err.message : String(err)}`);
+        setSaving(false);
+        return;
+      }
+    }
+
+    // 4. Upload trailer file to Supabase Storage if one was selected
     if (trailerFile) {
       try {
         const filmKey = film.id.replace(/[^a-z0-9]/gi, '-');
@@ -1127,6 +1175,55 @@ function FilmEditModal({ film, onSave, onReset, onClose }: {
                 ✓ On save, this path replaces the base64 thumbnail — resolves from Vercel CDN on all devices.
               </p>
             )}
+          </div>
+        </div>
+
+        {/* ── Backdrop / Hero Image ── */}
+        <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-4 space-y-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Backdrop / Hero Image</p>
+            <p className="text-[11px] text-slate-500 mt-0.5">Wide 16:9 image shown in the homepage hero. Separate from the poster.</p>
+          </div>
+          <div className="flex gap-4 items-start">
+            <div className="flex-none relative">
+              {(backdropPreview ?? draft.backdropUrl) && !String(backdropPreview ?? draft.backdropUrl).includes('picsum.photos') ? (
+                <img
+                  src={backdropPreview ?? draft.backdropUrl}
+                  alt="Backdrop preview"
+                  className="h-16 w-28 rounded-xl object-cover bg-slate-700"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                />
+              ) : (
+                <div className="h-16 w-28 rounded-xl bg-slate-700 flex items-center justify-center">
+                  <span className="text-slate-500 text-[10px]">No backdrop</span>
+                </div>
+              )}
+              {backdropPreview && !backdropCompressing && (
+                <span className="absolute -top-1 -right-1 text-[9px] font-bold bg-emerald-500 text-white rounded-full px-1.5 py-0.5">NEW</span>
+              )}
+              {backdropCompressing && (
+                <span className="absolute -top-1 -right-1 text-[9px] font-bold bg-amber-500 text-white rounded-full px-1.5 py-0.5">...</span>
+              )}
+            </div>
+            <div className="flex-1 space-y-2">
+              <input
+                ref={backdropInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleBackdropUpload}
+                disabled={backdropCompressing}
+                className="hidden"
+              />
+              <button
+                onClick={() => backdropInputRef.current?.click()}
+                disabled={backdropCompressing}
+                className="rounded-xl bg-slate-700 border border-slate-600 px-3 py-2 text-sm text-white hover:bg-slate-600 transition w-full text-left disabled:opacity-50"
+              >
+                {backdropCompressing ? 'Processing image…' : 'Upload backdrop image (16:9)'}
+              </button>
+              <p className="text-xs text-slate-500">JPG, PNG, WebP — resized to 1280×720. Use a wide landscape photo.</p>
+              {backdropError && <p className="text-xs text-red-400">{backdropError}</p>}
+            </div>
           </div>
         </div>
 
@@ -1282,10 +1379,10 @@ function FilmEditModal({ film, onSave, onReset, onClose }: {
           </button>
           <button
             onClick={handleSave}
-            disabled={coverCompressing || saving}
+            disabled={coverCompressing || backdropCompressing || saving}
             className="flex-1 rounded-xl bg-brand-purple py-2.5 text-sm font-semibold text-white hover:bg-brand-indigo transition disabled:opacity-50"
           >
-            {coverCompressing ? 'Compressing…' : saving ? 'Uploading…' : 'Save Changes'}
+            {coverCompressing || backdropCompressing ? 'Compressing…' : saving ? 'Uploading…' : 'Save Changes'}
           </button>
         </div>
       </div>
@@ -1380,6 +1477,7 @@ function buildAdminFilmsFromMovies(mergedMovies: Movie[]): AdminFilm[] {
       uploadDate:      meta?.uploadDate ?? `${m.releaseYear ?? 2025}-01-01`,
       moderationNotes: meta?.moderationNotes ?? '',
       trailerUrl:      m.trailerUrl,
+      backdropUrl:     m.backdropUrl,
     };
   });
 }
@@ -1532,6 +1630,7 @@ export default function SuperAdminDashboard() {
         featured: updated.featured,
         subscriberDiscountEligible: srcMovie?.subscriberDiscountEligible ?? false,
         trailerUrl: updated.trailerUrl,
+        backdropUrl: updated.backdropUrl,
         posterPrompt: srcMovie?.posterPrompt,
       };
 

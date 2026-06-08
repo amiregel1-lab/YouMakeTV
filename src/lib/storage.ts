@@ -1,4 +1,4 @@
-import { CreatorProfile, ViewerAccount } from '../types';
+import { AdminSession, CreatorProfile, ViewerAccount } from '../types';
 
 const VIEWER_KEY = 'youmake_viewer';
 const CREATOR_KEY = 'youmake_creator';
@@ -42,5 +42,35 @@ export function saveCreator(creator: CreatorProfile | null) {
     }
   } catch {
     // ignore storage errors in prototype
+  }
+}
+
+// ── Admin session ─────────────────────────────────────────────────────────
+// PROTOTYPE NOTE: This is a client-side session flag only.
+// Production requires server-issued signed tokens and server-side auth checks.
+const ADMIN_KEY = 'youmake_admin';
+
+export function loadAdminSession(): AdminSession | null {
+  try {
+    const raw = localStorage.getItem(ADMIN_KEY);
+    return raw ? (JSON.parse(raw) as AdminSession) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveAdminSession(session: AdminSession) {
+  try {
+    localStorage.setItem(ADMIN_KEY, JSON.stringify(session));
+  } catch {
+    // ignore
+  }
+}
+
+export function clearAdminSession() {
+  try {
+    localStorage.removeItem(ADMIN_KEY);
+  } catch {
+    // ignore
   }
 }

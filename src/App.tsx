@@ -22,6 +22,8 @@ import TermsPage from './components/TermsPage';
 import PrivacyPage from './components/PrivacyPage';
 import CopyrightPage from './components/CopyrightPage';
 import CreatorAgreementPage from './components/CreatorAgreementPage';
+import SuperAdminLogin from './components/SuperAdminLogin';
+import SuperAdminDashboard from './components/SuperAdminDashboard';
 import MockPaymentModal from './components/MockPaymentModal';
 import NotFoundPage from './components/NotFoundPage';
 import { initAnalytics, trackPageView } from './lib/analytics';
@@ -39,6 +41,18 @@ export default function App() {
     setCreator(loadCreator());
     initAnalytics();
   }, []);
+
+  // CTRL+SHIFT+A → Super Admin login (hidden keyboard shortcut for demos)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+        e.preventDefault();
+        navigate('/superadmin');
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [navigate]);
 
   useEffect(() => {
     trackPageView(location.pathname);
@@ -116,6 +130,17 @@ export default function App() {
       details: 'This prototype shows where payment processing will appear. No real transactions are processed.',
     });
   };
+
+  // Super admin routes render standalone — no Navbar/Footer
+  if (location.pathname.startsWith('/superadmin')) {
+    return (
+      <Routes>
+        <Route path="/superadmin" element={<SuperAdminLogin />} />
+        <Route path="/superadmin/dashboard" element={<SuperAdminDashboard />} />
+        <Route path="/superadmin/*" element={<SuperAdminLogin />} />
+      </Routes>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-transparent text-slate-950">

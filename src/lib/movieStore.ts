@@ -91,8 +91,9 @@ export function applyAdminFilmToMovieStore(adminFilm: AdminFilm, originalTitle?:
   const movie = movies.find((m) => m.title.toLowerCase() === lookupTitle);
   if (!movie) return; // admin-only film not in public catalog
 
-  // Thumbnail stored per-movie (separate key) to avoid bloating the shared overrides JSON
-  if (adminFilm.thumbnail) {
+  // Store thumbnail only when it's a real custom image (not the default picsum placeholder).
+  // This prevents every Save call from burning localStorage quota with the default URL.
+  if (adminFilm.thumbnail && !adminFilm.thumbnail.includes('picsum.photos')) {
     saveThumbnailOverride(movie.id, adminFilm.thumbnail);
   }
 

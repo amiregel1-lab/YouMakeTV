@@ -20,6 +20,7 @@ import {
   resetMovieOverride,
   saveAdminFilms,
 } from '../lib/movieStore';
+import { compressPosterImage } from '../lib/imageUtils';
 import { movies as sourceMovies } from '../data/movies';
 
 // PROTOTYPE NOTE: Admin session is verified client-side only.
@@ -932,6 +933,7 @@ function FilmEditModal({ film, onSave, onReset, onClose }: {
 
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [coverError, setCoverError] = useState('');
+  const [coverCompressing, setCoverCompressing] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
   const [trailerTestUrl, setTrailerTestUrl] = useState<string | null>(draft.trailerUrl ?? null);
@@ -946,17 +948,32 @@ function FilmEditModal({ film, onSave, onReset, onClose }: {
       e.target.value = '';
       return;
     }
+    setCoverCompressing(true);
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      const dataUrl = ev.target?.result as string;
-      setCoverPreview(dataUrl);
-      set('thumbnail', dataUrl);
+    reader.onload = async (ev) => {
+      const raw = ev.target?.result as string;
+      try {
+        // Compress to max 400×600 JPEG 75% before storing — keeps base64 under ~100 KB
+        // so localStorage writes always succeed (5 MB limit).
+        const compressed = await compressPosterImage(raw);
+        setCoverPreview(compressed);
+        set('thumbnail', compressed);
+      } catch {
+        setCoverError('Image processing failed. Please try a different file.');
+      } finally {
+        setCoverCompressing(false);
+      }
+    };
+    reader.onerror = () => {
+      setCoverError('Could not read the file. Please try again.');
+      setCoverCompressing(false);
     };
     reader.readAsDataURL(file);
   };
 
 
   const handleSave = () => {
+    if (coverCompressing) return; // prevent save while image is still being processed
     onSave(draft, originalTitle);
   };
 
@@ -969,14 +986,23 @@ function FilmEditModal({ film, onSave, onReset, onClose }: {
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Cover Photo / Poster</p>
           <div className="flex gap-4 items-start">
             <div className="flex-none relative">
-              <img
-                src={coverPreview ?? draft.thumbnail}
-                alt="Cover preview"
-                className="h-28 w-20 rounded-xl object-cover bg-slate-700"
-                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-              />
-              {coverPreview && (
+              {(coverPreview ?? draft.thumbnail) ? (
+                <img
+                  src={coverPreview ?? draft.thumbnail}
+                  alt="Cover preview"
+                  className="h-28 w-20 rounded-xl object-cover bg-slate-700"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                />
+              ) : (
+                <div className="h-28 w-20 rounded-xl bg-slate-700 flex items-center justify-center">
+                  <span className="text-slate-500 text-xs">No image</span>
+                </div>
+              )}
+              {coverPreview && !coverCompressing && (
                 <span className="absolute -top-1 -right-1 text-[9px] font-bold bg-emerald-500 text-white rounded-full px-1.5 py-0.5">NEW</span>
+              )}
+              {coverCompressing && (
+                <span className="absolute -top-1 -right-1 text-[9px] font-bold bg-amber-500 text-white rounded-full px-1.5 py-0.5">...</span>
               )}
             </div>
             <div className="flex-1 space-y-2">
@@ -985,15 +1011,17 @@ function FilmEditModal({ film, onSave, onReset, onClose }: {
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 onChange={handleCoverUpload}
+                disabled={coverCompressing}
                 className="hidden"
               />
               <button
                 onClick={() => coverInputRef.current?.click()}
-                className="rounded-xl bg-slate-700 border border-slate-600 px-3 py-2 text-sm text-white hover:bg-slate-600 transition w-full text-left"
+                disabled={coverCompressing}
+                className="rounded-xl bg-slate-700 border border-slate-600 px-3 py-2 text-sm text-white hover:bg-slate-600 transition w-full text-left disabled:opacity-50"
               >
-                Upload new cover photo
+                {coverCompressing ? 'Processing image…' : 'Upload new cover photo'}
               </button>
-              <p className="text-xs text-slate-500">JPG, PNG, WebP accepted</p>
+              <p className="text-xs text-slate-500">JPG, PNG, WebP accepted — resized to 400×600 for storage</p>
               {coverError && <p className="text-xs text-red-400">{coverError}</p>}
             </div>
           </div>
@@ -1108,7 +1136,13 @@ function FilmEditModal({ film, onSave, onReset, onClose }: {
           >
             Reset to Original
           </button>
-          <button onClick={handleSave} className="flex-1 rounded-xl bg-brand-purple py-2.5 text-sm font-semibold text-white hover:bg-brand-indigo transition">Save Changes</button>
+          <button
+            onClick={handleSave}
+            disabled={coverCompressing}
+            className="flex-1 rounded-xl bg-brand-purple py-2.5 text-sm font-semibold text-white hover:bg-brand-indigo transition disabled:opacity-50"
+          >
+            {coverCompressing ? 'Processing…' : 'Save Changes'}
+          </button>
         </div>
       </div>
     </Modal>

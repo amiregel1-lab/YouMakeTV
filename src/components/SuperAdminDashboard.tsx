@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import {
   AdminCreator, AdminFilm, AuditLogEntry, MonthlyMetric,
-  PayoutRecord, PlatformSettings,
+  Movie, PayoutRecord, PlatformSettings,
 } from '../types';
 import {
   DEFAULT_SETTINGS, MOCK_AUDIT_LOG, MOCK_CREATORS, MOCK_FILMS,
@@ -22,6 +22,9 @@ import {
 } from '../lib/movieStore';
 import { compressPosterImage } from '../lib/imageUtils';
 import { movies as sourceMovies } from '../data/movies';
+import { getMovies, upsertMovie } from '../lib/movieService';
+import { uploadCover, uploadTrailer } from '../lib/storageService';
+import { useMovies } from '../lib/MovieContext';
 
 // PROTOTYPE NOTE: Admin session is verified client-side only.
 // Production requires server-side JWT validation on every protected route.
@@ -936,8 +939,40 @@ function FilmEditModal({ film, onSave, onReset, onClose }: {
   const [coverCompressing, setCoverCompressing] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
+  // Derive suggested deployment filename from the numeric movie id in the admin film id string.
+  const numericId = film.id.replace('movie-', '');
+  const suggestedFilename = `poster-${numericId}.jpg`;
+  const suggestedPath = `/posters/${suggestedFilename}`;
+
+  // Pre-populate if the current thumbnail is already a committed path (not base64, not picsum).
+  const [staticPath, setStaticPath] = useState<string>(() => {
+    const t = film.thumbnail;
+    if (t && !t.startsWith('data:') && !t.includes('picsum.photos')) return t;
+    return '';
+  });
+
+  const handleDownloadImage = () => {
+    const src = coverPreview ?? (draft.thumbnail?.startsWith('data:') ? draft.thumbnail : null);
+    if (!src) return;
+    const a = document.createElement('a');
+    a.href = src;
+    a.download = suggestedFilename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   const [trailerTestUrl, setTrailerTestUrl] = useState<string | null>(draft.trailerUrl ?? null);
   const [trailerStatus, setTrailerStatus] = useState<'idle' | 'found' | 'not-found'>('idle');
+
+  // Trailer file upload state (for uploading to Supabase Storage)
+  const trailerInputRef = useRef<HTMLInputElement>(null);
+  const [trailerFile, setTrailerFile] = useState<File | null>(null);
+  const [trailerUploadStatus, setTrailerUploadStatus] = useState<'idle' | 'uploading' | 'done' | 'error'>('idle');
+
+  // Save state
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -972,9 +1007,47 @@ function FilmEditModal({ film, onSave, onReset, onClose }: {
   };
 
 
-  const handleSave = () => {
-    if (coverCompressing) return; // prevent save while image is still being processed
-    onSave(draft, originalTitle);
+  const handleSave = async () => {
+    if (coverCompressing || saving) return;
+    setSaving(true);
+    setSaveError('');
+
+    let finalDraft = { ...draft };
+
+    // 1. Static path overrides everything — use as-is (resolves from Vercel CDN)
+    if (staticPath.trim()) {
+      finalDraft = { ...finalDraft, thumbnail: staticPath.trim() };
+    } else if (finalDraft.thumbnail?.startsWith('data:')) {
+      // 2. Upload base64 cover to Supabase Storage → replace with public URL
+      try {
+        const filmKey = film.id.replace(/[^a-z0-9]/gi, '-');
+        const publicUrl = await uploadCover(filmKey, finalDraft.thumbnail);
+        finalDraft = { ...finalDraft, thumbnail: publicUrl };
+      } catch (err) {
+        setSaveError(`Cover upload failed: ${err instanceof Error ? err.message : String(err)}`);
+        setSaving(false);
+        return;
+      }
+    }
+
+    // 3. Upload trailer file to Supabase Storage if one was selected
+    if (trailerFile) {
+      try {
+        const filmKey = film.id.replace(/[^a-z0-9]/gi, '-');
+        setTrailerUploadStatus('uploading');
+        const publicUrl = await uploadTrailer(filmKey, trailerFile);
+        finalDraft = { ...finalDraft, trailerUrl: publicUrl };
+        setTrailerUploadStatus('done');
+      } catch (err) {
+        setSaveError(`Trailer upload failed: ${err instanceof Error ? err.message : String(err)}`);
+        setTrailerUploadStatus('error');
+        setSaving(false);
+        return;
+      }
+    }
+
+    setSaving(false);
+    onSave(finalDraft, originalTitle);
   };
 
   return (
@@ -1021,17 +1094,86 @@ function FilmEditModal({ film, onSave, onReset, onClose }: {
               >
                 {coverCompressing ? 'Processing image…' : 'Upload new cover photo'}
               </button>
+              {(coverPreview || draft.thumbnail?.startsWith('data:')) && !coverCompressing && (
+                <button
+                  onClick={handleDownloadImage}
+                  className="rounded-xl bg-brand-purple/10 border border-brand-purple/30 px-3 py-2 text-sm text-brand-purple hover:bg-brand-purple/20 transition w-full text-left"
+                >
+                  ↓ Download for deployment ({suggestedFilename})
+                </button>
+              )}
               <p className="text-xs text-slate-500">JPG, PNG, WebP accepted — resized to 400×600 for storage</p>
               {coverError && <p className="text-xs text-red-400">{coverError}</p>}
             </div>
+          </div>
+
+          {/* Static deployment path — works on all devices once file is committed */}
+          <div className="rounded-lg bg-slate-900/60 border border-slate-700 p-3 space-y-2">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-[0.12em]">Static poster path (cross-device)</p>
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              Uploaded covers are stored in this browser only.
+              To show the same image on all devices: download above → place in{' '}
+              <span className="font-mono text-slate-400">public/posters/</span> → commit &amp; deploy → enter the path below.
+            </p>
+            <input
+              type="text"
+              value={staticPath}
+              onChange={e => setStaticPath(e.target.value)}
+              placeholder={suggestedPath}
+              className="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2 text-sm text-white font-mono outline-none focus:border-brand-purple placeholder:text-slate-600"
+            />
+            {staticPath && (
+              <p className="text-[11px] text-emerald-400">
+                ✓ On save, this path replaces the base64 thumbnail — resolves from Vercel CDN on all devices.
+              </p>
+            )}
           </div>
         </div>
 
         {/* ── Trailer ── */}
         <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-4 space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Trailer</p>
+
+          {/* Upload to Supabase Storage */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 mb-1.5">Trailer File URL</label>
+            <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 mb-1.5">Upload Trailer File</label>
+            <input
+              ref={trailerInputRef}
+              type="file"
+              accept="video/mp4,video/webm,video/mov,video/*"
+              className="hidden"
+              onChange={e => {
+                const f = e.target.files?.[0] ?? null;
+                setTrailerFile(f);
+                setTrailerUploadStatus('idle');
+                // Show a local blob preview immediately
+                if (f) {
+                  const blobUrl = URL.createObjectURL(f);
+                  setTrailerTestUrl(blobUrl);
+                  setTrailerStatus('idle');
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => trailerInputRef.current?.click()}
+              className="w-full rounded-xl bg-slate-700 border border-slate-600 px-3 py-2 text-sm text-white hover:bg-slate-600 transition text-left"
+            >
+              {trailerFile ? `✓ ${trailerFile.name}` : 'Choose video file…'}
+            </button>
+            {trailerFile && (
+              <p className="mt-1 text-[11px] text-brand-purple">
+                {trailerUploadStatus === 'idle' && 'Will upload to Supabase Storage on Save.'}
+                {trailerUploadStatus === 'uploading' && '⏳ Uploading…'}
+                {trailerUploadStatus === 'done' && '✓ Uploaded — public URL saved.'}
+                {trailerUploadStatus === 'error' && '✗ Upload failed — check console.'}
+              </p>
+            )}
+          </div>
+
+          {/* Manual URL field (for existing paths or external URLs) */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 mb-1.5">Trailer URL (manual)</label>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -1040,6 +1182,7 @@ function FilmEditModal({ film, onSave, onReset, onClose }: {
                   set('trailerUrl', e.target.value || undefined);
                   setTrailerTestUrl(null);
                   setTrailerStatus('idle');
+                  setTrailerFile(null);
                 }}
                 placeholder="/trailers/parallax-station.mp4"
                 className="flex-1 rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-sm text-white outline-none focus:border-brand-purple placeholder:text-slate-600"
@@ -1050,15 +1193,13 @@ function FilmEditModal({ film, onSave, onReset, onClose }: {
                 disabled={!draft.trailerUrl}
                 className="rounded-xl bg-slate-700 border border-slate-600 px-3 py-2 text-sm text-white hover:bg-slate-600 transition whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Test Trailer
+                Test
               </button>
             </div>
-            <p className="mt-1.5 text-xs text-slate-500">
-              Place MP4 files in <span className="text-slate-400 font-mono">public/trailers/</span> and enter the path here.
-            </p>
             {trailerStatus === 'found' && <p className="mt-1 text-xs text-emerald-400 font-semibold">✓ Trailer Found</p>}
-            {trailerStatus === 'not-found' && <p className="mt-1 text-xs text-red-400">✗ Trailer Not Found — check the path or add the file to public/trailers/</p>}
+            {trailerStatus === 'not-found' && <p className="mt-1 text-xs text-red-400">✗ Not found — check path</p>}
           </div>
+
           {trailerTestUrl && (
             <video
               key={trailerTestUrl}
@@ -1128,6 +1269,9 @@ function FilmEditModal({ film, onSave, onReset, onClose }: {
             </label>
           ))}
         </div>
+        {saveError && (
+          <p className="text-xs text-red-400 rounded-lg bg-red-500/10 px-3 py-2">{saveError}</p>
+        )}
         <div className="flex gap-3 pt-2">
           <button onClick={onClose} className="flex-1 rounded-xl border border-slate-700 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-800 transition">Cancel</button>
           <button
@@ -1138,10 +1282,10 @@ function FilmEditModal({ film, onSave, onReset, onClose }: {
           </button>
           <button
             onClick={handleSave}
-            disabled={coverCompressing}
+            disabled={coverCompressing || saving}
             className="flex-1 rounded-xl bg-brand-purple py-2.5 text-sm font-semibold text-white hover:bg-brand-indigo transition disabled:opacity-50"
           >
-            {coverCompressing ? 'Processing…' : 'Save Changes'}
+            {coverCompressing ? 'Compressing…' : saving ? 'Uploading…' : 'Save Changes'}
           </button>
         </div>
       </div>
@@ -1199,13 +1343,10 @@ const NAV: { key: AdminSection; label: string; emoji: string }[] = [
 ];
 
 // ── Admin film init ───────────────────────────────────────────────────────────
-// Build the complete admin film list from all 100 public movies.
-// Source of truth for display fields (thumbnail, trailerUrl, price, title…):
-//   getMergedMovies() — raw catalog + youmake_movie_overrides
-// Source of truth for admin-only fields (status, flags, views, revenue…):
-//   youmake_admin_films (stored) → MOCK_FILMS (seeded) → sensible defaults
-function buildAdminFilms(): AdminFilm[] {
-  const mergedMovies = getMergedMovies();
+// Build the complete admin film list from a Movie[] array.
+// Source of truth for display fields: the movies array (from Supabase or local fallback).
+// Source of truth for admin-only fields: localStorage → MOCK_FILMS → sensible defaults.
+function buildAdminFilmsFromMovies(mergedMovies: Movie[]): AdminFilm[] {
   const storedFilms = loadAdminFilms() ?? [];
 
   return mergedMovies.map(m => {
@@ -1247,6 +1388,7 @@ function buildAdminFilms(): AdminFilm[] {
 
 export default function SuperAdminDashboard() {
   const navigate = useNavigate();
+  const { refreshMovies } = useMovies();
 
   // Auth guard — redirect if no valid admin session
   useEffect(() => {
@@ -1256,7 +1398,8 @@ export default function SuperAdminDashboard() {
 
   const [section, setSection] = useState<AdminSection>('overview');
   const [creators, setCreators] = useState<AdminCreator[]>(MOCK_CREATORS);
-  const [films, setFilms] = useState<AdminFilm[]>(() => buildAdminFilms());
+  const [films, setFilms] = useState<AdminFilm[]>([]);
+  const [filmsLoading, setFilmsLoading] = useState(true);
   const [payouts, setPayouts] = useState<PayoutRecord[]>(MOCK_PAYOUTS);
   const [settings, setSettings] = useState<PlatformSettings>(DEFAULT_SETTINGS);
   const [auditLog, setAuditLog] = useState<AuditLogEntry[]>(MOCK_AUDIT_LOG);
@@ -1265,14 +1408,24 @@ export default function SuperAdminDashboard() {
   const [editingCreator, setEditingCreator] = useState<AdminCreator | null>(null);
   const [editingFilm, setEditingFilm] = useState<AdminFilm | null>(null);
 
-  // Persist admin-specific metadata to localStorage whenever films change.
-  // Strip base64 thumbnails — those live in youmake_movie_overrides, not here.
+  // Load movies from Supabase on mount, then build admin film list.
   useEffect(() => {
+    setFilmsLoading(true);
+    getMovies()
+      .then(movies => setFilms(buildAdminFilmsFromMovies(movies)))
+      .catch(() => setFilms(buildAdminFilmsFromMovies(getMergedMovies())))
+      .finally(() => setFilmsLoading(false));
+  }, []);
+
+  // Persist admin-only metadata (status, flags, revenue) to localStorage.
+  // Strip base64 thumbnails — those are transient upload previews.
+  useEffect(() => {
+    if (filmsLoading) return;
     saveAdminFilms(films.map(af => ({
       ...af,
       thumbnail: af.thumbnail?.startsWith('data:') ? '' : af.thumbnail,
     })));
-  }, [films]);
+  }, [films, filmsLoading]);
 
   const metrics: MonthlyMetric[] = MONTHLY_METRICS;
   const stats = useMemo(() => computeStats(creators, films, payouts, settings), [creators, films, payouts, settings]);
@@ -1347,7 +1500,47 @@ export default function SuperAdminDashboard() {
     setFilms(p => p.filter(x => x.id !== id));
     addAudit('Deleted film', f?.title ?? '', 'movie', 'Film permanently deleted.');
   };
-  const saveFilmEdit = (updated: AdminFilm, originalTitle?: string) => {
+  const saveFilmEdit = async (updated: AdminFilm, originalTitle?: string) => {
+    // Find the numeric movie id from the source catalog by original title
+    const lookupTitle = (originalTitle ?? updated.title).toLowerCase();
+    const srcMovie = sourceMovies.find(m => m.title.toLowerCase() === lookupTitle)
+      ?? sourceMovies.find(m => m.title.toLowerCase() === updated.title.toLowerCase());
+
+    const movieId = srcMovie?.id
+      ?? (updated.id.startsWith('movie-') ? parseInt(updated.id.replace('movie-', ''), 10) : -1);
+
+    if (movieId >= 0) {
+      const movieUpdate: Movie = {
+        id: movieId,
+        title: updated.title,
+        subtitle: updated.subtitle ?? '',
+        description: updated.description ?? '',
+        genre: updated.genre,
+        genres: [updated.genre],
+        duration: updated.duration,
+        creator: updated.studioName,
+        price: updated.price,
+        thumbnail: updated.thumbnail,
+        badge: srcMovie?.badge ?? '',
+        tools: srcMovie?.tools ?? [],
+        rating: updated.rating,
+        language: srcMovie?.language ?? 'English',
+        tags: updated.tags ? updated.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+        releaseYear: updated.releaseYear,
+        views: updated.views,
+        trailerViews: srcMovie?.trailerViews ?? 0,
+        featured: updated.featured,
+        subscriberDiscountEligible: srcMovie?.subscriberDiscountEligible ?? false,
+        trailerUrl: updated.trailerUrl,
+        posterPrompt: srcMovie?.posterPrompt,
+      };
+
+      upsertMovie(movieUpdate, updated.status)
+        .then(() => refreshMovies())
+        .catch(err => console.error('[admin] Supabase save error:', err));
+    }
+
+    // Keep localStorage overlay in sync for backward compat
     applyAdminFilmToMovieStore(updated, originalTitle);
     setFilms(p => p.map(x => x.id === updated.id ? updated : x));
     addAudit('Edited film', updated.title, 'movie', 'Film metadata updated.');

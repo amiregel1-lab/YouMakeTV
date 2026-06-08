@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { getMergedMovies, getMovieById } from '../lib/movieStore';
+import { useMovies } from '../lib/MovieContext';
 import { formatCurrency, subscriberPrice } from '../lib/formatters';
 import type { Movie, ViewerAccount } from '../types';
 import PurchaseOptions from './PurchaseOptions';
@@ -49,6 +49,7 @@ function RelatedPosterCard({ movie }: { movie: Movie }) {
 export default function MovieDetailPage({ viewer, onPurchase, onSubscribe, onWatchTrailer }: MovieDetailPageProps) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { movies } = useMovies();
   const [posterError, setPosterError] = useState(false);
   const [trailerPlayerUrl, setTrailerPlayerUrl] = useState<string | null>(null);
 
@@ -56,21 +57,21 @@ export default function MovieDetailPage({ viewer, onPurchase, onSubscribe, onWat
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [id]);
 
-  const movie = useMemo(() => getMovieById(Number(id)), [id]);
+  const movie = useMemo(() => movies.find((m) => m.id === Number(id)), [movies, id]);
 
   const moreFromCreator = useMemo(() => {
     if (!movie) return [];
-    return getMergedMovies()
+    return movies
       .filter((m) => m.creator === movie.creator && m.id !== movie.id)
       .slice(0, 8);
-  }, [movie]);
+  }, [movies, movie]);
 
   const similarMovies = useMemo(() => {
     if (!movie) return [];
-    return getMergedMovies()
+    return movies
       .filter((m) => m.genre === movie.genre && m.id !== movie.id && m.creator !== movie.creator)
       .slice(0, 8);
-  }, [movie]);
+  }, [movies, movie]);
 
   const handleWatchTrailer = () => {
     if (movie?.trailerUrl) {

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { getMergedMovies } from './lib/movieStore';
+import { useMovies } from './lib/MovieContext';
 import { demoCreatorProfile, demoViewerAccount } from './data/mockData';
 import { CreatorFilm, CreatorProfile, ViewerAccount } from './types';
 import { loadCreator, loadViewer, saveCreator, saveViewer } from './lib/storage';
@@ -30,6 +30,7 @@ import NotFoundPage from './components/NotFoundPage';
 import { initAnalytics, trackPageView } from './lib/analytics';
 
 export default function App() {
+  const { movies } = useMovies();
   const [viewer, setViewer] = useState<ViewerAccount | null>(null);
   const [creator, setCreator] = useState<CreatorProfile | null>(null);
   const [newCreatorSession, setNewCreatorSession] = useState(false);
@@ -124,7 +125,7 @@ export default function App() {
 
   const openTrailerModal = (title?: string) => {
     if (title) {
-      const mergedMovie = getMergedMovies().find((m) => m.title === title);
+      const mergedMovie = movies.find((m) => m.title === title);
       if (mergedMovie?.trailerUrl) {
         setTrailerModal({ title, url: mergedMovie.trailerUrl });
         return;
@@ -183,7 +184,7 @@ export default function App() {
         <Routes>
           <Route
             path="/"
-            element={<ViewerHome movies={getMergedMovies()} viewer={viewer} onSelectMovie={(movieId) => navigate(`/movie/${movieId}`)} onWatchTrailer={openTrailerModal} />}
+            element={<ViewerHome movies={movies} viewer={viewer} onSelectMovie={(movieId) => navigate(`/movie/${movieId}`)} onWatchTrailer={openTrailerModal} />}
           />
           <Route
             path="/movie/:id"

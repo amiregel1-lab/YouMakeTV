@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getMergedMovies } from '../lib/movieStore';
+import { useMovies } from '../lib/MovieContext';
 import { Movie } from '../types';
 import { getPosterUrl, fallbackGradient } from '../lib/posters';
 import SEOHead from './SEOHead';
@@ -112,11 +112,12 @@ function CreatorCard({ creator, onSelectMovie }: { creator: Creator; onSelectMov
 
 export default function CreatorsPage() {
   const navigate = useNavigate();
+  const { movies } = useMovies();
   const [searchQuery, setSearchQuery] = useState('');
 
   const creators = useMemo<Creator[]>(() => {
     const map = new Map<string, Movie[]>();
-    getMergedMovies().forEach((movie) => {
+    movies.forEach((movie) => {
       const existing = map.get(movie.creator) ?? [];
       map.set(movie.creator, [...existing, movie]);
     });
@@ -158,7 +159,7 @@ export default function CreatorsPage() {
           <p className="mt-1 text-slate-500">Discover AI filmmakers on YouMakeTV.ai</p>
           <p className="mt-2 text-sm text-slate-400">
             <span className="font-semibold text-slate-950">{creators.length}</span> creators ·{' '}
-            <span className="font-semibold text-slate-950">{getMergedMovies().length}</span> films
+            <span className="font-semibold text-slate-950">{movies.length}</span> films
           </p>
         </div>
         <button

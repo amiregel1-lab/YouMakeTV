@@ -14,6 +14,11 @@ import CreatorPortal from './components/CreatorPortal';
 import CreatorOnboarding from './components/CreatorOnboarding';
 import CreatorDashboard from './components/CreatorDashboard';
 import CreatorsPage from './components/CreatorsPage';
+import Footer from './components/Footer';
+import AboutPage from './components/AboutPage';
+import ContactPage from './components/ContactPage';
+import TermsPage from './components/TermsPage';
+import PrivacyPage from './components/PrivacyPage';
 import MockPaymentModal from './components/MockPaymentModal';
 import NotFoundPage from './components/NotFoundPage';
 import { initAnalytics, trackPageView } from './lib/analytics';
@@ -144,9 +149,15 @@ export default function App() {
           <Route path="/creator" element={<CreatorPortal onStart={() => navigate('/creator/onboarding')} onDashboard={() => navigate('/creator/dashboard')} onViewDemo={handleDemoCreator} />} />
           <Route path="/creator/onboarding" element={<CreatorOnboarding onComplete={handleCreateCreator} />} />
           <Route path="/creator/dashboard" element={<CreatorDashboard creator={creator} onAddFilm={handleAddFilm} onDeleteFilm={handleDeleteFilm} onStartOnboarding={() => navigate('/creator/onboarding')} onCreateDemo={handleDemoCreator} />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
+
+      <Footer />
 
       {modal && <MockPaymentModal type={modal.type} title={modal.title} details={modal.details} onClose={() => setModal(null)} />}
     </div>

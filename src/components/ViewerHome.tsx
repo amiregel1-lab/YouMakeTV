@@ -1,7 +1,6 @@
 import { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Movie } from '../types';
-import MovieCard from './MovieCard';
 import { getPosterUrl, fallbackGradient } from '../lib/posters';
 import SEOHead from './SEOHead';
 
@@ -14,6 +13,7 @@ interface ViewerHomeProps {
 
 const FILTER_GENRES = ['All', 'Action', 'Sci-Fi', 'Drama', 'Horror', 'Comedy', 'Documentary', 'Animation', 'Fantasy', 'Thriller', 'Anime', 'Mystery'];
 const SORT_OPTIONS = ['Most Popular', 'Newest', 'Highest Rated'] as const;
+const DISCOVERY_GENRES = ['Action', 'Sci-Fi', 'Drama', 'Horror', 'Comedy', 'Documentary', 'Animation', 'Fantasy', 'Thriller', 'Mystery'] as const;
 const PRICE_TIERS = [
   { label: 'All prices', maxPrice: Infinity },
   { label: 'Free', maxPrice: 0 },
@@ -175,6 +175,109 @@ function MovieRow({ title, movies, onSelectMovie, onWatchTrailer }: MovieRowProp
       <div ref={scrollRef} className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
         {movies.map((movie) => (
           <PosterCard
+            key={movie.id}
+            movie={movie}
+            onSelect={() => onSelectMovie(movie.id)}
+            onTrailer={onWatchTrailer}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ── Genre discovery card — always shows title / runtime / price on poster ──
+
+interface GenreDiscoveryCardProps {
+  movie: Movie;
+  onSelect: () => void;
+  onTrailer: () => void;
+}
+
+function GenreDiscoveryCard({ movie, onSelect, onTrailer }: GenreDiscoveryCardProps) {
+  const [imgError, setImgError] = useState(false);
+  const priceLabel = movie.price === 0 ? 'Free' : `$${movie.price.toFixed(2)}`;
+
+  return (
+    <div
+      className="flex-none w-32 sm:w-40 lg:w-48 group cursor-pointer"
+      onClick={onSelect}
+    >
+      <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-slate-900 shadow-md transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1">
+        {!imgError ? (
+          <img
+            src={getPosterUrl(movie)}
+            alt={movie.title}
+            loading="lazy"
+            onError={() => setImgError(true)}
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="h-full w-full" style={{ background: fallbackGradient(movie.genre) }} />
+        )}
+
+        {/* Always-visible gradient + info overlay */}
+        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/95 via-black/55 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 p-2.5 pointer-events-none">
+          <p className="text-[11px] font-bold text-white leading-tight line-clamp-2 mb-1">{movie.title}</p>
+          <div className="flex items-center justify-between gap-1">
+            <p className="text-[9px] text-slate-300/90 font-medium">{movie.duration}</p>
+            <p className={`text-[9px] font-bold ${movie.price === 0 ? 'text-emerald-400' : 'text-brand-cyan'}`}>
+              {priceLabel}
+            </p>
+          </div>
+        </div>
+
+        {/* Hover: trailer + details buttons */}
+        <div className="absolute inset-x-0 top-0 bottom-14 flex flex-col items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <button
+            onClick={(e) => { e.stopPropagation(); onTrailer(); }}
+            className="w-4/5 rounded-full bg-white/90 py-1.5 text-[10px] font-semibold text-slate-950 hover:bg-white transition"
+          >
+            ▶ Watch Trailer
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onSelect(); }}
+            className="w-4/5 rounded-full border border-white/60 bg-black/20 py-1.5 text-[10px] font-semibold text-white hover:bg-black/35 transition"
+          >
+            View Details
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Genre discovery row with scroll arrows ─────────────────────────────────
+
+interface GenreDiscoveryRowProps {
+  genre: string;
+  movies: Movie[];
+  onSelectMovie: (id: number) => void;
+  onWatchTrailer: () => void;
+}
+
+function GenreDiscoveryRow({ genre, movies, onSelectMovie, onWatchTrailer }: GenreDiscoveryRowProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const scroll = (dir: 'left' | 'right') => {
+    scrollRef.current?.scrollBy({ left: dir === 'left' ? -600 : 600, behavior: 'smooth' });
+  };
+  if (movies.length === 0) return null;
+  return (
+    <section>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2.5">
+          <h2 className="text-lg font-semibold text-slate-950">{genre}</h2>
+          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500">{movies.length}</span>
+        </div>
+        <div className="flex gap-1.5">
+          <ArrowBtn dir="left" onClick={() => scroll('left')} />
+          <ArrowBtn dir="right" onClick={() => scroll('right')} />
+        </div>
+      </div>
+      <div ref={scrollRef} className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
+        {movies.map((movie) => (
+          <GenreDiscoveryCard
             key={movie.id}
             movie={movie}
             onSelect={() => onSelectMovie(movie.id)}
@@ -407,24 +510,25 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onWatchTrail
       {/* ── SECTION 5: TOP GROSSING ───────────────────────────────────────── */}
       <MovieRow title="Top Grossing" movies={topGrossing} onSelectMovie={onSelectMovie} onWatchTrailer={onWatchTrailer} />
 
-      {/* ── SECTION 6: ALL MOVIES ─────────────────────────────────────────── */}
+      {/* ── SECTION 6: BROWSE BY GENRE ────────────────────────────────────── */}
       <section>
+        {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-          <h2 className="text-lg font-semibold text-slate-950">All Movies</h2>
-          <div className="flex items-center gap-3">
-            <p className="text-sm text-slate-500">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-950">Browse by Genre</h2>
+            <p className="text-sm text-slate-500 mt-0.5">
               <span className="font-semibold text-slate-950">{filteredMovies.length}</span> of{' '}
               <span className="font-semibold text-slate-950">{movies.length}</span> titles
             </p>
-            {activeFilterCount > 0 && (
-              <button
-                onClick={clearFilters}
-                className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
-              >
-                Clear all ({activeFilterCount})
-              </button>
-            )}
           </div>
+          {activeFilterCount > 0 && (
+            <button
+              onClick={clearFilters}
+              className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
+            >
+              Clear all ({activeFilterCount})
+            </button>
+          )}
         </div>
 
         {/* Search */}
@@ -479,7 +583,7 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onWatchTrail
         </div>
 
         {/* Sort options */}
-        <div className="flex flex-wrap gap-2 mb-6">
+        <div className="flex flex-wrap gap-2 mb-8">
           {SORT_OPTIONS.map((opt) => (
             <button
               key={opt}
@@ -495,7 +599,7 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onWatchTrail
           ))}
         </div>
 
-        {/* Movie grid */}
+        {/* Genre discovery rows */}
         {filteredMovies.length === 0 ? (
           <div className="rounded-[2rem] border border-slate-200/70 bg-white shadow-soft p-12 text-center">
             <p className="text-slate-600 text-lg font-medium mb-2">No movies match your filters.</p>
@@ -508,15 +612,26 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onWatchTrail
             </button>
           </div>
         ) : (
-          <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
-            {filteredMovies.map((movie) => (
-              <MovieCard
-                key={movie.id}
-                movie={movie}
-                onSelect={(m) => onSelectMovie(m.id)}
-                onWatchTrailer={onWatchTrailer}
-              />
-            ))}
+          <div className="space-y-10">
+            {DISCOVERY_GENRES.map((genre) => {
+              const target = genre === 'Animation'
+                ? ['anime', 'animation']
+                : [genre.toLowerCase()];
+              const genreMovies = filteredMovies.filter((m) =>
+                (m.genres ?? [m.genre]).some((g) =>
+                  target.some((t) => g.toLowerCase().includes(t))
+                )
+              );
+              return (
+                <GenreDiscoveryRow
+                  key={genre}
+                  genre={genre}
+                  movies={genreMovies}
+                  onSelectMovie={onSelectMovie}
+                  onWatchTrailer={onWatchTrailer}
+                />
+              );
+            })}
           </div>
         )}
       </section>

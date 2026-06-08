@@ -202,7 +202,7 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
     return (
       <section className="overflow-hidden rounded-[2.5rem] border border-slate-200/70 bg-white shadow-soft">
         <div className="relative rounded-[2.5rem] bg-brand-fade/30 p-10">
-          <div className="absolute inset-0 bg-brand-soft opacity-70" />
+          <div className="pointer-events-none absolute inset-0 bg-brand-soft opacity-70" />
           <div className="relative space-y-6 text-center">
             <span className="inline-flex rounded-full bg-brand-pink/10 px-4 py-2 text-xs uppercase tracking-[0.32em] text-brand-pink">
               Creator dashboard

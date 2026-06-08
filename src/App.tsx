@@ -105,7 +105,12 @@ export default function App() {
 
   const handleDemoCreator = () => {
     setCreator(demoCreatorProfile);
-    navigate('/creator/dashboard');
+    // Only navigate if not already on the dashboard — pushing the same URL to
+    // history in React Router v6 can cause a render flash on mobile that makes
+    // the button appear to do nothing.
+    if (location.pathname !== '/creator/dashboard') {
+      navigate('/creator/dashboard');
+    }
   };
 
   const handleAddFilm = (film: CreatorFilm) => {

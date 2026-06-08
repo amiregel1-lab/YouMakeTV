@@ -56,12 +56,10 @@ interface PosterCardProps {
 
 function PosterCard({ movie, onSelect, onTrailer }: PosterCardProps) {
   const [imgError, setImgError] = useState(false);
+  const priceLabel = movie.price === 0 ? 'Free' : `$${movie.price.toFixed(2)}`;
   return (
-    <div className="flex-none w-28 sm:w-36 group cursor-pointer">
-      <div
-        className="relative aspect-[2/3] overflow-hidden rounded-xl bg-slate-900 shadow-md transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1"
-        onClick={onSelect}
-      >
+    <div className="flex-none w-28 sm:w-36 group cursor-pointer" onClick={onSelect}>
+      <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-slate-900 shadow-md transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1">
         {!imgError ? (
           <img
             src={getPosterUrl(movie)}
@@ -71,33 +69,33 @@ function PosterCard({ movie, onSelect, onTrailer }: PosterCardProps) {
             className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
           />
         ) : (
-          <div
-            className="h-full w-full flex flex-col items-start justify-end p-2 gap-0.5"
-            style={{ background: fallbackGradient(movie.genre) }}
-          >
-            <p className="text-[9px] font-bold text-white leading-tight line-clamp-2">{movie.title}</p>
-          </div>
+          <div className="h-full w-full" style={{ background: fallbackGradient(movie.genre) }} />
         )}
-        <div className="absolute inset-0 flex flex-col items-center justify-end p-2 gap-1.5 bg-slate-950/0 group-hover:bg-slate-950/75 transition-all duration-300">
-          <div className="w-full space-y-1.5 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-            <button
-              onClick={(e) => { e.stopPropagation(); onTrailer(); }}
-              className="w-full rounded-full bg-white py-1.5 text-[10px] font-semibold text-slate-950 hover:bg-slate-100 transition"
-            >
-              ▶ Trailer
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); onSelect(); }}
-              className="w-full rounded-full border border-white/50 py-1.5 text-[10px] font-semibold text-white hover:bg-white/10 transition"
-            >
-              Details
-            </button>
+        {/* Always-visible gradient + info */}
+        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/95 via-black/55 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 p-2 pointer-events-none">
+          <p className="text-[10px] font-bold text-white leading-tight line-clamp-2 mb-1">{movie.title}</p>
+          <div className="flex items-center justify-between gap-1">
+            <p className="text-[8px] text-slate-300/90 font-medium">{movie.duration}</p>
+            <p className={`text-[8px] font-bold ${movie.price === 0 ? 'text-emerald-400' : 'text-brand-cyan'}`}>{priceLabel}</p>
           </div>
         </div>
+        {/* Hover buttons */}
+        <div className="absolute inset-x-0 top-0 bottom-12 flex flex-col items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <button
+            onClick={(e) => { e.stopPropagation(); onTrailer(); }}
+            className="w-4/5 rounded-full bg-white/90 py-1.5 text-[9px] font-semibold text-slate-950 hover:bg-white transition"
+          >
+            ▶ Trailer
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onSelect(); }}
+            className="w-4/5 rounded-full border border-white/60 bg-black/20 py-1.5 text-[9px] font-semibold text-white hover:bg-black/35 transition"
+          >
+            Details
+          </button>
+        </div>
       </div>
-      <button onClick={onSelect} className="mt-1.5 w-full text-left">
-        <p className="text-xs font-semibold text-slate-950 line-clamp-1">{movie.title}</p>
-      </button>
     </div>
   );
 }
@@ -112,6 +110,7 @@ interface Top10CardProps {
 
 function Top10Card({ movie, rank, onSelect }: Top10CardProps) {
   const [imgError, setImgError] = useState(false);
+  const priceLabel = movie.price === 0 ? 'Free' : `$${movie.price.toFixed(2)}`;
   return (
     <div className="flex-none flex items-end gap-1">
       <span
@@ -120,8 +119,8 @@ function Top10Card({ movie, rank, onSelect }: Top10CardProps) {
       >
         {rank}
       </span>
-      <button onClick={onSelect} className="group w-24 sm:w-28 text-left">
-        <div className="aspect-[2/3] overflow-hidden rounded-xl bg-slate-900 shadow-lg transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl">
+      <div onClick={onSelect} className="group w-24 sm:w-28 cursor-pointer">
+        <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-slate-900 shadow-lg transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl">
           {!imgError ? (
             <img
               src={getPosterUrl(movie)}
@@ -131,16 +130,19 @@ function Top10Card({ movie, rank, onSelect }: Top10CardProps) {
               className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
             />
           ) : (
-            <div
-              className="h-full w-full flex flex-col items-start justify-end p-2 gap-0.5"
-              style={{ background: fallbackGradient(movie.genre) }}
-            >
-              <p className="text-[9px] font-bold text-white leading-tight line-clamp-2">{movie.title}</p>
-            </div>
+            <div className="h-full w-full" style={{ background: fallbackGradient(movie.genre) }} />
           )}
+          {/* Always-visible gradient + info */}
+          <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/95 via-black/55 to-transparent pointer-events-none" />
+          <div className="absolute inset-x-0 bottom-0 p-2 pointer-events-none">
+            <p className="text-[10px] font-bold text-white leading-tight line-clamp-2 mb-1">{movie.title}</p>
+            <div className="flex items-center justify-between gap-1">
+              <p className="text-[8px] text-slate-300/90 font-medium">{movie.duration}</p>
+              <p className={`text-[8px] font-bold ${movie.price === 0 ? 'text-emerald-400' : 'text-brand-cyan'}`}>{priceLabel}</p>
+            </div>
+          </div>
         </div>
-        <p className="mt-1.5 text-xs font-semibold text-slate-950 line-clamp-1">{movie.title}</p>
-      </button>
+      </div>
     </div>
   );
 }

@@ -13,6 +13,13 @@ import {
   MOCK_PAYOUTS, MONTHLY_METRICS,
 } from '../data/adminMockData';
 import { clearAdminSession, loadAdminSession, saveMediaOverride } from '../lib/storage';
+import {
+  applyAdminFilmToMovieStore,
+  loadAdminFilms,
+  resetMovieOverride,
+  saveAdminFilms,
+} from '../lib/movieStore';
+import { movies as sourceMovies } from '../data/movies';
 
 // PROTOTYPE NOTE: Admin session is verified client-side only.
 // Production requires server-side JWT validation on every protected route.
@@ -903,7 +910,13 @@ function CreatorEditModal({ creator, onSave, onClose }: { creator: AdminCreator;
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
 
-function FilmEditModal({ film, onSave, onClose }: { film: AdminFilm; onSave: (f: AdminFilm) => void; onClose: () => void }) {
+function FilmEditModal({ film, onSave, onReset, onClose }: {
+  film: AdminFilm;
+  onSave: (f: AdminFilm, originalTitle: string) => void;
+  onReset: (f: AdminFilm) => void;
+  onClose: () => void;
+}) {
+  const originalTitle = film.title;
   const [draft, setDraft] = useState({ ...film });
   const set = (key: keyof AdminFilm, value: unknown) => setDraft(p => ({ ...p, [key]: value }));
 
@@ -950,13 +963,12 @@ function FilmEditModal({ film, onSave, onClose }: { film: AdminFilm; onSave: (f:
   };
 
   const handleSave = () => {
-    if (coverPreview || trailerPreview) {
-      saveMediaOverride(draft.title, {
-        ...(coverPreview ? { thumbnail: coverPreview } : {}),
-        ...(trailerPreview ? { trailerUrl: trailerPreview } : {}),
-      });
+    // Keep session-scoped blob trailer URL in legacy media overrides so App.tsx
+    // openTrailerModal can still find it within the current browser session.
+    if (trailerPreview) {
+      saveMediaOverride(draft.title, { trailerUrl: trailerPreview });
     }
-    onSave(draft);
+    onSave(draft, originalTitle);
   };
 
   return (
@@ -1087,6 +1099,12 @@ function FilmEditModal({ film, onSave, onClose }: { film: AdminFilm; onSave: (f:
         </div>
         <div className="flex gap-3 pt-2">
           <button onClick={onClose} className="flex-1 rounded-xl border border-slate-700 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-800 transition">Cancel</button>
+          <button
+            onClick={() => { if (window.confirm('Reset this film to its original data? All edits will be lost.')) onReset(film); }}
+            className="flex-1 rounded-xl border border-red-700 py-2.5 text-sm font-semibold text-red-400 hover:bg-red-900/30 transition"
+          >
+            Reset to Original
+          </button>
           <button onClick={handleSave} className="flex-1 rounded-xl bg-brand-purple py-2.5 text-sm font-semibold text-white hover:bg-brand-indigo transition">Save Changes</button>
         </div>
       </div>
@@ -1156,7 +1174,7 @@ export default function SuperAdminDashboard() {
 
   const [section, setSection] = useState<AdminSection>('overview');
   const [creators, setCreators] = useState<AdminCreator[]>(MOCK_CREATORS);
-  const [films, setFilms] = useState<AdminFilm[]>(MOCK_FILMS);
+  const [films, setFilms] = useState<AdminFilm[]>(() => loadAdminFilms() ?? MOCK_FILMS);
   const [payouts, setPayouts] = useState<PayoutRecord[]>(MOCK_PAYOUTS);
   const [settings, setSettings] = useState<PlatformSettings>(DEFAULT_SETTINGS);
   const [auditLog, setAuditLog] = useState<AuditLogEntry[]>(MOCK_AUDIT_LOG);
@@ -1164,6 +1182,11 @@ export default function SuperAdminDashboard() {
   const [selectedCreator, setSelectedCreator] = useState<AdminCreator | null>(null);
   const [editingCreator, setEditingCreator] = useState<AdminCreator | null>(null);
   const [editingFilm, setEditingFilm] = useState<AdminFilm | null>(null);
+
+  // Persist admin films to localStorage whenever they change
+  useEffect(() => {
+    saveAdminFilms(films);
+  }, [films]);
 
   const metrics: MonthlyMetric[] = MONTHLY_METRICS;
   const stats = useMemo(() => computeStats(creators, films, payouts, settings), [creators, films, payouts, settings]);
@@ -1238,9 +1261,22 @@ export default function SuperAdminDashboard() {
     setFilms(p => p.filter(x => x.id !== id));
     addAudit('Deleted film', f?.title ?? '', 'movie', 'Film permanently deleted.');
   };
-  const saveFilmEdit = (updated: AdminFilm) => {
+  const saveFilmEdit = (updated: AdminFilm, originalTitle?: string) => {
+    applyAdminFilmToMovieStore(updated, originalTitle);
     setFilms(p => p.map(x => x.id === updated.id ? updated : x));
     addAudit('Edited film', updated.title, 'movie', 'Film metadata updated.');
+    setEditingFilm(null);
+  };
+
+  const resetFilmToOriginal = (film: AdminFilm) => {
+    const original = MOCK_FILMS.find(f => f.id === film.id);
+    if (!original) return;
+    // Remove public movie override
+    const publicMovie = sourceMovies.find(m => m.title.toLowerCase() === original.title.toLowerCase());
+    if (publicMovie) resetMovieOverride(publicMovie.id);
+    // Restore admin film to original mock values
+    setFilms(p => p.map(x => x.id === film.id ? original : x));
+    addAudit('Reset film to original', original.title, 'movie', 'Film reset to original mock data.');
     setEditingFilm(null);
   };
 
@@ -1402,7 +1438,7 @@ export default function SuperAdminDashboard() {
 
       {/* Modals */}
       {editingCreator && <CreatorEditModal creator={editingCreator} onSave={saveCreatorEdit} onClose={() => setEditingCreator(null)} />}
-      {editingFilm && <FilmEditModal film={editingFilm} onSave={saveFilmEdit} onClose={() => setEditingFilm(null)} />}
+      {editingFilm && <FilmEditModal film={editingFilm} onSave={saveFilmEdit} onReset={resetFilmToOriginal} onClose={() => setEditingFilm(null)} />}
     </div>
   );
 }

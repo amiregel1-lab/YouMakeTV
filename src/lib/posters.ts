@@ -15,11 +15,16 @@ const GENRE_PALETTE: Record<string, [string, string]> = {
 };
 
 // Returns the poster URL for a movie.
-// Checks localStorage for an admin-uploaded cover override first (keyed by title).
-// Falls back to picsum seeded by movie.id for deterministic placeholder art.
+// Prefers the thumbnail already on the movie object (set by getMergedMovies when an
+// admin override exists). Falls back to legacy media-overrides store, then picsum.
 export function getPosterUrl(
   movie: { id: number; thumbnail: string; title?: string; posterPrompt?: string },
 ): string {
+  // Non-picsum thumbnails (e.g. base64 from admin upload) take priority
+  if (movie.thumbnail && !movie.thumbnail.includes('picsum.photos')) {
+    return movie.thumbnail;
+  }
+  // Legacy: check youmake_media_overrides (backward compat with sessions that used the old key)
   if (movie.title) {
     try {
       const raw = localStorage.getItem('youmake_media_overrides');

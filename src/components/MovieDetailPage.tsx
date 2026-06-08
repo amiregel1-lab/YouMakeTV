@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { movies } from '../data/movies';
+import { getMergedMovies, getMovieById } from '../lib/movieStore';
+import { loadMediaOverrides } from '../lib/storage';
 import { formatCurrency, subscriberPrice } from '../lib/formatters';
 import type { Movie, ViewerAccount } from '../types';
 import PurchaseOptions from './PurchaseOptions';
 import { getPosterUrl, fallbackGradient } from '../lib/posters';
 import SEOHead from './SEOHead';
-import { loadMediaOverrides } from '../lib/storage';
 
 interface MovieDetailPageProps {
   viewer?: ViewerAccount | null;
@@ -57,25 +57,30 @@ export default function MovieDetailPage({ viewer, onPurchase, onSubscribe, onWat
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [id]);
 
-  const movie = useMemo(() => movies.find((item) => item.id === Number(id)), [id]);
+  const movie = useMemo(() => getMovieById(Number(id)), [id]);
 
-  const moreFromCreator = useMemo(
-    () => (movie ? movies.filter((m) => m.creator === movie.creator && m.id !== movie.id).slice(0, 8) : []),
-    [movie],
-  );
+  const moreFromCreator = useMemo(() => {
+    if (!movie) return [];
+    return getMergedMovies()
+      .filter((m) => m.creator === movie.creator && m.id !== movie.id)
+      .slice(0, 8);
+  }, [movie]);
 
-  const similarMovies = useMemo(
-    () =>
-      movie
-        ? movies
-            .filter((m) => m.genre === movie.genre && m.id !== movie.id && m.creator !== movie.creator)
-            .slice(0, 8)
-        : [],
-    [movie],
-  );
+  const similarMovies = useMemo(() => {
+    if (!movie) return [];
+    return getMergedMovies()
+      .filter((m) => m.genre === movie.genre && m.id !== movie.id && m.creator !== movie.creator)
+      .slice(0, 8);
+  }, [movie]);
 
   const handleWatchTrailer = () => {
     if (movie) {
+      // Prefer non-blob trailer URL from merged movie store (persists across reloads)
+      if (movie.trailerUrl && !movie.trailerUrl.startsWith('blob:')) {
+        setTrailerPlayerUrl(movie.trailerUrl);
+        return;
+      }
+      // Fall back to session-scoped blob URLs from media overrides
       const trailerUrl = loadMediaOverrides()[movie.title]?.trailerUrl;
       if (trailerUrl) {
         setTrailerPlayerUrl(trailerUrl);

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { movies } from './data/movies';
+import { getMergedMovies } from './lib/movieStore';
 import { demoCreatorProfile, demoViewerAccount } from './data/mockData';
 import { CreatorFilm, CreatorProfile, ViewerAccount } from './types';
 import { loadCreator, loadViewer, saveCreator, saveViewer } from './lib/storage';
@@ -124,6 +124,13 @@ export default function App() {
 
   const openTrailerModal = (title?: string) => {
     if (title) {
+      // Check merged movie data first (persisted non-blob trailer URLs)
+      const mergedMovie = getMergedMovies().find((m) => m.title === title);
+      if (mergedMovie?.trailerUrl && !mergedMovie.trailerUrl.startsWith('blob:')) {
+        setTrailerModal({ title, url: mergedMovie.trailerUrl });
+        return;
+      }
+      // Fall back to legacy media overrides (session-scoped blob URLs)
       try {
         const raw = localStorage.getItem('youmake_media_overrides');
         if (raw) {
@@ -186,7 +193,7 @@ export default function App() {
         <Routes>
           <Route
             path="/"
-            element={<ViewerHome movies={movies} viewer={viewer} onSelectMovie={(movieId) => navigate(`/movie/${movieId}`)} onWatchTrailer={openTrailerModal} />}
+            element={<ViewerHome movies={getMergedMovies()} viewer={viewer} onSelectMovie={(movieId) => navigate(`/movie/${movieId}`)} onWatchTrailer={openTrailerModal} />}
           />
           <Route
             path="/movie/:id"

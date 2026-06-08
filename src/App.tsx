@@ -22,6 +22,7 @@ import TermsPage from './components/TermsPage';
 import PrivacyPage from './components/PrivacyPage';
 import CopyrightPage from './components/CopyrightPage';
 import CreatorAgreementPage from './components/CreatorAgreementPage';
+import ScrollToTop from './components/ScrollToTop';
 import SuperAdminLogin from './components/SuperAdminLogin';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
 import MockPaymentModal from './components/MockPaymentModal';
@@ -144,6 +145,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-transparent text-slate-950">
+      <ScrollToTop />
       <Navbar
         active={activeRoute}
         viewer={viewer}

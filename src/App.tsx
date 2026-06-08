@@ -20,6 +20,8 @@ import AboutPage from './components/AboutPage';
 import ContactPage from './components/ContactPage';
 import TermsPage from './components/TermsPage';
 import PrivacyPage from './components/PrivacyPage';
+import CopyrightPage from './components/CopyrightPage';
+import CreatorAgreementPage from './components/CreatorAgreementPage';
 import MockPaymentModal from './components/MockPaymentModal';
 import NotFoundPage from './components/NotFoundPage';
 import { initAnalytics, trackPageView } from './lib/analytics';
@@ -157,6 +159,8 @@ export default function App() {
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/copyright" element={<CopyrightPage />} />
+          <Route path="/creator-agreement" element={<CreatorAgreementPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>

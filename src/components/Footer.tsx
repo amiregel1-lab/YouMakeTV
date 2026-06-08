@@ -45,7 +45,7 @@ export default function Footer() {
             <ul className="space-y-3">
               {link('Become a Creator', '/creator')}
               {link('Creator Sign In', '/creatorsLogin')}
-              {link('Creator Guidelines', '/terms#creator-agreement')}
+              {link('Creator Agreement', '/creator-agreement')}
             </ul>
           </div>
 
@@ -65,7 +65,7 @@ export default function Footer() {
             <ul className="space-y-3">
               {link('Terms of Service', '/terms')}
               {link('Privacy Policy', '/privacy')}
-              {link('DMCA / Copyright Policy', '/terms#dmca')}
+              {link('Copyright & DMCA Policy', '/copyright')}
               {link('Creator Agreement', '/terms#creator-agreement')}
             </ul>
           </div>

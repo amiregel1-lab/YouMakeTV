@@ -342,7 +342,13 @@ function MoviesSection({ films, search, onEdit, onApprove, onReject, onSuspend, 
     let r = films;
     if (search) {
       const q = search.toLowerCase();
-      r = r.filter(f => f.title.toLowerCase().includes(q) || f.studioName.toLowerCase().includes(q) || f.genre.toLowerCase().includes(q));
+      r = r.filter(f =>
+        f.title.toLowerCase().includes(q) ||
+        f.studioName.toLowerCase().includes(q) ||
+        f.creatorName.toLowerCase().includes(q) ||
+        f.genre.toLowerCase().includes(q) ||
+        f.tags.toLowerCase().includes(q)
+      );
     }
     if (statusFilter !== 'All') r = r.filter(f => f.status === statusFilter);
     if (genreFilter !== 'All') r = r.filter(f => f.genre === genreFilter);
@@ -354,7 +360,11 @@ function MoviesSection({ films, search, onEdit, onApprove, onReject, onSuspend, 
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-xl font-bold text-white">Movie Library</h2>
-          <p className="text-sm text-slate-500 mt-0.5">{films.length} total films</p>
+          <p className="text-sm text-slate-500 mt-0.5">
+            {filtered.length < films.length
+              ? `Showing ${filtered.length} of ${films.length} films`
+              : `${films.length} total films`}
+          </p>
         </div>
         <div className="flex gap-2 flex-wrap">
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-sm text-white outline-none focus:border-brand-purple">
@@ -1155,29 +1165,46 @@ const NAV: { key: AdminSection; label: string; emoji: string }[] = [
 ];
 
 // ── Admin film init ───────────────────────────────────────────────────────────
-// Merges stored admin metadata (status, flags, views) with the latest movie
-// store overrides (thumbnail, trailerUrl, price, title, etc.) so the admin
-// table and edit modal always reflect the current public movie state on load.
+// Build the complete admin film list from all 100 public movies.
+// Source of truth for display fields (thumbnail, trailerUrl, price, title…):
+//   getMergedMovies() — raw catalog + youmake_movie_overrides
+// Source of truth for admin-only fields (status, flags, views, revenue…):
+//   youmake_admin_films (stored) → MOCK_FILMS (seeded) → sensible defaults
 function buildAdminFilms(): AdminFilm[] {
-  const base = loadAdminFilms() ?? MOCK_FILMS;
-  const merged = getMergedMovies();
-  return base.map(af => {
-    const m = merged.find(mv => mv.title.toLowerCase() === af.title.toLowerCase());
-    if (!m) return af;
+  const mergedMovies = getMergedMovies();
+  const storedFilms = loadAdminFilms() ?? [];
+
+  return mergedMovies.map(m => {
+    const stored = storedFilms.find(af => af.title.toLowerCase() === m.title.toLowerCase());
+    const mock   = MOCK_FILMS.find(af => af.title.toLowerCase() === m.title.toLowerCase());
+    const meta   = stored ?? mock;
+
     return {
-      ...af,
-      title: m.title,
-      subtitle: m.subtitle,
-      description: m.description,
-      genre: m.genre,
-      duration: m.duration,
-      price: m.price,
-      thumbnail: m.thumbnail,
-      rating: m.rating,
-      releaseYear: m.releaseYear ?? af.releaseYear,
-      trailerUrl: m.trailerUrl,
-      featured: m.featured ?? af.featured,
-      tags: Array.isArray(m.tags) ? m.tags.join(', ') : af.tags,
+      id:              meta?.id ?? `movie-${m.id}`,
+      title:           m.title,
+      subtitle:        m.subtitle,
+      description:     m.description,
+      genre:           m.genre,
+      tags:            Array.isArray(m.tags) ? m.tags.join(', ') : (meta?.tags ?? ''),
+      duration:        m.duration,
+      releaseYear:     m.releaseYear ?? meta?.releaseYear ?? 2025,
+      price:           m.price,
+      thumbnail:       m.thumbnail,
+      rating:          m.rating,
+      creatorId:       meta?.creatorId ?? `creator-${m.creator.toLowerCase().replace(/\s+/g, '-')}`,
+      creatorName:     meta?.creatorName ?? m.creator,
+      studioName:      meta?.studioName ?? m.creator,
+      status:          meta?.status ?? 'Approved',
+      featured:        m.featured ?? meta?.featured ?? false,
+      trending:        meta?.trending ?? false,
+      newRelease:      meta?.newRelease ?? false,
+      visible:         meta?.visible ?? true,
+      views:           m.views ?? meta?.views ?? 0,
+      purchases:       meta?.purchases ?? 0,
+      revenue:         meta?.revenue ?? 0,
+      uploadDate:      meta?.uploadDate ?? `${m.releaseYear ?? 2025}-01-01`,
+      moderationNotes: meta?.moderationNotes ?? '',
+      trailerUrl:      m.trailerUrl,
     };
   });
 }
@@ -1204,9 +1231,13 @@ export default function SuperAdminDashboard() {
   const [editingCreator, setEditingCreator] = useState<AdminCreator | null>(null);
   const [editingFilm, setEditingFilm] = useState<AdminFilm | null>(null);
 
-  // Persist admin films to localStorage whenever they change
+  // Persist admin-specific metadata to localStorage whenever films change.
+  // Strip base64 thumbnails — those live in youmake_movie_overrides, not here.
   useEffect(() => {
-    saveAdminFilms(films);
+    saveAdminFilms(films.map(af => ({
+      ...af,
+      thumbnail: af.thumbnail?.startsWith('data:') ? '' : af.thumbnail,
+    })));
   }, [films]);
 
   const metrics: MonthlyMetric[] = MONTHLY_METRICS;
@@ -1290,14 +1321,41 @@ export default function SuperAdminDashboard() {
   };
 
   const resetFilmToOriginal = (film: AdminFilm) => {
-    const original = MOCK_FILMS.find(f => f.id === film.id);
-    if (!original) return;
-    // Remove public movie override
-    const publicMovie = sourceMovies.find(m => m.title.toLowerCase() === original.title.toLowerCase());
-    if (publicMovie) resetMovieOverride(publicMovie.id);
-    // Restore admin film to original mock values
-    setFilms(p => p.map(x => x.id === film.id ? original : x));
-    addAudit('Reset film to original', original.title, 'movie', 'Film reset to original mock data.');
+    // Remove the public movie override (restores raw catalog values)
+    const sourceMovie = sourceMovies.find(
+      m => m.title.toLowerCase() === film.title.toLowerCase() ||
+           m.id === parseInt(film.id.replace('movie-', ''))
+    );
+    if (sourceMovie) resetMovieOverride(sourceMovie.id);
+
+    // Restore admin-specific metadata: use MOCK_FILMS entry if it exists, else defaults
+    const mockEntry = MOCK_FILMS.find(f => f.id === film.id);
+    if (mockEntry) {
+      setFilms(p => p.map(x => x.id === film.id ? {
+        ...mockEntry,
+        thumbnail: sourceMovie?.thumbnail ?? mockEntry.thumbnail,
+        trailerUrl: sourceMovie?.trailerUrl,
+      } : x));
+    } else if (sourceMovie) {
+      setFilms(p => p.map(x => x.id === film.id ? {
+        ...x,
+        title: sourceMovie.title,
+        subtitle: sourceMovie.subtitle,
+        description: sourceMovie.description,
+        genre: sourceMovie.genre,
+        duration: sourceMovie.duration,
+        price: sourceMovie.price,
+        thumbnail: sourceMovie.thumbnail,
+        rating: sourceMovie.rating,
+        releaseYear: sourceMovie.releaseYear ?? x.releaseYear,
+        trailerUrl: sourceMovie.trailerUrl,
+        tags: Array.isArray(sourceMovie.tags) ? sourceMovie.tags.join(', ') : x.tags,
+        status: 'Approved',
+        featured: sourceMovie.featured ?? false,
+        moderationNotes: '',
+      } : x));
+    }
+    addAudit('Reset film to original', film.title, 'movie', 'Film reset to original catalog data.');
     setEditingFilm(null);
   };
 

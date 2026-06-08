@@ -6,7 +6,6 @@ function mimeToExt(mimeType: string): string {
   return 'jpg';
 }
 
-// Convert a base64 data URL to a Blob.
 function dataUrlToBlob(dataUrl: string): { blob: Blob; mimeType: string } {
   const [header, base64] = dataUrl.split(',');
   const mimeType = header.match(/:(.*?);/)?.[1] ?? 'image/jpeg';
@@ -18,15 +17,22 @@ function dataUrlToBlob(dataUrl: string): { blob: Blob; mimeType: string } {
 
 /**
  * Upload a compressed poster base64 data URL to the `covers` bucket.
+ * Uses signed upload URLs — works without a user session (anon key only).
  * Returns the public URL suitable for storing as cover_url in the movies table.
  */
 export async function uploadCover(filmKey: string, dataUrl: string): Promise<string> {
   const { blob, mimeType } = dataUrlToBlob(dataUrl);
   const filename = `${filmKey}-${Date.now()}.${mimeToExt(mimeType)}`;
 
+  const { data: signed, error: signErr } = await supabase.storage
+    .from('covers')
+    .createSignedUploadUrl(filename);
+
+  if (signErr) throw new Error(`Failed to get signed upload URL: ${signErr.message}`);
+
   const { data, error } = await supabase.storage
     .from('covers')
-    .upload(filename, blob, { contentType: mimeType, upsert: true });
+    .uploadToSignedUrl(signed.path, signed.token, blob, { contentType: mimeType });
 
   if (error) throw new Error(`Cover upload failed: ${error.message}`);
 
@@ -39,15 +45,22 @@ export async function uploadCover(filmKey: string, dataUrl: string): Promise<str
 
 /**
  * Upload a trailer video File to the `trailers` bucket.
+ * Uses signed upload URLs — works without a user session (anon key only).
  * Returns the public URL suitable for storing as trailer_url in the movies table.
  */
 export async function uploadTrailer(filmKey: string, file: File): Promise<string> {
   const ext = file.name.split('.').pop()?.toLowerCase() ?? 'mp4';
   const filename = `${filmKey}-${Date.now()}.${ext}`;
 
+  const { data: signed, error: signErr } = await supabase.storage
+    .from('trailers')
+    .createSignedUploadUrl(filename);
+
+  if (signErr) throw new Error(`Failed to get signed upload URL: ${signErr.message}`);
+
   const { data, error } = await supabase.storage
     .from('trailers')
-    .upload(filename, file, { contentType: file.type, upsert: true });
+    .uploadToSignedUrl(signed.path, signed.token, file, { contentType: file.type });
 
   if (error) throw new Error(`Trailer upload failed: ${error.message}`);
 

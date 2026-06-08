@@ -132,6 +132,8 @@ export async function upsertMovie(movie: Movie, status = 'Approved'): Promise<vo
  */
 async function seedMovies(): Promise<void> {
   const rows = localMovies.map((m) => movieToRow(m));
-  const { error } = await supabase.from('movies').insert(rows);
+  const { error } = await supabase
+    .from('movies')
+    .upsert(rows, { onConflict: 'id', ignoreDuplicates: true });
   if (error) console.warn('[movieService] seed error:', error.message);
 }

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 interface CreatorPortalProps {
   onStart: () => void;
   onDashboard: () => void;
+  onViewDemo?: () => void;
 }
 
 // ── AI Tool badges ────────────────────────────────────────────────────────────
@@ -111,95 +112,140 @@ const FAQS = [
   { q: 'How long does approval take?',         a: 'Most creator applications are reviewed within a few business days.' },
 ];
 
-// ── Dashboard preview ─────────────────────────────────────────────────────────
+// ── Enhanced Dashboard preview ────────────────────────────────────────────────
 
 function DashboardPreview() {
   const stats = [
-    { label: 'Revenue',      value: '$3,420', color: 'text-brand-purple' },
-    { label: 'Total Views',  value: '24,800', color: 'text-brand-cyan'   },
-    { label: 'Paid Watches', value: '1,240',  color: 'text-brand-pink'   },
-    { label: 'Conversion',   value: '12%',    color: 'text-emerald-600'  },
+    { label: 'Total Revenue',  value: '$3,420', color: 'text-brand-purple', bg: 'bg-brand-purple/5',  border: 'border-brand-purple/20', trend: '+24%' },
+    { label: 'Total Views',    value: '24,800', color: 'text-brand-cyan',   bg: 'bg-brand-cyan/5',    border: 'border-brand-cyan/20',   trend: '+18%' },
+    { label: 'Paid Watches',   value: '1,240',  color: 'text-brand-pink',   bg: 'bg-brand-pink/5',    border: 'border-brand-pink/20',   trend: '+31%' },
+    { label: 'Conversion',     value: '12%',    color: 'text-emerald-600',  bg: 'bg-emerald-50',      border: 'border-emerald-200',     trend: '+5%'  },
   ];
   const films = [
-    { title: 'Neon Shadows',   views: '4,240', rev: '$840', status: 'Approved' },
-    { title: 'Void Protocol',  views: '3,820', rev: '$762', status: 'Approved' },
-    { title: 'Static Dreams',  views: '2,910', rev: '$580', status: 'Approved' },
+    { title: 'Neon Shadows',  views: '4,240', rev: '$840', conv: '14%' },
+    { title: 'Void Protocol', views: '3,820', rev: '$762', conv: '12%' },
+    { title: 'Static Dreams', views: '2,910', rev: '$580', conv: '11%' },
+    { title: 'Echo Chamber',  views: '2,100', rev: '$420', conv: '9%'  },
   ];
   const navItems = ['Dashboard', 'Content', 'Payouts', 'Analytics', 'Settings'];
+  const chartBars = [52, 68, 58, 82, 74, 100];
+  const chartMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
 
   return (
-    <div className="rounded-[2rem] overflow-hidden border border-slate-200 bg-white shadow-2xl pointer-events-none select-none">
+    <div className="rounded-[2rem] overflow-hidden border border-slate-700/50 bg-white shadow-2xl pointer-events-none select-none ring-1 ring-white/10">
       {/* Window chrome */}
-      <div className="flex items-center gap-3 bg-slate-950 px-5 py-3">
+      <div className="flex items-center gap-3 bg-slate-950 px-5 py-3.5">
         <div className="flex gap-1.5">
-          <div className="h-3 w-3 rounded-full bg-red-400/70" />
-          <div className="h-3 w-3 rounded-full bg-yellow-400/70" />
-          <div className="h-3 w-3 rounded-full bg-green-400/70" />
+          <div className="h-3 w-3 rounded-full bg-red-400/80" />
+          <div className="h-3 w-3 rounded-full bg-yellow-400/80" />
+          <div className="h-3 w-3 rounded-full bg-green-400/80" />
         </div>
-        <span className="text-xs text-slate-400 font-medium">YouMakeTV · Creator Dashboard</span>
+        <span className="text-xs text-slate-400 font-medium ml-1">YouMakeTV · Creator Dashboard</span>
+        <div className="ml-auto flex items-center gap-1.5">
+          <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          <span className="text-[10px] text-slate-500">Live</span>
+        </div>
       </div>
 
       {/* Dashboard body */}
-      <div className="flex" style={{ minHeight: 340 }}>
+      <div className="flex" style={{ minHeight: 500 }}>
         {/* Sidebar */}
-        <div className="hidden sm:flex w-40 flex-none flex-col border-r border-slate-100 bg-white p-2.5 gap-0.5">
-          <div className="flex items-center gap-2 px-3 py-2 mb-2">
-            <div className="h-7 w-7 rounded-lg bg-slate-950 flex items-center justify-center text-white text-[10px] font-bold">AN</div>
-            <div>
-              <p className="text-[10px] font-semibold text-slate-950 leading-tight">AI Noir Studio</p>
+        <div className="hidden sm:flex w-44 flex-none flex-col border-r border-slate-100 bg-white p-3 gap-0.5">
+          <div className="flex items-center gap-2.5 px-2.5 py-2.5 mb-2">
+            <div className="h-8 w-8 rounded-xl bg-slate-950 flex items-center justify-center text-white text-[11px] font-bold flex-none">AN</div>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold text-slate-950 truncate">AI Noir Studio</p>
               <div className="flex items-center gap-1 mt-0.5">
-                <div className="h-1 w-1 rounded-full bg-emerald-400" />
-                <p className="text-[8px] text-slate-500">Verified</p>
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 flex-none" />
+                <p className="text-[9px] text-slate-500">Verified creator</p>
               </div>
             </div>
           </div>
           {navItems.map((item, i) => (
             <div
               key={item}
-              className={`rounded-lg px-3 py-1.5 text-[10px] font-medium ${i === 0 ? 'bg-slate-950 text-white' : 'text-slate-500'}`}
+              className={`rounded-xl px-3 py-2 text-[10px] font-medium ${i === 0 ? 'bg-slate-950 text-white' : 'text-slate-500'}`}
             >
               {item}
             </div>
           ))}
+          <div className="mt-auto pt-3 border-t border-slate-100">
+            <div className="rounded-xl bg-brand-purple/8 border border-brand-purple/20 px-3 py-2 text-center">
+              <p className="text-[10px] font-semibold text-brand-purple">+ Upload Film</p>
+            </div>
+          </div>
         </div>
 
         {/* Content area */}
-        <div className="flex-1 p-4 sm:p-5 space-y-4 bg-slate-50/60">
-          <div>
-            <p className="text-[8px] uppercase tracking-widest text-brand-purple font-semibold">Welcome back</p>
-            <p className="text-xs font-semibold text-slate-950 mt-0.5">AI Noir Studio</p>
-            <p className="text-[9px] text-slate-400 mt-0.5">12 films · Analytics updated live</p>
+        <div className="flex-1 p-4 sm:p-5 space-y-3.5 bg-slate-50/60 overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <p className="text-[9px] uppercase tracking-widest text-brand-purple font-semibold">Welcome back</p>
+              <p className="text-[13px] font-semibold text-slate-950 mt-0.5">AI Noir Studio</p>
+              <p className="text-[10px] text-slate-400">12 films · Analytics updated live</p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-semibold text-slate-700 flex-none">
+              + Upload
+            </div>
           </div>
 
           {/* Stat cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {stats.map(s => (
-              <div key={s.label} className="rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm">
-                <p className="text-[8px] uppercase tracking-wide text-slate-400">{s.label}</p>
+              <div key={s.label} className={`rounded-xl border ${s.border} ${s.bg} p-2.5`}>
+                <p className="text-[8px] uppercase tracking-wide text-slate-400 leading-tight">{s.label}</p>
                 <p className={`text-sm font-bold mt-1 ${s.color}`}>{s.value}</p>
+                <p className="text-[9px] text-emerald-600 mt-0.5 font-semibold">↑ {s.trend}</p>
               </div>
             ))}
           </div>
 
           {/* Payout banner */}
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 flex items-center justify-between">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 flex items-center justify-between">
             <div>
               <p className="text-[8px] uppercase tracking-wide text-emerald-600 font-semibold">Pending payout</p>
-              <p className="text-xs font-bold text-emerald-700 mt-0.5">$398.40</p>
+              <p className="text-[13px] font-bold text-emerald-700 mt-0.5">$398.40</p>
             </div>
-            <span className="text-[9px] bg-emerald-600 text-white rounded-full px-2 py-0.5 font-semibold">Processing</span>
+            <div className="text-right">
+              <span className="text-[9px] bg-emerald-600 text-white rounded-full px-2 py-0.5 font-semibold">Processing</span>
+              <p className="text-[8px] text-slate-400 mt-1">Paid Jul 1, 2026</p>
+            </div>
           </div>
 
-          {/* Film table */}
+          {/* Revenue chart */}
+          <div className="rounded-xl border border-slate-200 bg-white px-3 pt-3 pb-2 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] font-semibold text-slate-800">Monthly Revenue</p>
+              <p className="text-[9px] text-emerald-600 font-semibold">↑ 24% this period</p>
+            </div>
+            <div className="flex items-end gap-1.5" style={{ height: 52 }}>
+              {chartBars.map((h, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                  <div
+                    className={`w-full rounded-sm ${i === chartBars.length - 1 ? 'bg-brand-purple' : 'bg-brand-purple/25'}`}
+                    style={{ height: `${h}%` }}
+                  />
+                  <span className="text-[7px] text-slate-400">{chartMonths[i]}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Film performance table */}
           <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-            <div className="grid grid-cols-4 gap-1 bg-slate-50 px-3 py-1.5 text-[8px] uppercase tracking-wide text-slate-400 font-semibold">
-              <span className="col-span-2">Film</span><span>Views</span><span>Revenue</span>
+            <div className="grid grid-cols-5 gap-1 bg-slate-50 px-3 py-1.5 text-[8px] uppercase tracking-wide text-slate-400 font-semibold border-b border-slate-100">
+              <span className="col-span-2">Film</span>
+              <span>Views</span>
+              <span>Revenue</span>
+              <span>Conv.</span>
             </div>
             {films.map((f) => (
-              <div key={f.title} className="grid grid-cols-4 gap-1 px-3 py-1.5 border-t border-slate-100 text-[9px]">
+              <div key={f.title} className="grid grid-cols-5 gap-1 px-3 py-1.5 border-t border-slate-100 text-[9px] items-center">
                 <span className="col-span-2 font-medium text-slate-900 truncate">{f.title}</span>
                 <span className="text-slate-500">{f.views}</span>
                 <span className="font-semibold text-slate-900">{f.rev}</span>
+                <span className="font-semibold text-emerald-600">{f.conv}</span>
               </div>
             ))}
           </div>
@@ -211,7 +257,7 @@ function DashboardPreview() {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function CreatorPortal({ onStart, onDashboard }: CreatorPortalProps) {
+export default function CreatorPortal({ onStart, onDashboard, onViewDemo }: CreatorPortalProps) {
   const [showSticky, setShowSticky] = useState(false);
   const [openFaq, setOpenFaq]       = useState<number | null>(null);
 
@@ -292,7 +338,83 @@ export default function CreatorPortal({ onStart, onDashboard }: CreatorPortalPro
         </div>
       </section>
 
-      {/* ── 2. CREATOR SPOTLIGHT ─────────────────────────────────────────────── */}
+      {/* ── 2. DASHBOARD PREVIEW — major conversion element, above fold ──────── */}
+      <section className="overflow-hidden rounded-[2.5rem] border border-slate-800/60 bg-slate-950 shadow-2xl">
+        <div className="relative overflow-hidden px-8 py-14 sm:px-12 sm:py-16">
+          {/* Subtle dot grid */}
+          <div
+            className="absolute inset-0 opacity-[0.035] pointer-events-none"
+            style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '28px 28px' }}
+          />
+          {/* Purple glow */}
+          <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-brand-purple/20 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-brand-cyan/10 blur-3xl pointer-events-none" />
+
+          <div className="relative grid gap-12 lg:grid-cols-[1fr_1.75fr] lg:items-center">
+
+            {/* Left: headline + benefits + CTAs */}
+            <div className="space-y-7">
+              <span className="inline-flex rounded-full bg-brand-purple/20 border border-brand-purple/30 px-4 py-2 text-xs uppercase tracking-[0.32em] text-brand-purple/90">
+                Creator Dashboard
+              </span>
+
+              <div className="space-y-4">
+                <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white leading-[1.1]">
+                  Creators Are Earning.<br />
+                  <span className="bg-gradient-to-r from-brand-purple to-brand-cyan bg-clip-text text-transparent">
+                    Track Everything.
+                  </span>
+                </h2>
+                <p className="text-base leading-7 text-slate-300 max-w-sm">
+                  Track earnings, film performance, audience growth, purchases, and engagement from a single dashboard built specifically for AI filmmakers.
+                </p>
+              </div>
+
+              <ul className="space-y-3">
+                {[
+                  'Track every sale and purchase in real time',
+                  'Monitor audience growth across all films',
+                  'See top-performing films at a glance',
+                  'Measure trailer-to-paid conversion rates',
+                  'Understand viewer behavior and engagement',
+                  'Manage your entire AI film catalog',
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-3 text-sm text-slate-300">
+                    <span className="flex h-5 w-5 flex-none items-center justify-center rounded-full bg-brand-purple text-white text-xs font-bold mt-0.5">✓</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+
+              <div className="space-y-3 pt-1">
+                <button
+                  onClick={onStart}
+                  className="w-full rounded-full bg-brand-purple px-6 py-4 text-sm font-semibold text-white transition hover:bg-brand-indigo shadow-lg shadow-brand-purple/25"
+                >
+                  Start Creator Onboarding →
+                </button>
+                <button
+                  onClick={onViewDemo ?? onDashboard}
+                  className="w-full rounded-full border border-slate-600 bg-white/5 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-white/10 hover:border-slate-500"
+                >
+                  View Full Dashboard Demo
+                </button>
+              </div>
+
+              <p className="text-xs text-slate-500 text-center">
+                Used by AI filmmakers to track performance and grow revenue.
+              </p>
+            </div>
+
+            {/* Right: large dashboard preview */}
+            <div className="w-full lg:translate-y-2">
+              <DashboardPreview />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 3. CREATOR SPOTLIGHT ─────────────────────────────────────────────── */}
       <section>
         <div className="mb-7">
           <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Social proof</p>
@@ -378,40 +500,6 @@ export default function CreatorPortal({ onStart, onDashboard }: CreatorPortalPro
               </div>
             </div>
           ))}
-        </div>
-      </section>
-
-      {/* ── 6. DASHBOARD PREVIEW ─────────────────────────────────────────────── */}
-      <section className="rounded-[2rem] border border-slate-200/70 bg-white shadow-soft p-8 sm:p-10">
-        <div className="grid gap-10 lg:grid-cols-[1fr_1.6fr] lg:items-center">
-          <div className="space-y-5">
-            <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Creator tools</p>
-            <h2 className="text-2xl font-semibold text-slate-950">Everything you need to grow</h2>
-            <p className="text-slate-500 leading-7 text-sm">
-              Your creator dashboard gives you real-time visibility into revenue, views, paid watches, and conversion rates — so you always know what's working.
-            </p>
-            <ul className="space-y-2.5">
-              {[
-                'Revenue & earnings tracking',
-                'Per-film analytics breakdown',
-                'Trailer-to-paid conversion rate',
-                'Monthly payout history',
-                'Audience engagement insights',
-              ].map((item) => (
-                <li key={item} className="flex items-center gap-2.5 text-sm text-slate-700">
-                  <span className="flex h-5 w-5 flex-none items-center justify-center rounded-full bg-brand-purple/10 text-brand-purple text-xs font-bold">✓</span>
-                  {item}
-                </li>
-              ))}
-            </ul>
-            <button
-              onClick={onStart}
-              className="rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-            >
-              Start Creator Onboarding →
-            </button>
-          </div>
-          <DashboardPreview />
         </div>
       </section>
 

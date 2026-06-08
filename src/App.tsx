@@ -141,7 +141,7 @@ export default function App() {
           <Route path="/login" element={<LoginPage viewer={viewer} onSignIn={handleSignIn} />} />
           <Route path="/account" element={<AccountPage viewer={viewer} onSignOut={handleSignOut} />} />
           <Route path="/creators" element={<CreatorsPage />} />
-          <Route path="/creator" element={<CreatorPortal onStart={() => navigate('/creator/onboarding')} onDashboard={() => navigate('/creator/dashboard')} />} />
+          <Route path="/creator" element={<CreatorPortal onStart={() => navigate('/creator/onboarding')} onDashboard={() => navigate('/creator/dashboard')} onViewDemo={handleDemoCreator} />} />
           <Route path="/creator/onboarding" element={<CreatorOnboarding onComplete={handleCreateCreator} />} />
           <Route path="/creator/dashboard" element={<CreatorDashboard creator={creator} onAddFilm={handleAddFilm} onDeleteFilm={handleDeleteFilm} onStartOnboarding={() => navigate('/creator/onboarding')} onCreateDemo={handleDemoCreator} />} />
           <Route path="*" element={<NotFoundPage />} />

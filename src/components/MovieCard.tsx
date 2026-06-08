@@ -5,7 +5,7 @@ import { getPosterUrl, fallbackGradient } from '../lib/posters';
 interface MovieCardProps {
   movie: Movie;
   onSelect: (movie: Movie) => void;
-  onWatchTrailer: () => void;
+  onWatchTrailer: (title: string) => void;
 }
 
 export default function MovieCard({ movie, onSelect, onWatchTrailer }: MovieCardProps) {
@@ -37,7 +37,7 @@ export default function MovieCard({ movie, onSelect, onWatchTrailer }: MovieCard
         <div className="absolute inset-0 flex flex-col items-center justify-end p-3 gap-2 bg-slate-950/0 group-hover:bg-slate-950/75 transition-all duration-300">
           <div className="w-full space-y-2 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
             <button
-              onClick={(e) => { e.stopPropagation(); onWatchTrailer(); }}
+              onClick={(e) => { e.stopPropagation(); onWatchTrailer(movie.title); }}
               className="w-full rounded-full bg-white py-2 text-xs font-semibold text-slate-950 hover:bg-slate-100 transition"
             >
               ▶ Watch Trailer

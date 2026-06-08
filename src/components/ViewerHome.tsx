@@ -8,7 +8,7 @@ interface ViewerHomeProps {
   movies: Movie[];
   viewer?: { username: string; premium: boolean } | null;
   onSelectMovie: (movieId: number) => void;
-  onWatchTrailer: () => void;
+  onWatchTrailer: (title: string) => void;
 }
 
 const FILTER_GENRES = ['All', 'Action', 'Sci-Fi', 'Drama', 'Horror', 'Comedy', 'Documentary', 'Animation', 'Fantasy', 'Thriller', 'Anime', 'Mystery'];
@@ -51,7 +51,7 @@ function ArrowBtn({ dir, onClick }: { dir: 'left' | 'right'; onClick: () => void
 interface PosterCardProps {
   movie: Movie;
   onSelect: () => void;
-  onTrailer: () => void;
+  onTrailer: (title: string) => void;
 }
 
 function PosterCard({ movie, onSelect, onTrailer }: PosterCardProps) {
@@ -83,7 +83,7 @@ function PosterCard({ movie, onSelect, onTrailer }: PosterCardProps) {
         {/* Hover buttons */}
         <div className="absolute inset-x-0 top-0 bottom-12 flex flex-col items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <button
-            onClick={(e) => { e.stopPropagation(); onTrailer(); }}
+            onClick={(e) => { e.stopPropagation(); onTrailer(movie.title); }}
             className="w-4/5 rounded-full bg-white/90 py-1.5 text-[9px] font-semibold text-slate-950 hover:bg-white transition"
           >
             ▶ Trailer
@@ -153,7 +153,7 @@ interface MovieRowProps {
   title: string;
   movies: Movie[];
   onSelectMovie: (id: number) => void;
-  onWatchTrailer: () => void;
+  onWatchTrailer: (title: string) => void;
 }
 
 function MovieRow({ title, movies, onSelectMovie, onWatchTrailer }: MovieRowProps) {
@@ -193,7 +193,7 @@ function MovieRow({ title, movies, onSelectMovie, onWatchTrailer }: MovieRowProp
 interface GenreDiscoveryCardProps {
   movie: Movie;
   onSelect: () => void;
-  onTrailer: () => void;
+  onTrailer: (title: string) => void;
 }
 
 function GenreDiscoveryCard({ movie, onSelect, onTrailer }: GenreDiscoveryCardProps) {
@@ -233,7 +233,7 @@ function GenreDiscoveryCard({ movie, onSelect, onTrailer }: GenreDiscoveryCardPr
         {/* Hover: trailer + details buttons */}
         <div className="absolute inset-x-0 top-0 bottom-14 flex flex-col items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <button
-            onClick={(e) => { e.stopPropagation(); onTrailer(); }}
+            onClick={(e) => { e.stopPropagation(); onTrailer(movie.title); }}
             className="w-4/5 rounded-full bg-white/90 py-1.5 text-[10px] font-semibold text-slate-950 hover:bg-white transition"
           >
             ▶ Watch Trailer
@@ -256,7 +256,7 @@ interface GenreDiscoveryRowProps {
   genre: string;
   movies: Movie[];
   onSelectMovie: (id: number) => void;
-  onWatchTrailer: () => void;
+  onWatchTrailer: (title: string) => void;
 }
 
 function GenreDiscoveryRow({ genre, movies, onSelectMovie, onWatchTrailer }: GenreDiscoveryRowProps) {
@@ -465,7 +465,7 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onWatchTrail
                 ▶ Watch Now
               </button>
               <button
-                onClick={onWatchTrailer}
+                onClick={() => onWatchTrailer(featured.title)}
                 className="flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
               >
                 ▶ Trailer

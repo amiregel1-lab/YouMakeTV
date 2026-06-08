@@ -216,7 +216,7 @@ export default function MovieDetailPage({ viewer, onPurchase, onSubscribe, onWat
                 viewer={viewer}
                 onPurchase={onPurchase}
                 onSubscribe={onSubscribe}
-                onWatchTrailer={onWatchTrailer}
+                onWatchTrailer={handleWatchTrailer}
               />
 
               <Link

@@ -34,6 +34,7 @@ export default function App() {
   const [creator, setCreator] = useState<CreatorProfile | null>(null);
   const [newCreatorSession, setNewCreatorSession] = useState(false);
   const [modal, setModal] = useState<{ type: 'transaction' | 'subscription' | 'trailer'; title: string; details: string } | null>(null);
+  const [trailerModal, setTrailerModal] = useState<{ title: string; url: string } | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -121,7 +122,17 @@ export default function App() {
     setCreator((current) => (current ? { ...current, films: current.films.filter((film) => film.id !== filmId) } : current));
   };
 
-  const openTrailerModal = () => {
+  const openTrailerModal = (title?: string) => {
+    if (title) {
+      try {
+        const raw = localStorage.getItem('youmake_media_overrides');
+        if (raw) {
+          const overrides = JSON.parse(raw) as Record<string, { trailerUrl?: string }>;
+          const url = overrides[title]?.trailerUrl;
+          if (url) { setTrailerModal({ title, url }); return; }
+        }
+      } catch {}
+    }
     setModal({
       type: 'trailer',
       title: 'Trailer experience coming soon',
@@ -202,6 +213,24 @@ export default function App() {
       <Footer />
 
       {modal && <MockPaymentModal type={modal.type} title={modal.title} details={modal.details} onClose={() => setModal(null)} />}
+
+      {trailerModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4"
+          onClick={() => setTrailerModal(null)}
+        >
+          <div
+            className="w-full max-w-2xl rounded-2xl overflow-hidden bg-black shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 bg-slate-900">
+              <p className="text-sm font-semibold text-white">{trailerModal.title} — Trailer</p>
+              <button onClick={() => setTrailerModal(null)} className="text-slate-400 hover:text-white transition text-xl leading-none">×</button>
+            </div>
+            <video src={trailerModal.url} controls autoPlay className="w-full" style={{ maxHeight: '60vh' }} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

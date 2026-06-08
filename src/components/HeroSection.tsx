@@ -4,7 +4,7 @@ interface HeroSectionProps {
   movie: Movie;
   viewerCount: number;
   onSelect: (movie: Movie) => void;
-  onWatchTrailer: () => void;
+  onWatchTrailer: (title: string) => void;
   onPurchase: () => void;
 }
 
@@ -30,7 +30,7 @@ export default function HeroSection({ movie, viewerCount, onSelect, onWatchTrail
           </div>
 
           <div className="mt-8 flex flex-wrap items-center gap-4">
-            <button onClick={onWatchTrailer} className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100">
+            <button onClick={() => onWatchTrailer(movie.title)} className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100">
               Watch Trailer
             </button>
             <button onClick={onPurchase} className="rounded-full border border-slate-100/20 bg-slate-100/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-900/80">

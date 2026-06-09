@@ -6,13 +6,13 @@ export interface Creator {
   totalViews: number;
 }
 
-export type BadgeType = 'Top Creator' | 'Rising Studio' | 'Featured Studio' | 'New Creator';
+export type BadgeType = 'Top Studio' | 'Rising Studio' | 'Featured Studio' | 'New Studio';
 
 export const BADGE_CONFIG: Record<BadgeType, { label: string; className: string }> = {
-  'Top Creator':     { label: '★ Top Creator',   className: 'bg-amber-50 text-amber-700 border-amber-200' },
+  'Top Studio':      { label: '★ Top Studio',    className: 'bg-amber-50 text-amber-700 border-amber-200' },
   'Rising Studio':   { label: '↑ Rising Studio', className: 'bg-sky-50 text-sky-700 border-sky-200' },
   'Featured Studio': { label: '◆ Featured',      className: 'bg-violet-50 text-violet-700 border-violet-200' },
-  'New Creator':     { label: '✦ New',           className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  'New Studio':      { label: '✦ New Studio',    className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
 };
 
 // Deterministic very-dark tint per studio — subtle variety, all feel premium
@@ -34,10 +34,10 @@ export function studioTint(name: string): string {
 }
 
 export function getBadge(totalViews: number, films: Movie[]): BadgeType | null {
-  if (totalViews > 80_000) return 'Top Creator';
+  if (totalViews > 80_000) return 'Top Studio';
   if (films.some((f) => f.featured)) return 'Featured Studio';
   if (totalViews > 30_000 && films.length >= 4) return 'Rising Studio';
-  if (films.length <= 2) return 'New Creator';
+  if (films.length <= 2) return 'New Studio';
   return null;
 }
 

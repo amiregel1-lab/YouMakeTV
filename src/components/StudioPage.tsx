@@ -42,7 +42,7 @@ export default function StudioPage() {
           We couldn't find a studio named "{studioName}". It may have been removed or the link may be incorrect.
         </p>
         <button
-          onClick={() => navigate('/creators')}
+          onClick={() => navigate('/studios')}
           className="mt-6 rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition"
         >
           ← Back to Studios
@@ -74,7 +74,7 @@ export default function StudioPage() {
 
       {/* Back navigation */}
       <button
-        onClick={() => navigate('/creators')}
+        onClick={() => navigate('/studios')}
         className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-950 transition"
       >
         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

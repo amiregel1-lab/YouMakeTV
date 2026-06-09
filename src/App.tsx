@@ -14,6 +14,7 @@ import CreatorPortal from './components/CreatorPortal';
 import CreatorOnboarding from './components/CreatorOnboarding';
 import CreatorDashboard from './components/CreatorDashboard';
 import CreatorsPage from './components/CreatorsPage';
+import StudiosPage from './components/StudiosPage';
 import StudioPage from './components/StudioPage';
 import CreatorLoginPage from './components/CreatorLoginPage';
 import Footer from './components/Footer';
@@ -73,7 +74,8 @@ export default function App() {
   const activeRoute = useMemo(() => {
     if (location.pathname.startsWith('/creatorsLogin')) return 'creatorsLogin';
     if (location.pathname.startsWith('/creators')) return 'creators';
-    if (location.pathname.startsWith('/studio/')) return 'creators';
+    if (location.pathname.startsWith('/studios')) return 'studios';
+    if (location.pathname.startsWith('/studio/')) return 'studios';
     if (location.pathname.startsWith('/creator/dashboard')) return 'dashboard';
     if (location.pathname.startsWith('/creator/onboarding')) return 'onboarding';
     if (location.pathname.startsWith('/creator')) return 'creator';
@@ -171,6 +173,7 @@ export default function App() {
             subscribe: '/subscribe',
             creator: '/creator',
             creators: '/creators',
+            studios: '/studios',
             onboarding: '/creator/onboarding',
             dashboard: '/creator/dashboard',
             login: '/login',
@@ -196,6 +199,7 @@ export default function App() {
           <Route path="/login" element={<LoginPage viewer={viewer} onSignIn={handleSignIn} />} />
           <Route path="/account" element={<AccountPage viewer={viewer} onSignOut={handleSignOut} />} />
           <Route path="/creators" element={<CreatorsPage />} />
+          <Route path="/studios" element={<StudiosPage />} />
           <Route path="/studio/:name" element={<StudioPage />} />
           <Route path="/creator" element={<CreatorPortal onStart={() => navigate('/creator/onboarding')} onDashboard={() => navigate('/creator/dashboard')} onViewDemo={handleDemoCreator} onSignIn={() => navigate('/creatorsLogin')} />} />
           <Route path="/creatorsLogin" element={<CreatorLoginPage onSignIn={() => navigate('/creator/dashboard')} onStart={() => navigate('/creator/onboarding')} onViewDemo={handleDemoCreator} />} />

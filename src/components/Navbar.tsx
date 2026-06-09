@@ -4,7 +4,7 @@ import BrandLogo from './BrandLogo';
 interface NavbarProps {
   active: string;
   viewer?: ViewerAccount | null;
-  onRouteChange: (route: 'home' | 'subscribe' | 'creator' | 'creators' | 'onboarding' | 'dashboard' | 'login' | 'account' | 'creatorsLogin') => void;
+  onRouteChange: (route: 'home' | 'subscribe' | 'creator' | 'creators' | 'studios' | 'onboarding' | 'dashboard' | 'login' | 'account' | 'creatorsLogin') => void;
   onSignOut: () => void;
 }
 
@@ -43,7 +43,7 @@ export default function Navbar({ active, viewer, onRouteChange, onSignOut }: Nav
             <BrandLogo />
           </button>
 
-          {/* Desktop nav links */}
+          {/* Desktop nav — Movies | YouMake+ | Studios | Creators */}
           <nav className="hidden items-center gap-8 lg:flex">
             <button
               onClick={() => onRouteChange('home')}
@@ -56,6 +56,12 @@ export default function Navbar({ active, viewer, onRouteChange, onSignOut }: Nav
               className={`text-sm font-semibold transition ${active === 'subscribe' ? 'text-slate-950' : 'text-slate-500 hover:text-slate-900'}`}
             >
               YouMake+
+            </button>
+            <button
+              onClick={() => onRouteChange('studios')}
+              className={`text-sm font-semibold transition ${active === 'studios' ? 'text-slate-950' : 'text-slate-500 hover:text-slate-900'}`}
+            >
+              Studios
             </button>
             <button
               onClick={() => onRouteChange('creators')}
@@ -76,7 +82,6 @@ export default function Navbar({ active, viewer, onRouteChange, onSignOut }: Nav
 
             {viewer ? (
               <>
-                {/* Desktop: full username button */}
                 <button
                   onClick={() => onRouteChange('account')}
                   className="hidden items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-slate-100 lg:inline-flex"
@@ -86,14 +91,12 @@ export default function Navbar({ active, viewer, onRouteChange, onSignOut }: Nav
                   </span>
                   {viewer.username}
                 </button>
-                {/* Desktop: sign out */}
                 <button
                   onClick={onSignOut}
                   className="hidden rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 lg:inline-flex"
                 >
                   Sign out
                 </button>
-                {/* Mobile: avatar only */}
                 <button
                   onClick={() => onRouteChange('account')}
                   aria-label="Go to account"
@@ -103,6 +106,7 @@ export default function Navbar({ active, viewer, onRouteChange, onSignOut }: Nav
                 </button>
               </>
             ) : active === 'creators' ? (
+              /* Creator-focused CTAs on the Creators (acquisition) page */
               <>
                 <button
                   onClick={() => onRouteChange('onboarding')}
@@ -118,6 +122,7 @@ export default function Navbar({ active, viewer, onRouteChange, onSignOut }: Nav
                 </button>
               </>
             ) : (
+              /* Standard viewer CTAs everywhere else */
               <>
                 <button
                   onClick={() => onRouteChange('subscribe')}
@@ -137,7 +142,7 @@ export default function Navbar({ active, viewer, onRouteChange, onSignOut }: Nav
         </div>
       </header>
 
-      {/* Mobile bottom tab bar */}
+      {/* Mobile bottom tab bar — Movies | YouMake+ | Studios | Account */}
       <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur-xl lg:hidden">
         <div className="flex items-stretch">
           <MobileTab
@@ -161,12 +166,12 @@ export default function Navbar({ active, viewer, onRouteChange, onSignOut }: Nav
             }
           />
           <MobileTab
-            label="Creators"
-            active={active === 'creators'}
-            onClick={() => onRouteChange('creators')}
+            label="Studios"
+            active={active === 'studios'}
+            onClick={() => onRouteChange('studios')}
             icon={
               <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
               </svg>
             }
           />

@@ -106,7 +106,7 @@ export default function CopyrightPage() {
             <p>Send your completed DMCA takedown notice to our designated DMCA Agent:</p>
             <div className="rounded-2xl bg-slate-50 border border-slate-200 px-5 py-4 space-y-1">
               <p className="font-semibold text-slate-950">DMCA Agent — YouMakeTV.ai</p>
-              <p>Email: <span className="text-brand-purple">dmca@youmaketv.ai</span></p>
+              <p>Email: <span className="text-brand-purple">info@youmaketv.ai</span></p>
               <p>Subject line: <span className="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded">DMCA Takedown Notice</span></p>
             </div>
             <p>
@@ -202,7 +202,7 @@ export default function CopyrightPage() {
             <p>
               This policy addresses copyright claims under the DMCA. If you have a claim involving trademark
               infringement, defamation, violation of right of publicity, or other intellectual property concerns,
-              please contact us at <span className="text-brand-purple">legal@youmaketv.ai</span>. We will review
+              please contact us at <span className="text-brand-purple">info@youmaketv.ai</span>. We will review
               such claims on a case-by-case basis and take appropriate action in our sole discretion.
             </p>
           </Section>
@@ -213,8 +213,8 @@ export default function CopyrightPage() {
             <p>For copyright-related questions or to submit a DMCA notice:</p>
             <div className="rounded-2xl bg-slate-50 border border-slate-200 px-5 py-4 space-y-1">
               <p className="font-semibold text-slate-950">DMCA &amp; Legal — YouMakeTV.ai</p>
-              <p>Email: <span className="text-brand-purple">dmca@youmaketv.ai</span></p>
-              <p>General legal matters: <span className="text-brand-purple">legal@youmaketv.ai</span></p>
+              <p>Email: <span className="text-brand-purple">info@youmaketv.ai</span></p>
+              <p>General legal matters: <span className="text-brand-purple">info@youmaketv.ai</span></p>
             </div>
           </Section>
         </div>
@@ -222,7 +222,7 @@ export default function CopyrightPage() {
       </div>
 
       <p className="text-xs text-center text-slate-400 pb-4">
-        YouMakeTV.ai · dmca@youmaketv.ai
+        YouMakeTV.ai · info@youmaketv.ai
       </p>
     </div>
   );

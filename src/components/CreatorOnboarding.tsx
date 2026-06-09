@@ -30,8 +30,8 @@ const COUNTRIES = [
 ];
 
 const BENEFITS = [
-  'Keep 70% on every paid watch',
-  'Revenue rises to 80% after 500 watches',
+  'Start earning 30% revenue share from day one',
+  'Grow to 35% at 1,000 views, 40% at 5,000 views',
   'Real-time earnings dashboard',
   'Upload, edit, and manage your films',
   'Monthly payouts direct to your account',
@@ -82,7 +82,7 @@ You may not upload content that: depicts child sexual abuse material or sexual c
 
 7. REVENUE SHARE AND PAYMENTS
 
-Subject to this Agreement and your compliance with all platform policies, YouMakeTV will pay you: 70% of Net Revenue for the first 500 paid watches per film; 80% of Net Revenue for paid watches after the first 500 per film. Payouts are processed monthly on or around the 1st of each month for earnings accumulated in the prior calendar month. Payouts are subject to a minimum threshold of $25.00 USD. Earnings below the threshold will be carried forward.
+Subject to this Agreement and your compliance with all platform policies, YouMakeTV will pay you based on your Creator tier: 30% of Net Revenue as a Starter Creator (0–999 total paid views); 35% of Net Revenue as a Growth Creator (1,000–4,999 total paid views); 40% of Net Revenue as a Pro Creator (5,000+ total paid views). Payouts are processed monthly on or around the 1st of each month for earnings accumulated in the prior calendar month. Payouts are subject to a minimum threshold of $25.00 USD. Earnings below the threshold will be carried forward.
 
 You acknowledge that: revenue share rates are subject to change upon 30 days' written notice; platform fees, transaction fees, and processing costs may be deducted before revenue share is calculated; payouts may be delayed by up to 60 days for fraud review, dispute resolution, or regulatory compliance; YouMakeTV may withhold payment if it reasonably suspects fraudulent activity, including artificially inflated view counts; chargebacks initiated by viewers will be deducted from your earnings regardless of reason; YouMakeTV reserves the right to offset future earnings against any amounts you owe.
 
@@ -119,8 +119,8 @@ This Agreement is governed by the laws of the State of Delaware, United States, 
 YouMakeTV reserves the right to modify this Agreement at any time. Material changes will be notified via email or platform notice at least 30 days before taking effect. Continued use of the platform after modification constitutes acceptance.
 
 CONTACT
-Creator Support: creators@youmaketv.ai
-Legal: legal@youmaketv.ai
+Creator Support: info@youmaketv.ai
+Legal: info@youmaketv.ai
 Full agreement: youmaketv.ai/creator-agreement
 
 By clicking "Create Creator Account," you confirm that you have read, understood, and agree to this Creator Agreement in its entirety.`;
@@ -210,7 +210,7 @@ function RightPanel({ step }: { step: number }) {
           {[
             { num: '1', title: 'Dashboard access', desc: 'Instant access to your creator workspace.' },
             { num: '2', title: 'Upload your first film', desc: 'Use the dashboard upload tool to publish your first AI film.' },
-            { num: '3', title: 'Start earning', desc: 'Earn 70% of every paid watch from day one.' },
+            { num: '3', title: 'Start earning', desc: 'Start earning 30% revenue share from day one — grows as your audience scales.' },
             { num: '4', title: 'Get paid monthly', desc: 'Payouts are processed on the 1st of each month.' },
           ].map((item) => (
             <li key={item.num} className="flex items-start gap-4">

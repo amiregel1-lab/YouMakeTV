@@ -9,6 +9,9 @@ export default function ContactPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const subject = encodeURIComponent(`[YouMakeTV] ${form.subject} — from ${form.name}`);
+    const body = encodeURIComponent(`Name: ${form.name}\nEmail: ${form.email}\nSubject: ${form.subject}\n\n${form.message}`);
+    window.location.href = `mailto:info@youmaketv.ai?subject=${subject}&body=${body}`;
     setSubmitted(true);
   };
 
@@ -103,8 +106,8 @@ export default function ContactPage() {
       {/* Contact info */}
       <div className="grid gap-4 sm:grid-cols-2">
         {[
-          { label: 'Creator Support', detail: 'creators@youmaketv.ai', note: 'For onboarding, payouts, and film questions' },
-          { label: 'Press & Media', detail: 'press@youmaketv.ai', note: 'Interview requests and media inquiries' },
+          { label: 'Creator Support', detail: 'info@youmaketv.ai', note: 'For onboarding, payouts, and film questions' },
+          { label: 'Press & Media', detail: 'info@youmaketv.ai', note: 'Interview requests and media inquiries' },
         ].map((c) => (
           <div key={c.label} className="rounded-[2rem] border border-slate-200/70 bg-white shadow-soft p-6 space-y-1">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{c.label}</p>

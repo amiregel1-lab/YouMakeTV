@@ -9,8 +9,8 @@ interface CreatorLoginPageProps {
 }
 
 const BENEFITS = [
-  'Keep 70% on every paid watch',
-  'Revenue rises to 80% after 500 watches',
+  'Start earning 30% revenue share from day one',
+  'Grow to 35% at 1,000 views, 40% at 5,000 views',
   'Real-time earnings dashboard',
   'Upload, edit, and manage your films',
   'Monthly payouts direct to your account',

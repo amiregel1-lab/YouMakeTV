@@ -191,7 +191,7 @@ export default function TermsPage() {
             </p>
             <p>
               To request a refund under an exception, contact{' '}
-              <span className="text-brand-purple">support@youmaketv.ai</span> within 30 days of the
+              <span className="text-brand-purple">info@youmaketv.ai</span> within 30 days of the
               qualifying event.
             </p>
           </Section>
@@ -361,7 +361,7 @@ export default function TermsPage() {
             <p>
               Before initiating arbitration, you agree to provide us with written notice of your dispute
               and allow thirty (30) days to attempt informal resolution. Notices should be sent to{' '}
-              <span className="text-brand-purple">legal@youmaketv.ai</span>.
+              <span className="text-brand-purple">info@youmaketv.ai</span>.
             </p>
             <p>
               Either party may seek injunctive or other equitable relief in any court of competent
@@ -444,8 +444,8 @@ export default function TermsPage() {
             <p>For questions about these Terms:</p>
             <div className="rounded-2xl bg-slate-50 border border-slate-200 px-5 py-4 space-y-1">
               <p className="font-semibold text-slate-950">YouMakeTV.ai — Legal</p>
-              <p>Email: <span className="text-brand-purple">legal@youmaketv.ai</span></p>
-              <p>General support: <span className="text-brand-purple">support@youmaketv.ai</span></p>
+              <p>Email: <span className="text-brand-purple">info@youmaketv.ai</span></p>
+              <p>General support: <span className="text-brand-purple">info@youmaketv.ai</span></p>
             </div>
           </Section>
         </div>
@@ -453,7 +453,7 @@ export default function TermsPage() {
       </div>
 
       <p className="text-xs text-center text-slate-400 pb-4">
-        Questions? Contact us at <span className="text-brand-purple">legal@youmaketv.ai</span>
+        Questions? Contact us at <span className="text-brand-purple">info@youmaketv.ai</span>
       </p>
     </div>
   );

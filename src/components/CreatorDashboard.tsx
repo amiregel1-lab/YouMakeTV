@@ -10,7 +10,7 @@ import FilmPerformanceTable from './FilmPerformanceTable';
 import FilmUploadForm from './FilmUploadForm';
 import { formatCurrency, formatNumber } from '../lib/formatters';
 
-type Tab = 'dashboard' | 'content' | 'payouts' | 'analytics' | 'settings';
+type Tab = 'dashboard' | 'content' | 'payouts' | 'analytics' | 'settings' | 'studio';
 
 interface CreatorDashboardProps {
   creator: CreatorProfile | null;
@@ -18,6 +18,7 @@ interface CreatorDashboardProps {
   onCreateDemo: () => void;
   onStartOnboarding: () => void;
   onDeleteFilm: (filmId: string) => void;
+  onEditFilm?: (filmId: string, changes: Partial<CreatorFilm>) => void;
   showWelcome?: boolean;
   onDismissWelcome?: () => void;
 }
@@ -63,6 +64,13 @@ const IconSettings = () => (
   </svg>
 );
 
+const IconStudio = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    <polyline points="9 22 9 12 15 12 15 22" />
+  </svg>
+);
+
 // ── Sidebar nav item ──────────────────────────────────────────────────────────
 
 function NavItem({ icon, label, active, onClick, badge }: {
@@ -90,14 +98,19 @@ function NavItem({ icon, label, active, onClick, badge }: {
   );
 }
 
-// ── Film card (Content tab) ───────────────────────────────────────────────────
+// ── Film card (Content tab) — supports inline editing ─────────────────────────
 
-function FilmCard({ film, onAnalytics, onDelete }: {
+const GENRES = ['Sci-Fi', 'Drama', 'Action', 'Horror', 'Comedy', 'Thriller', 'Romance', 'Documentary', 'Experimental', 'Animation', 'Fantasy', 'Mystery', 'Short'];
+
+function FilmCard({ film, onAnalytics, onDelete, onEdit }: {
   film: CreatorFilm;
   onAnalytics: (f: CreatorFilm) => void;
   onDelete: (id: string) => void;
+  onEdit?: (id: string, changes: Partial<CreatorFilm>) => void;
 }) {
   const [imgError, setImgError] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editFields, setEditFields] = useState({ title: film.title, price: film.price, genre: film.genre, description: film.description });
   const revenue = film.price * film.paidWatches;
 
   const statusColors: Record<string, string> = {
@@ -106,6 +119,90 @@ function FilmCard({ film, onAnalytics, onDelete }: {
     'Approved': 'bg-emerald-100 text-emerald-700',
     'Rejected': 'bg-red-100 text-red-700',
   };
+
+  const handleSave = () => {
+    onEdit?.(film.id, {
+      title: editFields.title.trim() || film.title,
+      price: Math.max(0, editFields.price),
+      genre: editFields.genre,
+      description: editFields.description,
+      updatedDate: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+    });
+    setEditing(false);
+  };
+
+  const handleCancel = () => {
+    setEditFields({ title: film.title, price: film.price, genre: film.genre, description: film.description });
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div className="rounded-[1.5rem] border border-brand-purple/30 bg-white overflow-hidden shadow-md">
+        <div className="p-5 space-y-4">
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-purple">Edit Film</p>
+            <button onClick={handleCancel} className="text-xs text-slate-400 hover:text-slate-700 transition">Cancel ×</button>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 mb-1.5">Title</label>
+            <input
+              type="text"
+              value={editFields.title}
+              onChange={(e) => setEditFields(p => ({ ...p, title: e.target.value }))}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-950 outline-none focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/20"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 mb-1.5">Price ($)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={editFields.price}
+                onChange={(e) => setEditFields(p => ({ ...p, price: parseFloat(e.target.value) || 0 }))}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-950 outline-none focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/20"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 mb-1.5">Genre</label>
+              <select
+                value={editFields.genre}
+                onChange={(e) => setEditFields(p => ({ ...p, genre: e.target.value }))}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-950 outline-none focus:border-brand-purple"
+              >
+                {GENRES.map(g => <option key={g}>{g}</option>)}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 mb-1.5">Description</label>
+            <textarea
+              rows={3}
+              value={editFields.description}
+              onChange={(e) => setEditFields(p => ({ ...p, description: e.target.value }))}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-950 outline-none focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/20 resize-none"
+            />
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button
+              onClick={handleSave}
+              className="flex-1 rounded-full bg-brand-purple py-2.5 text-xs font-semibold text-white transition hover:bg-brand-indigo"
+            >
+              Save Changes
+            </button>
+            <button
+              onClick={handleCancel}
+              className="rounded-full border border-slate-200 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-[1.5rem] border border-slate-200 bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow">
@@ -157,6 +254,14 @@ function FilmCard({ film, onAnalytics, onDelete }: {
           >
             Analytics
           </button>
+          {onEdit && (
+            <button
+              onClick={() => setEditing(true)}
+              className="rounded-full border border-brand-purple/30 bg-brand-purple/5 px-3.5 py-2 text-xs font-semibold text-brand-purple hover:bg-brand-purple/10 transition"
+            >
+              Edit
+            </button>
+          )}
           <button
             onClick={() => onDelete(film.id)}
             className="rounded-full border border-red-200 bg-red-50 px-3.5 py-2 text-xs font-semibold text-red-600 hover:bg-red-100 transition"
@@ -193,7 +298,7 @@ function buildPayouts(totalEarnings: number) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onStartOnboarding, onDeleteFilm, showWelcome, onDismissWelcome }: CreatorDashboardProps) {
+export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onStartOnboarding, onDeleteFilm, onEditFilm, showWelcome, onDismissWelcome }: CreatorDashboardProps) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -275,6 +380,7 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
     { id: 'payouts',    label: 'Payout History',  icon: <IconPayout /> },
     { id: 'analytics',  label: 'Analytics',       icon: <IconAnalytics /> },
     { id: 'settings',   label: 'Settings',        icon: <IconSettings /> },
+    { id: 'studio',     label: 'Studio Profile',  icon: <IconStudio /> },
   ];
 
   const handleAddFilm = (payload: Parameters<typeof onAddFilm>[0]) => {
@@ -322,7 +428,10 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
 
         {/* Bottom actions */}
         <div className="p-3 border-t border-slate-100 space-y-0.5">
-          <button className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-950 transition-all">
+          <button
+            onClick={() => navigate('/studios')}
+            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-950 transition-all"
+          >
             <svg className="flex-none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
               <polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
@@ -416,7 +525,7 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
               </div>
 
               {creator.films.length === 0 ? (
-                <CreatorEmptyState onUpload={() => setIsUploadOpen(true)} onGuidelines={() => alert('Upload guidelines coming soon.')} />
+                <CreatorEmptyState onUpload={() => setIsUploadOpen(true)} onGuidelines={() => setActiveTab('settings')} />
               ) : (
                 <>
                   <section className="rounded-[2rem] border border-slate-200/70 bg-white shadow-soft p-6 sm:p-8">
@@ -487,7 +596,7 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
               </div>
 
               {creator.films.length === 0 ? (
-                <CreatorEmptyState onUpload={() => setIsUploadOpen(true)} onGuidelines={() => alert('Upload guidelines coming soon.')} />
+                <CreatorEmptyState onUpload={() => setIsUploadOpen(true)} onGuidelines={() => setActiveTab('settings')} />
               ) : (
                 <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                   {creator.films.map((film) => (
@@ -496,6 +605,7 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
                       film={film}
                       onAnalytics={setSelectedFilm}
                       onDelete={onDeleteFilm}
+                      onEdit={onEditFilm}
                     />
                   ))}
                 </div>
@@ -593,7 +703,7 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
               </div>
 
               {creator.films.length === 0 ? (
-                <CreatorEmptyState onUpload={() => setIsUploadOpen(true)} onGuidelines={() => alert('Upload guidelines coming soon.')} />
+                <CreatorEmptyState onUpload={() => setIsUploadOpen(true)} onGuidelines={() => setActiveTab('settings')} />
               ) : (
                 <>
                   <section className="rounded-[2rem] border border-slate-200/70 bg-white shadow-soft p-6 sm:p-8">
@@ -687,6 +797,103 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
                     </div>
                   ))}
                 </div>
+              </section>
+            </div>
+          )}
+
+          {/* ── STUDIO PROFILE ─────────────────────────────────────────────────── */}
+          {activeTab === 'studio' && (
+            <div className="space-y-6 max-w-2xl">
+              <div>
+                <h2 className="text-2xl font-semibold text-slate-950">Studio Profile</h2>
+                <p className="mt-1 text-sm text-slate-500">How your studio appears to viewers on YouMakeTV</p>
+              </div>
+
+              {/* Profile card */}
+              <section className="rounded-[2rem] border border-slate-200/70 bg-white shadow-soft p-6 sm:p-8 space-y-6">
+                <div className="flex items-center gap-5">
+                  <div className="flex h-20 w-20 flex-none items-center justify-center rounded-[1.5rem] bg-slate-950 text-white text-2xl font-bold">
+                    {initials}
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-xl font-semibold text-slate-950">{creator.studioName}</h3>
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 flex-none" />
+                        Verified Creator
+                      </span>
+                      <span className="inline-flex rounded-full bg-brand-purple/10 px-3 py-1 text-xs font-semibold text-brand-purple">
+                        {creator.films.length} Film{creator.films.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {[
+                    { label: 'Creator name',  value: creator.fullName },
+                    { label: 'Studio name',   value: creator.studioName },
+                    { label: 'Email',         value: creator.email },
+                    { label: 'Member since',  value: creator.createdAt },
+                    { label: 'Verification',  value: 'KYC Complete' },
+                    { label: 'Status',        value: 'Active' },
+                  ].map((f) => (
+                    <div key={f.label}>
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400 mb-1.5">{f.label}</p>
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-950">
+                        {f.value}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => navigate('/contact')}
+                  className="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-slate-50"
+                >
+                  Request profile edit →
+                </button>
+              </section>
+
+              {/* Public profile stats */}
+              <section className="rounded-[2rem] border border-slate-200/70 bg-white shadow-soft p-6 sm:p-8 space-y-5">
+                <h3 className="font-semibold text-slate-950">Public profile stats</h3>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-[1.5rem] bg-slate-50 border border-slate-200 p-5 text-center">
+                    <p className="text-2xl font-semibold text-slate-950">{creator.films.length}</p>
+                    <p className="text-xs text-slate-500 mt-1">Total films</p>
+                  </div>
+                  <div className="rounded-[1.5rem] bg-brand-purple/5 border border-brand-purple/20 p-5 text-center">
+                    <p className="text-2xl font-semibold text-brand-purple">
+                      {formatNumber(creator.films.reduce((s, f) => s + f.views, 0))}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">Total views</p>
+                  </div>
+                  <div className="rounded-[1.5rem] bg-emerald-50 border border-emerald-200 p-5 text-center">
+                    <p className="text-2xl font-semibold text-emerald-700">
+                      {creator.films.filter(f => f.status === 'Approved').length}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">Published films</p>
+                  </div>
+                </div>
+              </section>
+
+              {/* View on platform */}
+              <section className="rounded-[2rem] border border-slate-200/70 bg-white shadow-soft p-6 sm:p-8 space-y-4">
+                <h3 className="font-semibold text-slate-950">Your public page</h3>
+                <p className="text-sm text-slate-500">
+                  Viewers can discover your studio and browse all your published films on YouMakeTV.
+                </p>
+                <button
+                  onClick={() => navigate('/studios')}
+                  className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                    <polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+                  </svg>
+                  Browse all studios
+                </button>
               </section>
             </div>
           )}

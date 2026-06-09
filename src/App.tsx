@@ -13,6 +13,7 @@ import AccountPage from './components/AccountPage';
 import CreatorPortal from './components/CreatorPortal';
 import CreatorOnboarding from './components/CreatorOnboarding';
 import CreatorDashboard from './components/CreatorDashboard';
+import CreatorDemoPortal from './components/CreatorDemoPortal';
 import CreatorsPage from './components/CreatorsPage';
 import StudiosPage from './components/StudiosPage';
 import StudioPage from './components/StudioPage';
@@ -127,6 +128,14 @@ export default function App() {
     setCreator((current) => (current ? { ...current, films: current.films.filter((film) => film.id !== filmId) } : current));
   };
 
+  const handleEditFilm = (filmId: string, changes: Partial<import('./types').CreatorFilm>) => {
+    setCreator((current) =>
+      current
+        ? { ...current, films: current.films.map((f) => (f.id === filmId ? { ...f, ...changes } : f)) }
+        : current
+    );
+  };
+
   const openTrailerModal = (title?: string) => {
     if (title) {
       const mergedMovie = movies.find((m) => m.title === title);
@@ -201,10 +210,13 @@ export default function App() {
           <Route path="/creators" element={<CreatorsPage />} />
           <Route path="/studios" element={<StudiosPage />} />
           <Route path="/studio/:name" element={<StudioPage />} />
-          <Route path="/creator" element={<CreatorPortal onStart={() => navigate('/creator/onboarding')} onDashboard={() => navigate('/creator/dashboard')} onViewDemo={handleDemoCreator} onSignIn={() => navigate('/creatorsLogin')} />} />
-          <Route path="/creatorsLogin" element={<CreatorLoginPage onSignIn={() => navigate('/creator/dashboard')} onStart={() => navigate('/creator/onboarding')} onViewDemo={handleDemoCreator} />} />
+          <Route path="/creator" element={<CreatorPortal onStart={() => navigate('/creator/onboarding')} onDashboard={() => navigate('/creator/dashboard')} onViewDemo={() => navigate('/creator/demo')} onSignIn={() => navigate('/creatorsLogin')} />} />
+          {/* /creator/portal is an alias for /creator — same acquisition landing page */}
+          <Route path="/creator/portal" element={<CreatorPortal onStart={() => navigate('/creator/onboarding')} onDashboard={() => navigate('/creator/dashboard')} onViewDemo={() => navigate('/creator/demo')} onSignIn={() => navigate('/creatorsLogin')} />} />
+          <Route path="/creator/demo" element={<CreatorDemoPortal />} />
+          <Route path="/creatorsLogin" element={<CreatorLoginPage onSignIn={() => navigate('/creator/dashboard')} onStart={() => navigate('/creator/onboarding')} onViewDemo={() => navigate('/creator/demo')} />} />
           <Route path="/creator/onboarding" element={<CreatorOnboarding onComplete={handleCreateCreator} />} />
-          <Route path="/creator/dashboard" element={<CreatorDashboard creator={creator} onAddFilm={handleAddFilm} onDeleteFilm={handleDeleteFilm} onStartOnboarding={() => navigate('/creator/onboarding')} onCreateDemo={handleDemoCreator} showWelcome={newCreatorSession} onDismissWelcome={() => setNewCreatorSession(false)} />} />
+          <Route path="/creator/dashboard" element={<CreatorDashboard creator={creator} onAddFilm={handleAddFilm} onDeleteFilm={handleDeleteFilm} onEditFilm={handleEditFilm} onStartOnboarding={() => navigate('/creator/onboarding')} onCreateDemo={() => navigate('/creator/demo')} showWelcome={newCreatorSession} onDismissWelcome={() => setNewCreatorSession(false)} />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/terms" element={<TermsPage />} />

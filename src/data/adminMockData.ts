@@ -20,7 +20,7 @@ export const MOCK_CREATORS: AdminCreator[] = [
     email: 'sofia@nexusfilms.ai', country: 'Canada',
     verified: true, kycCompleted: true, status: 'Active', revenueShare: 40,
     totalMovies: 6, totalRevenue: 12340, totalViews: 102500, joinedAt: '2025-12-08',
-    notes: 'Top performing creator. Premium revenue share negotiated after 500+ paid watches.',
+    notes: 'Top performing creator. Pro Creator tier active — 5,000+ paid views milestone reached.',
   },
   {
     id: 'c-004', fullName: 'Kai Tanaka', studioName: 'Phantom Light Studio',

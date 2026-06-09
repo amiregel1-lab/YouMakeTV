@@ -301,9 +301,9 @@ export default function CreatorPortal({ onStart, onDashboard, onViewDemo, onSign
               {/* Stats */}
               <div className="flex flex-wrap gap-10 pt-2">
                 {[
-                  { value: '$842k+',  label: 'Total creator payouts' },
-                  { value: '$18.4k',  label: 'Highest creator earnings' },
-                  { value: 'Up to 40%', label: 'Per paid view' },
+                  { value: 'Up to 40%', label: 'Revenue share per paid view' },
+                  { value: 'Free',      label: 'To join and publish' },
+                  { value: 'Monthly',   label: 'Payout schedule' },
                 ].map((s) => (
                   <div key={s.label}>
                     <p className="text-2xl font-semibold text-slate-950">{s.value}</p>
@@ -418,9 +418,9 @@ export default function CreatorPortal({ onStart, onDashboard, onViewDemo, onSign
       {/* ── 3. CREATOR SPOTLIGHT ─────────────────────────────────────────────── */}
       <section>
         <div className="mb-7">
-          <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Social proof</p>
+          <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Platform demo</p>
           <h2 className="mt-1.5 text-2xl font-semibold text-slate-950">Creator Spotlight</h2>
-          <p className="mt-1 text-slate-500 text-sm">Real creators building real income on YouMakeTV.</p>
+          <p className="mt-1 text-slate-500 text-sm">Example creator dashboard snapshots — illustrative demo data.</p>
         </div>
         <div className="grid gap-5 sm:grid-cols-3">
           {SPOTLIGHTS.map((creator) => (
@@ -438,7 +438,7 @@ export default function CreatorPortal({ onStart, onDashboard, onViewDemo, onSign
               </div>
               <div className="rounded-[1.5rem] bg-brand-purple/5 border border-brand-purple/15 px-5 py-4 text-center">
                 <p className="text-3xl font-semibold text-brand-purple">{creator.earned}</p>
-                <p className="text-xs text-slate-500 mt-1">earned on YouMakeTV</p>
+                <p className="text-xs text-slate-500 mt-1">example earnings (demo)</p>
               </div>
               <div className="flex justify-between text-sm text-slate-500">
                 <span><strong className="text-slate-950">{creator.films}</strong> films</span>
@@ -449,14 +449,14 @@ export default function CreatorPortal({ onStart, onDashboard, onViewDemo, onSign
         </div>
       </section>
 
-      {/* ── 3. METRICS BAR ───────────────────────────────────────────────────── */}
+      {/* ── 3. PLATFORM TERMS BAR ────────────────────────────────────────────── */}
       <section className="rounded-[2rem] border border-slate-200/70 bg-white shadow-soft p-8 sm:p-10">
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 text-center sm:text-left">
           {[
-            { value: '$842,000+', label: 'Total creator payouts',        accent: 'text-brand-purple' },
-            { value: '$18,400',   label: 'Highest creator earnings',      accent: 'text-amber-600'   },
-            { value: '$1,200',    label: 'Avg monthly creator earnings',  accent: 'text-emerald-600' },
-            { value: '$2.99',     label: 'Average film price',            accent: 'text-brand-cyan'  },
+            { value: '30–40%',        label: 'Revenue share tiers',      accent: 'text-brand-purple' },
+            { value: 'Free',          label: 'To join and publish',       accent: 'text-emerald-600' },
+            { value: '$0.99–$4.99',   label: 'Suggested film pricing',    accent: 'text-brand-cyan'  },
+            { value: 'Monthly',       label: 'Payout schedule',           accent: 'text-amber-600'   },
           ].map((m) => (
             <div key={m.label} className="space-y-1.5">
               <p className={`text-3xl font-semibold ${m.accent}`}>{m.value}</p>

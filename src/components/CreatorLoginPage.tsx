@@ -18,10 +18,10 @@ const BENEFITS = [
 ];
 
 const STATS = [
-  { label: 'Avg. monthly earnings', value: '$1,240' },
-  { label: 'Top creator this month', value: '$8,900' },
-  { label: 'Active creators', value: '3,200+' },
-  { label: 'Films published', value: '12,400+' },
+  { label: 'Starting revenue share', value: '30%' },
+  { label: 'Pro tier revenue share', value: '40%' },
+  { label: 'Minimum payout', value: '$25' },
+  { label: 'Payout schedule', value: 'Monthly' },
 ];
 
 export default function CreatorLoginPage({ onSignIn, onStart, onViewDemo }: CreatorLoginPageProps) {
@@ -146,7 +146,7 @@ export default function CreatorLoginPage({ onSignIn, onStart, onViewDemo }: Crea
           {/* New creator CTA */}
           <div className="rounded-2xl border border-slate-100 bg-slate-50 px-6 py-5 space-y-3 text-center">
             <p className="text-sm font-semibold text-slate-700">New to YouMakeTV?</p>
-            <p className="text-xs text-slate-500">Join thousands of creators earning from their AI films.</p>
+            <p className="text-xs text-slate-500">Join a growing community of AI film creators on YouMakeTV.</p>
             <button
               type="button"
               onClick={onStart}

@@ -39,10 +39,10 @@ const BENEFITS = [
 ];
 
 const CREATOR_STATS = [
-  { label: 'Avg. monthly earnings', value: '$1,240' },
-  { label: 'Top creator this month', value: '$8,900' },
-  { label: 'Active creators', value: '3,200+' },
-  { label: 'Films published', value: '12,400+' },
+  { label: 'Starting revenue share', value: '30%' },
+  { label: 'Pro tier revenue share', value: '40%' },
+  { label: 'Minimum payout', value: '$25' },
+  { label: 'Payout schedule', value: 'Monthly' },
 ];
 
 const AGREEMENT_TEXT = `CREATOR AGREEMENT — YouMakeTV.ai

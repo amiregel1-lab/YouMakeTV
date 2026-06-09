@@ -46,7 +46,7 @@ export default function AboutPage() {
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-3">
         {[
-          { value: '$842k+', label: 'Paid out to creators', accent: 'text-brand-purple' },
+          { value: '$0', label: 'Cost to join as a creator', accent: 'text-brand-purple' },
           { value: '10+ genres', label: 'Of AI-generated content', accent: 'text-brand-cyan' },
           { value: 'Up to 40%', label: 'Revenue share for creators', accent: 'text-emerald-600' },
         ].map((s) => (

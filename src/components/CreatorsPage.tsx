@@ -2,75 +2,142 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMovies } from '../lib/MovieContext';
 import { Movie } from '../types';
-import { getPosterUrl, fallbackGradient } from '../lib/posters';
+import { getPosterUrl, getBackdropUrl, fallbackGradient } from '../lib/posters';
 import SEOHead from './SEOHead';
+import StudioMonogram from './StudioMonogram';
+import {
+  getBadge, isVerified, formatNum, topGenre, joinYear,
+  BADGE_CONFIG, type BadgeType, type Creator,
+} from '../lib/studioUtils';
 
-interface Creator {
-  name: string;
-  films: Movie[];
-  totalViews: number;
-  followers: number;
+type FilterChip = 'All' | 'Sci-Fi' | 'Drama' | 'Comedy' | 'Thriller' | 'Horror' | 'Anime' | 'Documentary';
+type SortOption = 'Most Viewed' | 'Most Films' | 'Newest' | 'Recently Active';
+
+const FILTER_CHIPS: FilterChip[] = ['All', 'Sci-Fi', 'Drama', 'Comedy', 'Thriller', 'Horror', 'Anime', 'Documentary'];
+const SORT_OPTIONS: SortOption[] = ['Most Viewed', 'Most Films', 'Newest', 'Recently Active'];
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function BadgePill({ badge }: { badge: BadgeType }) {
+  const { label, className } = BADGE_CONFIG[badge];
+  return (
+    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-semibold tracking-wide ${className}`}>
+      {label}
+    </span>
+  );
 }
 
-type FilterChip = 'All' | 'Top Creators' | 'Rising Studios' | 'New Creators' | 'Sci-Fi' | 'Comedy' | 'Drama' | 'Documentary';
-type SortOption = 'Most Viewed' | 'Most Films' | 'Most Followers' | 'Newest';
-
-const FILTER_CHIPS: FilterChip[] = ['All', 'Top Creators', 'Rising Studios', 'New Creators', 'Sci-Fi', 'Comedy', 'Drama', 'Documentary'];
-const SORT_OPTIONS: SortOption[] = ['Most Viewed', 'Most Films', 'Most Followers', 'Newest'];
-
-// Deterministic studio logo gradient based on name
-const STUDIO_GRADIENTS = [
-  'from-violet-500 to-indigo-600',
-  'from-cyan-500 to-blue-600',
-  'from-emerald-500 to-teal-600',
-  'from-rose-500 to-pink-600',
-  'from-amber-500 to-orange-500',
-  'from-fuchsia-500 to-purple-600',
-  'from-sky-500 to-cyan-500',
-  'from-lime-500 to-green-600',
-];
-
-function studioGradient(name: string): string {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = ((h << 5) - h + name.charCodeAt(i)) | 0;
-  return STUDIO_GRADIENTS[Math.abs(h) % STUDIO_GRADIENTS.length];
+function VerifiedCheck({ className = 'h-4 w-4 text-blue-500' }: { className?: string }) {
+  return (
+    <svg className={`${className} flex-none`} viewBox="0 0 20 20" fill="currentColor" aria-label="Verified">
+      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+    </svg>
+  );
 }
 
-type BadgeType = 'Top Creator' | 'Rising Studio' | 'Featured Studio' | 'New Creator' | 'Verified';
+// ── FeaturedCreatorCard ───────────────────────────────────────────────────────
 
-function getBadge(creator: Creator): BadgeType {
-  if (creator.totalViews > 70_000) return 'Top Creator';
-  if (creator.films.some((f) => f.featured)) return 'Featured Studio';
-  if (creator.totalViews > 20_000 && creator.films.length >= 3) return 'Rising Studio';
-  if (creator.films.length <= 2) return 'New Creator';
-  return 'Verified';
+function FeaturedCreatorCard({
+  creator,
+  onSelectMovie,
+}: {
+  creator: Creator;
+  onSelectMovie: (id: number) => void;
+}) {
+  const navigate = useNavigate();
+  const badge = getBadge(creator.totalViews, creator.films);
+  const verified = isVerified(creator.totalViews, creator.films.length);
+  const category = topGenre(creator.films);
+  const year = joinYear(creator.films);
+  const topFilm = [...creator.films].sort((a, b) => (b.views ?? 0) - (a.views ?? 0))[0];
+  const previewFilms = [...creator.films]
+    .sort((a, b) => (b.views ?? 0) - (a.views ?? 0))
+    .slice(0, 4);
+
+  return (
+    <div className="relative overflow-hidden rounded-[2rem] bg-slate-950">
+      {/* Blurred backdrop */}
+      {topFilm && (
+        <img
+          src={getBackdropUrl(topFilm)}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover opacity-25 select-none pointer-events-none"
+          style={{ filter: 'blur(10px)', transform: 'scale(1.1)' }}
+        />
+      )}
+      {/* Gradient: strong left, fades right so posters show through */}
+      <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-slate-950/50" />
+
+      <div className="relative flex flex-col lg:flex-row items-start lg:items-center gap-6 p-6 sm:p-8 lg:p-10">
+        {/* Studio info */}
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] uppercase tracking-[0.32em] text-slate-400 font-semibold mb-5">
+            Featured Studio
+          </p>
+
+          <div className="flex items-center gap-4 mb-5">
+            <StudioMonogram name={creator.name} size="lg" />
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-xl sm:text-2xl font-bold text-white">{creator.name}</h2>
+                {verified && <VerifiedCheck className="h-5 w-5 text-blue-400" />}
+              </div>
+              <p className="text-slate-400 text-sm mt-0.5">{category} Studio</p>
+              {badge && <div className="mt-2"><BadgePill badge={badge} /></div>}
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="flex items-center gap-8 mb-6">
+            {[
+              { label: 'Films', value: creator.films.length.toString() },
+              { label: 'Views', value: formatNum(creator.totalViews) },
+              { label: 'Joined', value: year },
+            ].map(({ label, value }) => (
+              <div key={label}>
+                <p className="text-lg font-bold text-white tabular-nums">{value}</p>
+                <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-0.5">{label}</p>
+              </div>
+            ))}
+          </div>
+
+          <button
+            onClick={() => navigate(`/studio/${encodeURIComponent(creator.name)}`)}
+            className="rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-slate-100"
+          >
+            View Studio →
+          </button>
+        </div>
+
+        {/* Film poster strip */}
+        <div
+          className="flex gap-3 overflow-x-auto pb-1 lg:flex-none"
+          style={{ scrollbarWidth: 'none' }}
+        >
+          {previewFilms.map((film) => (
+            <button
+              key={film.id}
+              onClick={() => onSelectMovie(film.id)}
+              title={film.title}
+              className="group/poster flex-none w-24 sm:w-28"
+            >
+              <div className="aspect-[2/3] overflow-hidden rounded-xl shadow-xl transition-all duration-200 group-hover/poster:-translate-y-1 group-hover/poster:shadow-2xl">
+                <img
+                  src={getPosterUrl(film)}
+                  alt={film.title}
+                  loading="lazy"
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover/poster:scale-105"
+                />
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
-const BADGE_CONFIG: Record<BadgeType, { label: string; className: string }> = {
-  'Top Creator':      { label: '★ Top Creator',     className: 'bg-amber-50 text-amber-700 border-amber-200' },
-  'Rising Studio':    { label: '↑ Rising Studio',   className: 'bg-sky-50 text-sky-700 border-sky-200' },
-  'Featured Studio':  { label: '◆ Featured',        className: 'bg-violet-50 text-violet-700 border-violet-200' },
-  'New Creator':      { label: '✦ New Creator',     className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  'Verified':         { label: '✓ Verified',        className: 'bg-slate-50 text-slate-600 border-slate-200' },
-};
-
-function formatNum(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
-  return n.toString();
-}
-
-function topGenre(films: Movie[]): string {
-  const counts: Record<string, number> = {};
-  films.forEach((f) => { counts[f.genre] = (counts[f.genre] ?? 0) + 1; });
-  return Object.entries(counts).sort(([, a], [, b]) => b - a)[0]?.[0] ?? 'Studio';
-}
-
-function getInitials(name: string): string {
-  return name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-}
-
-// ── CreatorCard ─────────────────────────────────────────────────────────────
+// ── CreatorCard ───────────────────────────────────────────────────────────────
 
 function CreatorCard({
   creator,
@@ -82,62 +149,47 @@ function CreatorCard({
   onViewStudio: () => void;
 }) {
   const [imgErrors, setImgErrors] = useState<Set<number>>(new Set());
-
-  const preview = creator.films.slice(0, 4);
-  const extra = creator.films.length - 4;
-  const badge = getBadge(creator);
-  const { label: badgeLabel, className: badgeClass } = BADGE_CONFIG[badge];
-  const gradient = studioGradient(creator.name);
+  const badge = getBadge(creator.totalViews, creator.films);
+  const verified = isVerified(creator.totalViews, creator.films.length);
   const category = topGenre(creator.films);
-  const initials = getInitials(creator.name);
+  const year = joinYear(creator.films);
 
-  const handleImgError = (id: number) => {
+  const preview = useMemo(
+    () => [...creator.films].sort((a, b) => (b.views ?? 0) - (a.views ?? 0)).slice(0, 4),
+    [creator.films],
+  );
+  const extra = creator.films.length - 4;
+
+  const handleImgError = (id: number) =>
     setImgErrors((prev) => { const n = new Set(prev); n.add(id); return n; });
-  };
 
   return (
     <div
       onClick={onViewStudio}
-      className="group/card flex flex-col rounded-[1.75rem] border border-slate-200/70 bg-white shadow-soft overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+      className="group/card flex flex-col rounded-[1.5rem] border border-slate-100 bg-white shadow-sm overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
     >
-      {/* Top color band */}
-      <div className={`h-1.5 w-full bg-gradient-to-r ${gradient} flex-none`} />
-
       {/* Header */}
-      <div className="p-6 pb-4 flex-none">
-        <div className="flex items-start gap-4">
-          {/* Studio logo badge */}
-          <div
-            className={`flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-gradient-to-br ${gradient} text-white text-base font-bold shadow-md tracking-wide`}
-          >
-            {initials}
-          </div>
-
+      <div className="p-5 pb-4 flex-none">
+        <div className="flex items-start gap-3">
+          <StudioMonogram name={creator.name} size="md" />
           <div className="min-w-0 flex-1">
-            {/* Name + verified */}
             <div className="flex items-center gap-1.5">
-              <h3 className="font-semibold text-slate-950 truncate leading-tight">{creator.name}</h3>
-              <svg className="h-4 w-4 flex-none text-blue-500" viewBox="0 0 20 20" fill="currentColor" aria-label="Verified">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
-              </svg>
+              <h3 className="font-semibold text-slate-900 truncate leading-tight">{creator.name}</h3>
+              {verified && <VerifiedCheck />}
             </div>
-
-            {/* Badge + category */}
-            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-              <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-wide ${badgeClass}`}>
-                {badgeLabel}
-              </span>
-              <span className="text-[10px] text-slate-400 uppercase tracking-widest font-medium">{category}</span>
-            </div>
+            {badge && <div className="mt-1.5"><BadgePill badge={badge} /></div>}
+            <p className="text-[10px] text-slate-400 mt-1.5 font-medium uppercase tracking-widest">
+              {category}
+            </p>
           </div>
         </div>
 
-        {/* Stats grid */}
+        {/* Stats */}
         <div className="mt-4 grid grid-cols-3 gap-2">
           {[
-            { label: 'Followers', value: formatNum(creator.followers) },
-            { label: 'Films',     value: creator.films.length.toString() },
-            { label: 'Views',     value: formatNum(creator.totalViews) },
+            { label: 'Films',  value: creator.films.length.toString() },
+            { label: 'Views',  value: formatNum(creator.totalViews) },
+            { label: 'Joined', value: year },
           ].map(({ label, value }) => (
             <div key={label} className="rounded-xl bg-slate-50 border border-slate-100 px-2 py-2.5 text-center">
               <p className="text-sm font-bold text-slate-950 tabular-nums">{value}</p>
@@ -147,10 +199,13 @@ function CreatorCard({
         </div>
       </div>
 
+      {/* Divider */}
+      <div className="h-px bg-slate-100 mx-5 flex-none" />
+
       {/* Film strip */}
-      <div className="px-5 pb-4 flex-1">
-        <p className="text-[10px] uppercase tracking-[0.22em] text-slate-400 mb-3 font-medium">Film Library</p>
-        <div className="flex gap-2">
+      <div className="p-4 flex-1">
+        <p className="text-[10px] uppercase tracking-widest text-slate-400 mb-3 font-medium">Films</p>
+        <div className="flex gap-1.5">
           {preview.map((film) => (
             <button
               key={film.id}
@@ -158,7 +213,7 @@ function CreatorCard({
               title={film.title}
               className="group/poster flex-1 min-w-0"
             >
-              <div className="aspect-[2/3] overflow-hidden rounded-lg bg-slate-800 shadow-sm transition-all duration-200 group-hover/poster:-translate-y-1 group-hover/poster:shadow-md">
+              <div className="aspect-[2/3] overflow-hidden rounded-lg bg-slate-100 transition-all duration-200 group-hover/poster:-translate-y-0.5 group-hover/poster:shadow-md">
                 {!imgErrors.has(film.id) ? (
                   <img
                     src={getPosterUrl(film)}
@@ -180,16 +235,16 @@ function CreatorCard({
           ))}
           {extra > 0 && (
             <div className="flex-1 min-w-0">
-              <div className="aspect-[2/3] rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center">
-                <span className="text-xs font-semibold text-slate-500">+{extra}</span>
+              <div className="aspect-[2/3] rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center">
+                <span className="text-xs font-semibold text-slate-400">+{extra}</span>
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* View Studio button */}
-      <div className="px-5 pb-5 flex-none">
+      {/* View Studio */}
+      <div className="px-4 pb-4 flex-none">
         <button
           onClick={(e) => { e.stopPropagation(); onViewStudio(); }}
           className="w-full rounded-full bg-slate-950 py-2.5 text-sm font-semibold text-white transition-colors duration-150 group-hover/card:bg-slate-700"
@@ -201,7 +256,7 @@ function CreatorCard({
   );
 }
 
-// ── CreatorsPage ─────────────────────────────────────────────────────────────
+// ── CreatorsPage ──────────────────────────────────────────────────────────────
 
 export default function CreatorsPage() {
   const navigate = useNavigate();
@@ -215,12 +270,18 @@ export default function CreatorsPage() {
     movies.forEach((movie) => {
       map.set(movie.creator, [...(map.get(movie.creator) ?? []), movie]);
     });
-    return Array.from(map.entries()).map(([name, films]) => {
-      const totalViews = films.reduce((sum, m) => sum + (m.views ?? 0), 0);
-      const followers = Math.round(totalViews / 11);
-      return { name, films, totalViews, followers };
-    });
+    return Array.from(map.entries()).map(([name, films]) => ({
+      name,
+      films,
+      totalViews: films.reduce((s, m) => s + (m.views ?? 0), 0),
+    }));
   }, [movies]);
+
+  // The featured studio is always the highest-viewed, shown separately above the grid
+  const featured = useMemo(
+    () => [...creators].sort((a, b) => b.totalViews - a.totalViews)[0] ?? null,
+    [creators],
+  );
 
   const filtered = useMemo(() => {
     let result = [...creators];
@@ -230,22 +291,10 @@ export default function CreatorsPage() {
       result = result.filter((c) => c.name.toLowerCase().includes(q));
     }
 
-    switch (activeFilter) {
-      case 'Top Creators':
-        result = result.filter((c) => c.totalViews > 70_000);
-        break;
-      case 'Rising Studios':
-        result = result.filter((c) => c.totalViews > 20_000 && c.totalViews <= 70_000 && c.films.length >= 3);
-        break;
-      case 'New Creators':
-        result = result.filter((c) => c.films.length <= 2 || c.totalViews < 15_000);
-        break;
-      case 'Sci-Fi':
-      case 'Comedy':
-      case 'Drama':
-      case 'Documentary':
-        result = result.filter((c) => c.films.some((f) => f.genre.toLowerCase().includes(activeFilter.toLowerCase())));
-        break;
+    if (activeFilter !== 'All') {
+      result = result.filter((c) =>
+        c.films.some((f) => f.genre.toLowerCase() === activeFilter.toLowerCase()),
+      );
     }
 
     switch (activeSort) {
@@ -255,22 +304,31 @@ export default function CreatorsPage() {
       case 'Most Films':
         result.sort((a, b) => b.films.length - a.films.length);
         break;
-      case 'Most Followers':
-        result.sort((a, b) => b.followers - a.followers);
-        break;
       case 'Newest':
-        result.sort((a, b) => Math.max(...b.films.map((f) => f.id)) - Math.max(...a.films.map((f) => f.id)));
+        result.sort((a, b) => {
+          const ay = Math.min(...a.films.map((f) => f.releaseYear ?? 2026));
+          const by = Math.min(...b.films.map((f) => f.releaseYear ?? 2026));
+          return by - ay;
+        });
+        break;
+      case 'Recently Active':
+        result.sort(
+          (a, b) =>
+            Math.max(...b.films.map((f) => f.id)) - Math.max(...a.films.map((f) => f.id)),
+        );
         break;
     }
 
     return result;
   }, [creators, searchQuery, activeFilter, activeSort]);
 
+  const showFeatured = !searchQuery.trim() && activeFilter === 'All';
+
   return (
     <div className="space-y-8">
       <SEOHead
         title="AI Film Studios | YouMakeTV.ai"
-        description="Discover AI film studios building the next generation of entertainment. Browse creators, explore their work, and join the platform."
+        description="Discover the AI film studios building the next generation of entertainment. Browse creators, watch their films, and find your next favorite studio."
         canonical="/creators"
         structuredData={{
           '@context': 'https://schema.org',
@@ -281,7 +339,7 @@ export default function CreatorsPage() {
         }}
       />
 
-      {/* Header */}
+      {/* Page header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight text-slate-950">AI Film Studios</h1>
@@ -289,7 +347,7 @@ export default function CreatorsPage() {
             Discover the creators building the next generation of AI entertainment.
           </p>
           <p className="mt-2 text-sm text-slate-400">
-            <span className="font-semibold text-slate-950">{creators.length}</span> creators ·{' '}
+            <span className="font-semibold text-slate-950">{creators.length}</span> studios ·{' '}
             <span className="font-semibold text-slate-950">{movies.length}</span> films
           </p>
         </div>
@@ -313,13 +371,15 @@ export default function CreatorsPage() {
       <div className="relative">
         <svg
           className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400"
-          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
         </svg>
         <input
           type="text"
-          placeholder="Search studios by name…"
+          placeholder="Search studios…"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full rounded-full border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-slate-950 placeholder-slate-400 outline-none focus:border-brand-cyan focus:ring-2 focus:ring-brand-cyan/20"
@@ -334,15 +394,17 @@ export default function CreatorsPage() {
         )}
       </div>
 
-      {/* Filter + Sort row */}
+      {/* Filter chips + sort */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        {/* Filter chips */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 flex-1" style={{ scrollbarWidth: 'none' }}>
+        <div
+          className="flex items-center gap-2 overflow-x-auto pb-1 flex-1"
+          style={{ scrollbarWidth: 'none' }}
+        >
           {FILTER_CHIPS.map((chip) => (
             <button
               key={chip}
               onClick={() => setActiveFilter(chip)}
-              className={`flex-none rounded-full border px-4 py-1.5 text-sm font-semibold whitespace-nowrap transition ${
+              className={`flex-none rounded-full border px-4 py-1.5 text-sm font-medium whitespace-nowrap transition ${
                 activeFilter === chip
                   ? 'border-slate-950 bg-slate-950 text-white'
                   : 'border-slate-200 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-900'
@@ -352,13 +414,11 @@ export default function CreatorsPage() {
             </button>
           ))}
         </div>
-
-        {/* Sort dropdown */}
         <div className="flex-none">
           <select
             value={activeSort}
             onChange={(e) => setActiveSort(e.target.value as SortOption)}
-            className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-semibold text-slate-700 outline-none cursor-pointer hover:border-slate-400 transition"
+            className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-700 outline-none cursor-pointer hover:border-slate-400 transition"
           >
             {SORT_OPTIONS.map((opt) => (
               <option key={opt} value={opt}>{opt}</option>
@@ -367,7 +427,15 @@ export default function CreatorsPage() {
         </div>
       </div>
 
-      {/* Creators grid */}
+      {/* Featured studio spotlight */}
+      {showFeatured && featured && (
+        <FeaturedCreatorCard
+          creator={featured}
+          onSelectMovie={(id) => navigate(`/movie/${id}`)}
+        />
+      )}
+
+      {/* Studios grid */}
       {filtered.length > 0 ? (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((creator) => (
@@ -375,14 +443,16 @@ export default function CreatorsPage() {
               key={creator.name}
               creator={creator}
               onSelectMovie={(id) => navigate(`/movie/${id}`)}
-              onViewStudio={() => navigate('/creator')}
+              onViewStudio={() => navigate(`/studio/${encodeURIComponent(creator.name)}`)}
             />
           ))}
         </div>
       ) : (
-        <div className="rounded-[2rem] border border-slate-200/70 bg-white shadow-soft p-12 text-center">
+        <div className="rounded-[2rem] border border-slate-100 bg-white shadow-sm p-12 text-center">
           <p className="text-slate-600 font-medium">
-            {searchQuery ? `No studios found for "${searchQuery}"` : `No studios match the "${activeFilter}" filter`}
+            {searchQuery
+              ? `No studios found for "${searchQuery}"`
+              : `No studios match the "${activeFilter}" filter`}
           </p>
           <button
             onClick={() => { setSearchQuery(''); setActiveFilter('All'); }}
@@ -393,8 +463,8 @@ export default function CreatorsPage() {
         </div>
       )}
 
-      {/* Bottom CTA */}
-      <section className="rounded-[2.5rem] border border-slate-200/70 bg-white shadow-soft overflow-hidden">
+      {/* Bottom creator CTA */}
+      <section className="rounded-[2.5rem] border border-slate-100 bg-white shadow-sm overflow-hidden">
         <div className="relative p-8 sm:p-12">
           <div className="absolute inset-0 bg-brand-soft opacity-50 pointer-events-none" />
           <div className="relative text-center max-w-lg mx-auto">

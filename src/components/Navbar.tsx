@@ -102,6 +102,21 @@ export default function Navbar({ active, viewer, onRouteChange, onSignOut }: Nav
                   {viewer.username.charAt(0).toUpperCase()}
                 </button>
               </>
+            ) : active === 'creators' ? (
+              <>
+                <button
+                  onClick={() => onRouteChange('onboarding')}
+                  className="rounded-full bg-brand-purple px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-indigo"
+                >
+                  Become a Creator
+                </button>
+                <button
+                  onClick={() => onRouteChange('creatorsLogin')}
+                  className="hidden rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 lg:inline-flex"
+                >
+                  Creator Login
+                </button>
+              </>
             ) : (
               <>
                 <button

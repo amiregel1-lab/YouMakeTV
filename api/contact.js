@@ -14,9 +14,23 @@ function escHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
+// Allowed origins for the contact form. Any deploy preview / production domain
+// that should be able to POST here must be listed. '*' is intentionally avoided
+// so this email-sending endpoint can't be invoked from arbitrary sites.
+const ALLOWED_ORIGINS = new Set([
+  'https://youmaketv.ai',
+  'https://www.youmaketv.ai',
+  'http://localhost:5173',
+  'http://localhost:4173',
+]);
+
 export default async function handler(req, res) {
-  // CORS headers so the SPA can call this from any origin during dev
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // Lock CORS to known origins — this endpoint spends money (Resend) per call.
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.has(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -45,6 +59,10 @@ export default async function handler(req, res) {
   }
   if (trimMessage.length > 10000) {
     return res.status(400).json({ error: 'Message is too long (max 10,000 characters).' });
+  }
+  // Cap the short fields too — they land in the email subject/headers.
+  if (trimName.length > 200 || trimEmail.length > 320 || trimSubject.length > 200) {
+    return res.status(400).json({ error: 'One or more fields exceed the allowed length.' });
   }
 
   const apiKey = process.env.RESEND_API_KEY;

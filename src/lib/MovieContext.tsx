@@ -8,7 +8,6 @@ import {
 } from 'react';
 import type { Movie } from '../types';
 import { getMovies } from './movieService';
-import { movies as localMovies } from '../data/movies';
 
 interface MovieContextValue {
   movies: Movie[];
@@ -17,14 +16,18 @@ interface MovieContextValue {
 }
 
 const MovieContext = createContext<MovieContextValue>({
-  movies: localMovies,
-  loading: false,
+  movies: [],
+  loading: true,
   refreshMovies: async () => {},
 });
 
 export function MovieProvider({ children }: { children: React.ReactNode }) {
-  // Start with local catalog so the UI renders instantly, then swap in Supabase data.
-  const [movies, setMovies] = useState<Movie[]>(localMovies);
+  // Start empty and let consumers render skeletons while the catalog loads.
+  // Never seed with the local mock catalog: painting its covers first and then
+  // swapping in Supabase data is exactly the "stale image flash" bug.
+  // getMovies() itself falls back to local data if Supabase is unreachable,
+  // so state still resolves exactly once on error.
+  const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
   const mounted = useRef(true);
 

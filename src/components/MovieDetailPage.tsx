@@ -49,7 +49,7 @@ function RelatedPosterCard({ movie }: { movie: Movie }) {
 export default function MovieDetailPage({ viewer, onPurchase, onSubscribe, onWatchTrailer }: MovieDetailPageProps) {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { movies } = useMovies();
+  const { movies, loading } = useMovies();
   const [posterError, setPosterError] = useState(false);
   const [trailerPlayerUrl, setTrailerPlayerUrl] = useState<string | null>(null);
 
@@ -80,6 +80,23 @@ export default function MovieDetailPage({ viewer, onPurchase, onSubscribe, onWat
     }
     onWatchTrailer();
   };
+
+  // Catalog still loading — show a quiet skeleton instead of flashing "not found"
+  if (!movie && (loading || movies.length === 0)) {
+    return (
+      <div className="space-y-8" aria-busy="true" aria-label="Loading movie">
+        <div className="grid gap-8 lg:grid-cols-[300px_1fr]">
+          <div className="aspect-[2/3] rounded-2xl bg-slate-200 animate-pulse" />
+          <div className="space-y-4 pt-2">
+            <div className="h-10 w-3/4 rounded-xl bg-slate-200 animate-pulse" />
+            <div className="h-5 w-1/2 rounded-lg bg-slate-200 animate-pulse" />
+            <div className="h-24 w-full rounded-xl bg-slate-100 animate-pulse" />
+            <div className="h-11 w-40 rounded-full bg-slate-200 animate-pulse" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!movie) {
     return (

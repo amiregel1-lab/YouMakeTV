@@ -10,7 +10,7 @@ export const movies: Movie[] = [
     price: 0, thumbnail: 'https://picsum.photos/seed/ymtv0/400/600',
     badge: 'Free', tools: ['Sora', 'ElevenLabs'], rating: 'PG-13', language: 'English',
     tags: ['Space', 'Isolation'], releaseYear: 2025, views: 84200, trailerViews: 31000, featured: true, subscriberDiscountEligible: false,
-    trailerUrl: '/trailers/parallax-station.mp4',
+    trailerUrl: '/trailers/parallax-station-trailer.mp4',
     posterPrompt: 'Cinematic sci-fi movie poster: lone astronaut in a glowing white suit standing on a dark metallic platform, vast starfield behind, a pulsing blue signal beam cutting across the composition, theatrical lighting, IMAX-quality depth, title at bottom.',
   },
   {

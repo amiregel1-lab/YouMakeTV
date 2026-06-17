@@ -307,7 +307,10 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onWatchTrail
     top10ScrollRef.current?.scrollBy({ left: dir === 'left' ? -480 : 480, behavior: 'smooth' });
   };
 
-  const featured = useMemo(() => movies.find((m) => m.featured) ?? movies[5], [movies]);
+  const featured = useMemo(
+    () => movies.find((m) => m.featured) ?? movies[5] ?? movies[0],
+    [movies],
+  );
 
   const top10 = useMemo(
     () => [...movies].sort((a, b) => (b.views ?? 0) - (a.views ?? 0)).slice(0, 10),
@@ -380,6 +383,42 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onWatchTrail
     setSelectedGenre('All');
     setPriceTier(0);
   };
+
+  // Catalog not loaded yet — render neutral skeletons instead of ever painting
+  // placeholder/stale covers that would get swapped once Supabase data arrives.
+  if (movies.length === 0) {
+    return (
+      <div className="space-y-10" aria-busy="true" aria-label="Loading catalog">
+        <section
+          className="relative -mx-4 sm:-mx-6 lg:-mx-8 -mt-8 overflow-hidden bg-slate-950"
+          style={{ minHeight: '460px', height: 'min(65vh, 700px)' }}
+        >
+          <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900" />
+          <div className="absolute inset-0 flex items-end pb-10 sm:pb-14 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-2xl space-y-4">
+              <div className="h-7 w-36 rounded-full bg-white/10 animate-pulse" />
+              <div className="h-12 w-80 max-w-full rounded-xl bg-white/10 animate-pulse" />
+              <div className="h-5 w-96 max-w-full rounded-lg bg-white/5 animate-pulse" />
+              <div className="flex gap-3">
+                <div className="h-11 w-32 rounded-full bg-white/15 animate-pulse" />
+                <div className="h-11 w-28 rounded-full bg-white/10 animate-pulse" />
+              </div>
+            </div>
+          </div>
+        </section>
+        {[0, 1].map((row) => (
+          <section key={row} className="space-y-4">
+            <div className="h-6 w-44 rounded-lg bg-slate-200 animate-pulse" />
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="aspect-[2/3] rounded-xl bg-slate-200 animate-pulse" />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-10">

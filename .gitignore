@@ -14,3 +14,10 @@ npm-debug.log*
 
 # Build artifacts / scratch
 .trailer-build/
+
+# Large media assets — keep in a storage bucket / Git LFS, not in the repo
+/Covers/
+/Parallax Station/
+/Rainbow Dealer/
+/public/trailers/
+*.ai.zip

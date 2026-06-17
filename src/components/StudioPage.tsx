@@ -9,7 +9,7 @@ import { getBadge, isVerified, formatNum, topGenre, joinYear, BADGE_CONFIG } fro
 export default function StudioPage() {
   const { name } = useParams<{ name: string }>();
   const navigate = useNavigate();
-  const { movies } = useMovies();
+  const { movies, loading } = useMovies();
   const [imgErrors, setImgErrors] = useState<Set<number>>(new Set());
 
   const studioName = decodeURIComponent(name ?? '');
@@ -31,6 +31,20 @@ export default function StudioPage() {
 
   const handleImgError = (id: number) =>
     setImgErrors((prev) => { const n = new Set(prev); n.add(id); return n; });
+
+  // Catalog still loading — don't flash "Studio not found" before data arrives
+  if (films.length === 0 && (loading || movies.length === 0)) {
+    return (
+      <div className="space-y-8" aria-busy="true" aria-label="Loading studio">
+        <div className="h-40 rounded-[2rem] bg-slate-200 animate-pulse" />
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="aspect-[2/3] rounded-xl bg-slate-200 animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   // Studio not found
   if (!studioName || films.length === 0) {

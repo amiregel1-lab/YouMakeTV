@@ -19,15 +19,27 @@ const GENRE_PALETTE: Record<string, [string, string]> = {
   'Documentary': ['#091108', '#122212'],
 };
 
+// Appends a content-version token to a Storage/CDN URL so that re-uploading a
+// new image to the SAME path produces a NEW URL. Without this, the browser/CDN
+// keeps serving the previously cached bytes — which is why an updated cover
+// flashes the *old* image for a second before revalidating to the new one.
+// picsum and data: URLs are returned untouched (deterministic / inline already).
+function withVersion(url: string, updatedAt?: string): string {
+  if (!updatedAt || url.startsWith('data:')) return url;
+  const v = Date.parse(updatedAt);
+  if (Number.isNaN(v)) return url;
+  return `${url}${url.includes('?') ? '&' : '?'}v=${v}`;
+}
+
 // Returns the poster URL for a movie.
 // The movies table (cover_url) is the single source of truth — local caches of
 // covers (e.g. the old youmake_media_overrides localStorage key) must never
 // shadow it, or replaced covers keep flashing stale images per device.
 export function getPosterUrl(
-  movie: { id: number; thumbnail: string; title?: string; posterPrompt?: string },
+  movie: { id: number; thumbnail: string; title?: string; posterPrompt?: string; updatedAt?: string },
 ): string {
   if (movie.thumbnail && !movie.thumbnail.includes('picsum.photos')) {
-    return movie.thumbnail;
+    return withVersion(movie.thumbnail, movie.updatedAt);
   }
   return `https://picsum.photos/seed/ymtv${movie.id}/400/600`;
 }
@@ -38,13 +50,13 @@ export function getPosterUrl(
  * Falls back gracefully so any movie can be featured without a manual backdrop upload.
  */
 export function getBackdropUrl(
-  movie: { id: number; thumbnail: string; backdropUrl?: string },
+  movie: { id: number; thumbnail: string; backdropUrl?: string; updatedAt?: string },
 ): string {
   if (movie.backdropUrl && !movie.backdropUrl.includes('picsum.photos')) {
-    return movie.backdropUrl;
+    return withVersion(movie.backdropUrl, movie.updatedAt);
   }
   if (movie.thumbnail && !movie.thumbnail.includes('picsum.photos')) {
-    return movie.thumbnail;
+    return withVersion(movie.thumbnail, movie.updatedAt);
   }
   return picsumBackdrop(movie.id);
 }

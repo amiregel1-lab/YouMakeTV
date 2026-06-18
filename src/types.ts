@@ -30,6 +30,9 @@ export interface Movie {
   trailerUrl?: string;
   backdropUrl?: string;
   posterPrompt?: string;
+  // ISO timestamp of the last DB write. Used to version cover/backdrop URLs so a
+  // re-uploaded image (same Storage path) never serves a stale, cached copy.
+  updatedAt?: string;
 }
 
 export interface CreatorFilm {

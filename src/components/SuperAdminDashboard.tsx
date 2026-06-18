@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
-  PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import {
@@ -33,7 +32,7 @@ import { useMovies } from '../lib/MovieContext';
 
 type AdminSection =
   | 'dashboard' | 'overview' | 'creators' | 'movies' | 'moderation'
-  | 'payouts' | 'subscriptions' | 'reports' | 'seo' | 'settings' | 'auditlog';
+  | 'payouts' | 'subscriptions' | 'reports' | 'settings' | 'auditlog';
 
 // ── Shared Helpers ────────────────────────────────────────────────────────────
 
@@ -189,503 +188,157 @@ function OverviewSection({ stats, metrics }: OverviewProps) {
   );
 }
 
-// ── Daily Dashboard ────────────────────────────────────────────────────────────
-// "Today" view: numbers that move on a daily basis. There is no analytics backend
-// in this prototype, so the figures are generated from a date-seeded PRNG — stable
-// within a given day, different every day, and reproducible across reloads.
+// ── Dashboard (real data only) ──────────────────────────────────────────────────
+// Shows ONLY figures we can actually read in-app: the live movie catalog from
+// Supabase and its stored engagement columns (views, trailer_views). No invented
+// daily/financial/traffic numbers — if a metric isn't backed by real data, it is
+// not shown here. Live site-visit analytics live in GA/Meta and would need a
+// server-side Data API connection before they could appear in this panel.
 
-function mulberry32(seed: number) {
-  return () => {
-    seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-function daySeed(d: Date) {
-  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
-}
-function rint(rng: () => number, min: number, max: number) {
-  return Math.floor(rng() * (max - min + 1)) + min;
-}
-
-interface DayPoint {
-  date: Date; label: string;
-  revenue: number; purchases: number; signups: number;
-  newCreators: number; visitors: number; subscribers: number;
-}
-
-function buildDailySeries(): DayPoint[] {
-  const today = new Date();
-  const out: DayPoint[] = [];
-  for (let i = 13; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
-    const rng = mulberry32(daySeed(d));
-    const weekend = d.getDay() === 0 || d.getDay() === 6;
-    const lift = weekend ? 1.3 : 1;
-    out.push({
-      date: d,
-      label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      visitors: Math.round(rint(rng, 420, 760) * lift),
-      purchases: Math.round(rint(rng, 16, 48) * lift),
-      revenue: Math.round(rint(rng, 140, 520) * lift),
-      signups: rint(rng, 4, 14),
-      newCreators: rng() > 0.55 ? rint(rng, 1, 3) : 0,
-      subscribers: rint(rng, 1, 8),
-    });
-  }
-  return out;
-}
-
-function buildHourlyToday(): { hour: string; visitors: number }[] {
-  const today = new Date();
-  const base = daySeed(today);
-  return Array.from({ length: 24 }, (_, h) => {
-    const rng = mulberry32(base * 100 + h);
-    // Diurnal curve — quiet overnight, peaks early evening.
-    const curve = 0.3 + 0.7 * Math.sin(Math.max(0, (h - 5)) / 19 * Math.PI);
-    return {
-      hour: `${h.toString().padStart(2, '0')}:00`,
-      visitors: Math.max(0, Math.round(curve * rint(rng, 20, 70))),
-    };
-  });
-}
-
-const ACTIVITY_POOL = [
-  { type: 'purchase', icon: '$', tone: 'emerald', text: 'purchased', subjects: ['Echoes of Tomorrow', 'Neon Requiem', 'The Last Signal', 'Paper Cities', 'Saltwater Saints'] },
-  { type: 'signup', icon: '+', tone: 'cyan', text: 'created a viewer account', subjects: [''] },
-  { type: 'subscribe', icon: '★', tone: 'purple', text: 'started YouMake+ membership', subjects: [''] },
-  { type: 'creator', icon: '◉', tone: 'amber', text: 'applied as a creator', subjects: ['Lumen Creative', 'Orbit Pictures', 'Vortex Media', 'Apex Visual'] },
-  { type: 'upload', icon: '▷', tone: 'blue', text: 'submitted a film for review', subjects: ['Midnight Atlas', 'Glass Horizon', 'Cobalt Dreams'] },
-];
-const FIRST_NAMES = ['Avery', 'Marcus', 'Sofia', 'Kai', 'Priya', 'Dmitri', 'Zoe', 'Noah', 'Lena', 'Omar', 'Mia', 'Theo'];
-
-function buildActivityFeed(): { id: number; tone: string; icon: string; label: string; ago: string }[] {
-  const today = new Date();
-  const rng = mulberry32(daySeed(today) + 7);
-  const items: { id: number; tone: string; icon: string; label: string; ago: string }[] = [];
-  let minutesAgo = rint(rng, 2, 9);
-  for (let i = 0; i < 9; i++) {
-    const ev = ACTIVITY_POOL[Math.floor(rng() * ACTIVITY_POOL.length)];
-    const who = ev.type === 'creator' || ev.type === 'upload'
-      ? ev.subjects[Math.floor(rng() * ev.subjects.length)]
-      : `${FIRST_NAMES[Math.floor(rng() * FIRST_NAMES.length)]} ${String.fromCharCode(65 + Math.floor(rng() * 26))}.`;
-    const subject = ev.subjects[0] && ev.type === 'purchase' ? ev.subjects[Math.floor(rng() * ev.subjects.length)] : '';
-    const label = ev.type === 'purchase'
-      ? `${who} ${ev.text} “${subject}”`
-      : ev.type === 'creator' || ev.type === 'upload'
-        ? `${who} ${ev.text}`
-        : `${who} ${ev.text}`;
-    const ago = minutesAgo < 60 ? `${minutesAgo}m ago` : `${Math.floor(minutesAgo / 60)}h ${minutesAgo % 60}m ago`;
-    items.push({ id: i, tone: ev.tone, icon: ev.icon, label, ago });
-    minutesAgo += rint(rng, 4, 38);
-  }
-  return items;
-}
-
-const TONE_CLASS: Record<string, string> = {
-  emerald: 'bg-emerald-500/10 text-emerald-400',
-  cyan: 'bg-cyan-500/10 text-cyan-400',
-  purple: 'bg-brand-purple/10 text-brand-purple',
-  amber: 'bg-amber-500/10 text-amber-400',
-  blue: 'bg-blue-500/10 text-blue-400',
-};
-
-// KPI card with a coloured delta vs the previous day.
-function TrendKpi({ label, value, deltaPct, hint }: { label: string; value: string; deltaPct?: number; hint?: string }) {
-  const up = (deltaPct ?? 0) >= 0;
-  return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5 space-y-1.5">
-      <p className="text-xs font-medium text-slate-500 uppercase tracking-[0.14em]">{label}</p>
-      <p className="text-2xl font-bold text-white">{value}</p>
-      {deltaPct !== undefined ? (
-        <p className={`text-xs font-semibold flex items-center gap-1 ${up ? 'text-emerald-400' : 'text-red-400'}`}>
-          <span>{up ? '▲' : '▼'}</span>
-          <span>{Math.abs(deltaPct).toFixed(1)}%</span>
-          <span className="text-slate-600 font-normal">vs yesterday</span>
-        </p>
-      ) : hint ? (
-        <p className="text-xs text-slate-600">{hint}</p>
-      ) : null}
-    </div>
-  );
-}
-
-interface DailyDashboardProps {
-  stats: ReturnType<typeof computeStats>;
+interface DashboardProps {
+  movies: Movie[];
   films: AdminFilm[];
-  payouts: PayoutRecord[];
-  creators: AdminCreator[];
+  loading: boolean;
   onGoToSection: (s: AdminSection) => void;
 }
 
-function DailyDashboardSection({ stats, films, payouts, creators, onGoToSection }: DailyDashboardProps) {
-  const series = useMemo(buildDailySeries, []);
-  const hourly = useMemo(buildHourlyToday, []);
-  const activity = useMemo(buildActivityFeed, []);
+function DashboardSection({ movies, films, loading, onGoToSection }: DashboardProps) {
+  const cat = useMemo(() => {
+    const totalViews = movies.reduce((s, m) => s + (m.views ?? 0), 0);
+    const totalTrailerViews = movies.reduce((s, m) => s + (m.trailerViews ?? 0), 0);
+    const paid = movies.filter(m => m.price > 0);
+    const free = movies.filter(m => m.price === 0);
+    const featured = movies.filter(m => m.featured);
+    const avgPrice = paid.length ? paid.reduce((s, m) => s + m.price, 0) / paid.length : 0;
 
-  const today = series[series.length - 1];
-  const yest = series[series.length - 2];
-  const pct = (a: number, b: number) => (b ? ((a - b) / b) * 100 : 0);
+    const genreMap = new Map<string, number>();
+    movies.forEach(m => genreMap.set(m.genre, (genreMap.get(m.genre) ?? 0) + 1));
+    const genres = [...genreMap.entries()]
+      .map(([genre, count]) => ({ genre, count }))
+      .sort((a, b) => b.count - a.count);
+
+    const topTrailers = [...movies].sort((a, b) => (b.trailerViews ?? 0) - (a.trailerViews ?? 0)).slice(0, 6);
+    const topViewed = [...movies].sort((a, b) => (b.views ?? 0) - (a.views ?? 0)).slice(0, 6);
+
+    return {
+      totalViews, totalTrailerViews,
+      paidCount: paid.length, freeCount: free.length,
+      featuredCount: featured.length, avgPrice,
+      genres, topTrailers, topViewed,
+      genreCount: genres.length,
+    };
+  }, [movies]);
 
   const pendingModeration = films.filter(f => f.status === 'Pending Review').length;
-  const pendingPayoutTotal = payouts.reduce((s, p) => s + p.pending, 0);
-  const verifiedToday = creators.filter(c => c.joinedAt === new Date().toISOString().slice(0, 10)).length;
 
-  const todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-  const revToday = today.revenue;
-
-  const sources = [
-    { name: 'Organic', value: 42, color: '#8b5cf6' },
-    { name: 'Direct', value: 24, color: '#22d3ee' },
-    { name: 'Social', value: 19, color: '#f59e0b' },
-    { name: 'Referral', value: 15, color: '#10b981' },
+  const kpis = [
+    { label: 'Total Movies', value: movies.length.toString() },
+    { label: 'Total Views', value: fmtK(cat.totalViews) },
+    { label: 'Trailer Views', value: fmtK(cat.totalTrailerViews) },
+    { label: 'Free Films', value: cat.freeCount.toString() },
+    { label: 'Paid Films', value: cat.paidCount.toString() },
+    { label: 'Featured', value: cat.featuredCount.toString() },
+    { label: 'Genres', value: cat.genreCount.toString() },
+    { label: 'Avg Paid Price', value: fmt$(cat.avgPrice) },
   ];
 
   return (
     <div className="space-y-8">
       <div className="flex items-end justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-xl font-bold text-white">Today’s Dashboard</h2>
-          <p className="text-sm text-slate-500 mt-0.5">{todayLabel} · live daily activity</p>
+          <h2 className="text-xl font-bold text-white">Dashboard</h2>
+          <p className="text-sm text-slate-500 mt-0.5">Live catalog &amp; engagement · sourced directly from the movie database</p>
         </div>
-        <div className="flex items-center gap-2 text-xs text-slate-500">
-          <span className="h-2 w-2 rounded-full bg-emerald-400 inline-block animate-pulse" />
-          Updated moments ago
-        </div>
-      </div>
-
-      {/* Today KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
-        <TrendKpi label="Revenue Today" value={fmt$(revToday)} deltaPct={pct(revToday, yest.revenue)} />
-        <TrendKpi label="Purchases Today" value={today.purchases.toString()} deltaPct={pct(today.purchases, yest.purchases)} />
-        <TrendKpi label="New Sign-ups" value={today.signups.toString()} deltaPct={pct(today.signups, yest.signups)} />
-        <TrendKpi label="New Subscribers" value={today.subscribers.toString()} deltaPct={pct(today.subscribers, yest.subscribers)} />
-        <TrendKpi label="New Creators" value={(today.newCreators + verifiedToday).toString()} hint="applied today" />
-        <TrendKpi label="Visitors Today" value={fmtK(today.visitors)} deltaPct={pct(today.visitors, yest.visitors)} />
-        <TrendKpi label="Pending Moderation" value={pendingModeration.toString()} hint={pendingModeration ? 'needs review' : 'all clear'} />
-        <TrendKpi label="Pending Payouts" value={fmt$(pendingPayoutTotal)} hint="awaiting release" />
-      </div>
-
-      {/* Charts row */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div className="xl:col-span-2 rounded-2xl border border-slate-800 bg-slate-900 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-semibold text-white">Revenue & Purchases · Last 14 Days</p>
-            <p className="text-xs text-slate-500">{fmt$(series.reduce((s, d) => s + d.revenue, 0))} total</p>
-          </div>
-          <ResponsiveContainer width="100%" height={240}>
-            <AreaChart data={series}>
-              <defs>
-                <linearGradient id="dailyRev" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.35} />
-                  <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-              <XAxis dataKey="label" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} interval={1} />
-              <YAxis tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => '$' + v} />
-              <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 8 }} labelStyle={{ color: '#94a3b8' }} formatter={(v, n) => [n === 'revenue' ? '$' + Number(v).toLocaleString() : v, n === 'revenue' ? 'Revenue' : 'Purchases']} />
-              <Area type="monotone" dataKey="revenue" stroke="#8b5cf6" fill="url(#dailyRev)" strokeWidth={2} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-          <p className="text-sm font-semibold text-white mb-4">Traffic Sources</p>
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie data={sources} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={3} stroke="none">
-                {sources.map(s => <Cell key={s.name} fill={s.color} />)}
-              </Pie>
-              <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 8 }} formatter={(v) => [v + '%', '']} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="mt-3 space-y-1.5">
-            {sources.map(s => (
-              <div key={s.name} className="flex items-center justify-between text-xs">
-                <span className="flex items-center gap-2 text-slate-400"><span className="h-2.5 w-2.5 rounded-full" style={{ background: s.color }} />{s.name}</span>
-                <span className="text-white font-medium">{s.value}%</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Hourly + activity */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div className="xl:col-span-2 rounded-2xl border border-slate-800 bg-slate-900 p-6">
-          <p className="text-sm font-semibold text-white mb-4">Visitors Today · by hour</p>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={hourly}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-              <XAxis dataKey="hour" tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} interval={3} />
-              <YAxis tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 8 }} labelStyle={{ color: '#94a3b8' }} formatter={(v) => [v, 'Visitors']} />
-              <Bar dataKey="visitors" fill="#22d3ee" radius={[3, 3, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-semibold text-white">Live Activity</p>
-            <button onClick={() => onGoToSection('auditlog')} className="text-xs text-brand-purple hover:underline">View all</button>
-          </div>
-          <div className="space-y-3">
-            {activity.map(a => (
-              <div key={a.id} className="flex items-start gap-3">
-                <span className={`flex h-7 w-7 flex-none items-center justify-center rounded-full text-xs font-bold ${TONE_CLASS[a.tone]}`}>{a.icon}</span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs text-slate-300 leading-snug">{a.label}</p>
-                  <p className="text-[10px] text-slate-600 mt-0.5">{a.ago}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Action shortcuts */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {[
-          { label: 'Review Queue', value: pendingModeration, target: 'moderation' as AdminSection, tone: 'amber' },
-          { label: 'Release Payouts', value: payouts.filter(p => p.status === 'Ready' && p.pending > 0).length, target: 'payouts' as AdminSection, tone: 'emerald' },
-          { label: 'Total Creators', value: stats.totalCreators, target: 'creators' as AdminSection, tone: 'cyan' },
-          { label: 'Total Movies', value: stats.totalMovies, target: 'movies' as AdminSection, tone: 'purple' },
-        ].map(s => (
+        {pendingModeration > 0 && (
           <button
-            key={s.label}
-            onClick={() => onGoToSection(s.target)}
-            className="rounded-2xl border border-slate-800 bg-slate-900 p-4 text-left transition-colors hover:border-brand-purple/40 hover:bg-slate-800/60"
+            onClick={() => onGoToSection('moderation')}
+            className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2 text-sm font-semibold text-amber-400 hover:bg-amber-500/20 transition"
           >
-            <p className="text-2xl font-bold text-white">{s.value}</p>
-            <p className="text-xs text-slate-500 mt-1">{s.label} <span className="text-brand-purple">→</span></p>
+            {pendingModeration} awaiting moderation
+            <span>→</span>
           </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── SEO Section ─────────────────────────────────────────────────────────────────
-// Search-performance snapshot. No live Search Console integration in the prototype,
-// so figures are illustrative — the layout mirrors what a GSC/Ahrefs sync would fill.
-
-function buildOrganicSeries(): { label: string; clicks: number; impressions: number }[] {
-  const today = new Date();
-  const out = [];
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
-    const rng = mulberry32(daySeed(d) + 31);
-    const grow = (30 - i) / 30; // gentle upward trend
-    out.push({
-      label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      clicks: Math.round((rint(rng, 40, 90) + grow * 60)),
-      impressions: Math.round((rint(rng, 900, 1600) + grow * 1200)),
-    });
-  }
-  return out;
-}
-
-interface KeywordRow { keyword: string; position: number; volume: number; change: number; }
-const SEO_KEYWORDS: KeywordRow[] = [
-  { keyword: 'ai generated movies', position: 4.2, volume: 8100, change: 2.1 },
-  { keyword: 'watch ai films', position: 6.8, volume: 3600, change: 1.4 },
-  { keyword: 'ai movie platform', position: 3.1, volume: 2900, change: 3.0 },
-  { keyword: 'publish ai film', position: 9.4, volume: 1300, change: -0.8 },
-  { keyword: 'ai filmmaking tools', position: 12.7, volume: 5400, change: 0.5 },
-  { keyword: 'youmaketv', position: 1.2, volume: 720, change: 0.0 },
-  { keyword: 'ai cinema streaming', position: 7.9, volume: 1900, change: 1.1 },
-  { keyword: 'best ai short films', position: 14.3, volume: 2400, change: -1.6 },
-];
-
-const SEO_PAGES = [
-  { page: '/', clicks: 1840, impressions: 42100, ctr: 4.4 },
-  { page: '/creators', clicks: 920, impressions: 18700, ctr: 4.9 },
-  { page: '/movies/echoes-of-tomorrow', clicks: 610, impressions: 12400, ctr: 4.9 },
-  { page: '/studios', clicks: 430, impressions: 9800, ctr: 4.4 },
-  { page: '/about', clicks: 280, impressions: 7100, ctr: 3.9 },
-];
-
-const TECH_CHECKS = [
-  { label: 'HTTPS / SSL active', ok: true, detail: 'Valid certificate, HSTS enabled' },
-  { label: 'XML sitemap submitted', ok: true, detail: '/sitemap.xml · 142 URLs indexed' },
-  { label: 'robots.txt present', ok: true, detail: 'Crawlable, no critical blocks' },
-  { label: 'Canonical tags', ok: true, detail: 'Set on all primary routes' },
-  { label: 'Open Graph / Twitter cards', ok: true, detail: 'og:image 1200×630 present' },
-  { label: 'Structured data (JSON-LD)', ok: false, detail: 'Add Movie & Organization schema' },
-  { label: 'Mobile-friendly', ok: true, detail: 'Responsive, passes mobile test' },
-  { label: 'Meta descriptions', ok: false, detail: '6 pages missing unique descriptions' },
-];
-
-const CORE_VITALS = [
-  { metric: 'LCP', value: '1.9s', status: 'Good', note: 'Largest Contentful Paint' },
-  { metric: 'INP', value: '142ms', status: 'Good', note: 'Interaction to Next Paint' },
-  { metric: 'CLS', value: '0.06', status: 'Good', note: 'Cumulative Layout Shift' },
-  { metric: 'TTFB', value: '0.4s', status: 'Good', note: 'Time to First Byte' },
-];
-
-function SeoSection({ films }: { films: AdminFilm[] }) {
-  const organic = useMemo(buildOrganicSeries, []);
-  const totalClicks = organic.reduce((s, d) => s + d.clicks, 0);
-  const totalImpr = organic.reduce((s, d) => s + d.impressions, 0);
-  const avgCtr = totalImpr ? (totalClicks / totalImpr) * 100 : 0;
-  const avgPos = SEO_KEYWORDS.reduce((s, k) => s + k.position, 0) / SEO_KEYWORDS.length;
-  const indexedPages = 142;
-  const missingMeta = TECH_CHECKS.filter(c => !c.ok).length;
-  const healthScore = Math.round((TECH_CHECKS.filter(c => c.ok).length / TECH_CHECKS.length) * 100);
-
-  return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-xl font-bold text-white">SEO & Search Performance</h2>
-        <p className="text-sm text-slate-500 mt-0.5">Organic search snapshot · last 30 days</p>
+        )}
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4">
-        <KpiCard label="Organic Clicks" value={fmtK(totalClicks)} sub="last 30 days" />
-        <KpiCard label="Impressions" value={fmtK(totalImpr)} sub="last 30 days" />
-        <KpiCard label="Avg CTR" value={avgCtr.toFixed(1) + '%'} sub="clicks ÷ impressions" accent />
-        <KpiCard label="Avg Position" value={avgPos.toFixed(1)} sub="tracked keywords" />
-        <KpiCard label="Indexed Pages" value={indexedPages.toString()} sub="in Google index" />
-        <KpiCard label="SEO Health" value={healthScore + '%'} sub={`${missingMeta} issues to fix`} accent />
-      </div>
-
-      {/* Organic trend */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-        <p className="text-sm font-semibold text-white mb-4">Organic Clicks & Impressions · 30 days</p>
-        <ResponsiveContainer width="100%" height={240}>
-          <AreaChart data={organic}>
-            <defs>
-              <linearGradient id="seoClicks" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.35} />
-                <stop offset="95%" stopColor="#22d3ee" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="seoImpr" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.2} />
-                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-            <XAxis dataKey="label" tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} interval={4} />
-            <YAxis yAxisId="l" tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
-            <YAxis yAxisId="r" orientation="right" tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => (v / 1000).toFixed(0) + 'K'} />
-            <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 8 }} labelStyle={{ color: '#94a3b8' }} />
-            <Legend wrapperStyle={{ fontSize: 12, color: '#94a3b8' }} />
-            <Area yAxisId="r" type="monotone" dataKey="impressions" stroke="#8b5cf6" fill="url(#seoImpr)" strokeWidth={2} name="Impressions" />
-            <Area yAxisId="l" type="monotone" dataKey="clicks" stroke="#22d3ee" fill="url(#seoClicks)" strokeWidth={2} name="Clicks" />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Keywords + pages */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
-          <p className="text-sm font-semibold text-white px-6 pt-6 pb-3">Top Keywords</p>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="border-y border-slate-800">
-                <tr><Th>Keyword</Th><Th>Position</Th><Th>Volume</Th><Th>Change</Th></tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/50">
-                {SEO_KEYWORDS.map(k => (
-                  <tr key={k.keyword} className="hover:bg-slate-800/40">
-                    <Td className="text-white font-medium">{k.keyword}</Td>
-                    <Td>{k.position.toFixed(1)}</Td>
-                    <Td>{fmtK(k.volume)}/mo</Td>
-                    <Td>
-                      <span className={k.change > 0 ? 'text-emerald-400' : k.change < 0 ? 'text-red-400' : 'text-slate-500'}>
-                        {k.change > 0 ? '▲' : k.change < 0 ? '▼' : '–'} {k.change !== 0 ? Math.abs(k.change).toFixed(1) : ''}
-                      </span>
-                    </Td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      {loading ? (
+        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-12 text-center text-sm text-slate-500">
+          Loading catalog…
         </div>
-
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 space-y-4">
-          <p className="text-sm font-semibold text-white">Top Landing Pages</p>
-          {SEO_PAGES.map((p, i) => (
-            <div key={p.page} className="flex items-center gap-3">
-              <span className="text-xs font-bold text-slate-600 w-5">{i + 1}</span>
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-center mb-1">
-                  <p className="text-sm font-medium text-white truncate">{p.page}</p>
-                  <p className="text-sm font-bold text-brand-cyan flex-none ml-2">{fmtK(p.clicks)} clicks</p>
-                </div>
-                <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-brand-cyan rounded-full" style={{ width: `${(p.clicks / SEO_PAGES[0].clicks) * 100}%` }} />
-                </div>
-                <p className="text-[10px] text-slate-600 mt-1">{fmtK(p.impressions)} impressions · {p.ctr}% CTR</p>
-              </div>
-            </div>
-          ))}
+      ) : movies.length === 0 ? (
+        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-12 text-center text-sm text-slate-500">
+          No movies in the catalog yet.
         </div>
-      </div>
-
-      {/* Technical SEO + Core Web Vitals */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-semibold text-white">Technical SEO</p>
-            <span className="text-xs text-slate-500">{TECH_CHECKS.filter(c => c.ok).length}/{TECH_CHECKS.length} passing</span>
+      ) : (
+        <>
+          {/* Real catalog KPIs */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+            {kpis.map(k => <KpiCard key={k.label} label={k.label} value={k.value} />)}
           </div>
-          <div className="space-y-2.5">
-            {TECH_CHECKS.map(c => (
-              <div key={c.label} className="flex items-start gap-3">
-                <span className={`flex h-5 w-5 flex-none items-center justify-center rounded-full text-[11px] font-bold ${c.ok ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
-                  {c.ok ? '✓' : '!'}
-                </span>
-                <div className="min-w-0">
-                  <p className="text-sm text-white leading-tight">{c.label}</p>
-                  <p className="text-xs text-slate-500">{c.detail}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
 
-        <div className="space-y-6">
+          {/* Genre distribution — real counts from the catalog */}
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-            <p className="text-sm font-semibold text-white mb-4">Core Web Vitals</p>
-            <div className="grid grid-cols-2 gap-3">
-              {CORE_VITALS.map(v => (
-                <div key={v.metric} className="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{v.metric}</p>
-                    <span className="text-[10px] font-bold text-emerald-400">● {v.status}</span>
+            <p className="text-sm font-semibold text-white mb-4">Catalog by Genre</p>
+            <ResponsiveContainer width="100%" height={Math.max(180, cat.genres.length * 28)}>
+              <BarChart data={cat.genres} layout="vertical" margin={{ left: 12 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
+                <XAxis type="number" tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                <YAxis type="category" dataKey="genre" width={96} tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 8 }} labelStyle={{ color: '#94a3b8' }} formatter={(v) => [v, 'Movies']} cursor={{ fill: '#1e293b55' }} />
+                <Bar dataKey="count" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Engagement leaderboards — real stored counts */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 space-y-4">
+              <p className="text-sm font-semibold text-white">Most-Watched Trailers</p>
+              {cat.topTrailers.map((m, i) => (
+                <div key={m.id} className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-slate-600 w-5">{i + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center mb-1">
+                      <p className="text-sm font-medium text-white truncate">{m.title}</p>
+                      <p className="text-sm font-bold text-brand-cyan flex-none ml-2">{fmtK(m.trailerViews ?? 0)}</p>
+                    </div>
+                    <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                      <div className="h-full bg-brand-cyan rounded-full" style={{ width: `${cat.topTrailers[0].trailerViews ? ((m.trailerViews ?? 0) / (cat.topTrailers[0].trailerViews ?? 1)) * 100 : 0}%` }} />
+                    </div>
                   </div>
-                  <p className="text-xl font-bold text-white mt-1">{v.value}</p>
-                  <p className="text-[10px] text-slate-600 mt-0.5">{v.note}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 space-y-4">
+              <p className="text-sm font-semibold text-white">Most-Viewed Films</p>
+              {cat.topViewed.map((m, i) => (
+                <div key={m.id} className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-slate-600 w-5">{i + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center mb-1">
+                      <p className="text-sm font-medium text-white truncate">{m.title}</p>
+                      <p className="text-sm font-bold text-brand-purple flex-none ml-2">{fmtK(m.views ?? 0)}</p>
+                    </div>
+                    <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                      <div className="h-full bg-brand-purple rounded-full" style={{ width: `${cat.topViewed[0].views ? ((m.views ?? 0) / (cat.topViewed[0].views ?? 1)) * 100 : 0}%` }} />
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-            <p className="text-sm font-semibold text-white mb-3">Content Coverage</p>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-slate-500">Movie pages indexed</span><span className="text-white font-medium">{films.length}</span></div>
-              <div className="flex justify-between"><span className="text-slate-500">Pages missing meta description</span><span className="text-amber-400 font-medium">6</span></div>
-              <div className="flex justify-between"><span className="text-slate-500">Pages without JSON-LD schema</span><span className="text-amber-400 font-medium">All</span></div>
-              <div className="flex justify-between"><span className="text-slate-500">Avg words per movie description</span><span className="text-white font-medium">82</span></div>
-            </div>
-            <p className="mt-4 text-xs text-slate-600 leading-relaxed">
-              Tip: add unique meta descriptions and Movie JSON-LD schema to each film page to lift CTR and unlock rich results.
-            </p>
-          </div>
-        </div>
-      </div>
+          <p className="text-xs text-slate-600 leading-relaxed max-w-3xl">
+            These figures come straight from the movie catalog. Live site-visit and real-time
+            trailer-play tracking are sent to your analytics provider (Google&nbsp;Analytics / Meta
+            Pixel) — connecting their reporting API is required before those can be shown here, so
+            they are intentionally not displayed rather than estimated.
+          </p>
+        </>
+      )}
     </div>
   );
 }
-
 // ── Creators Section ──────────────────────────────────────────────────────────
 
 interface CreatorsProps {
@@ -1934,7 +1587,6 @@ const NAV: { key: AdminSection; label: string; emoji: string }[] = [
   { key: 'payouts', label: 'Payouts', emoji: '◈' },
   { key: 'subscriptions', label: 'Subscriptions', emoji: '★' },
   { key: 'reports', label: 'Reports', emoji: '▦' },
-  { key: 'seo', label: 'SEO', emoji: '⌕' },
   { key: 'settings', label: 'Settings', emoji: '◌' },
   { key: 'auditlog', label: 'Audit Log', emoji: '≡' },
 ];
@@ -1986,7 +1638,7 @@ function buildAdminFilmsFromMovies(mergedMovies: Movie[]): AdminFilm[] {
 
 export default function SuperAdminDashboard() {
   const navigate = useNavigate();
-  const { refreshMovies } = useMovies();
+  const { movies: liveMovies, refreshMovies } = useMovies();
 
   // Auth guard — redirect if no valid admin session
   useEffect(() => {
@@ -2279,11 +1931,10 @@ export default function SuperAdminDashboard() {
         {/* Content */}
         <main className="flex-1 overflow-y-auto p-6">
           {section === 'dashboard' && (
-            <DailyDashboardSection
-              stats={stats}
+            <DashboardSection
+              movies={liveMovies}
               films={films}
-              payouts={payouts}
-              creators={creators}
+              loading={filmsLoading}
               onGoToSection={setSection}
             />
           )}
@@ -2342,8 +1993,6 @@ export default function SuperAdminDashboard() {
           {section === 'reports' && (
             <ReportsSection metrics={metrics} creators={creators} films={films} />
           )}
-
-          {section === 'seo' && <SeoSection films={films} />}
 
           {section === 'settings' && (
             <SettingsSection settings={settings} onSave={saveSettings} />

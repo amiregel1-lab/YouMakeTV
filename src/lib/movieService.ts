@@ -31,6 +31,7 @@ function rowToMovie(row: Record<string, any>): Movie {
     backdropUrl: (row.backdrop_url as string) || undefined,
     posterPrompt: (row.poster_prompt as string) || undefined,
     updatedAt: (row.updated_at as string) || undefined,
+    createdAt: (row.created_at as string) || undefined,
   };
 }
 

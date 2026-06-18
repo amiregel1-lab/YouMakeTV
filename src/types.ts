@@ -33,6 +33,9 @@ export interface Movie {
   // ISO timestamp of the last DB write. Used to version cover/backdrop URLs so a
   // re-uploaded image (same Storage path) never serves a stale, cached copy.
   updatedAt?: string;
+  // ISO timestamp of when the row was first inserted (movie uploaded). Powers the
+  // "today" admin dashboard — what was uploaded / changed today.
+  createdAt?: string;
 }
 
 export interface CreatorFilm {

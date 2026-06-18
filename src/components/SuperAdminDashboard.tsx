@@ -188,152 +188,169 @@ function OverviewSection({ stats, metrics }: OverviewProps) {
   );
 }
 
-// ── Dashboard (real data only) ──────────────────────────────────────────────────
-// Shows ONLY figures we can actually read in-app: the live movie catalog from
-// Supabase and its stored engagement columns (views, trailer_views). No invented
-// daily/financial/traffic numbers — if a metric isn't backed by real data, it is
-// not shown here. Live site-visit analytics live in GA/Meta and would need a
-// server-side Data API connection before they could appear in this panel.
+// ── Dashboard — "Today" only ─────────────────────────────────────────────────────
+// Shows ONLY what actually happened TODAY, measured from real database timestamps:
+// movies uploaded today (created_at), movies edited today (updated_at), and creators
+// onboarded today (joinedAt). Everything is a real count — it shows 0 on a quiet day
+// rather than inventing activity. Metrics that the app does not yet store as dated
+// events (purchases, trailer plays, sign-ups, subscriptions — these go to GA / Meta)
+// are NOT shown as numbers, because a perpetual "0" would itself be a placeholder.
+
+function startOfTodayMs(): number {
+  const n = new Date();
+  return new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime();
+}
+function isToday(iso: string | undefined, start: number): boolean {
+  if (!iso) return false;
+  const t = new Date(iso).getTime();
+  return !Number.isNaN(t) && t >= start;
+}
+function relTime(iso?: string): string {
+  if (!iso) return 'never';
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return 'never';
+  const m = Math.floor((Date.now() - t) / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
 
 interface DashboardProps {
   movies: Movie[];
-  films: AdminFilm[];
+  creators: AdminCreator[];
   loading: boolean;
-  onGoToSection: (s: AdminSection) => void;
 }
 
-function DashboardSection({ movies, films, loading, onGoToSection }: DashboardProps) {
-  const cat = useMemo(() => {
-    const totalViews = movies.reduce((s, m) => s + (m.views ?? 0), 0);
-    const totalTrailerViews = movies.reduce((s, m) => s + (m.trailerViews ?? 0), 0);
-    const paid = movies.filter(m => m.price > 0);
-    const free = movies.filter(m => m.price === 0);
-    const featured = movies.filter(m => m.featured);
-    const avgPrice = paid.length ? paid.reduce((s, m) => s + m.price, 0) / paid.length : 0;
+type FeedItem = { id: number; title: string; action: 'Uploaded' | 'Edited'; ts: number; iso?: string };
 
-    const genreMap = new Map<string, number>();
-    movies.forEach(m => genreMap.set(m.genre, (genreMap.get(m.genre) ?? 0) + 1));
-    const genres = [...genreMap.entries()]
-      .map(([genre, count]) => ({ genre, count }))
-      .sort((a, b) => b.count - a.count);
+function DashboardSection({ movies, creators, loading }: DashboardProps) {
+  const t = useMemo(() => {
+    const start = startOfTodayMs();
+    const todayStr = new Date().toISOString().slice(0, 10);
 
-    const topTrailers = [...movies].sort((a, b) => (b.trailerViews ?? 0) - (a.trailerViews ?? 0)).slice(0, 6);
-    const topViewed = [...movies].sort((a, b) => (b.views ?? 0) - (a.views ?? 0)).slice(0, 6);
+    const uploadedToday = movies.filter(m => isToday(m.createdAt, start));
+    const editedToday = movies.filter(m => isToday(m.updatedAt, start) && !isToday(m.createdAt, start));
+    const newCreatorsToday = creators.filter(c => c.joinedAt === todayStr);
+
+    const feed: FeedItem[] = [];
+    for (const m of movies) {
+      const uploaded = isToday(m.createdAt, start);
+      const edited = isToday(m.updatedAt, start) && !uploaded;
+      if (uploaded) feed.push({ id: m.id, title: m.title, action: 'Uploaded', ts: new Date(m.createdAt as string).getTime(), iso: m.createdAt });
+      else if (edited) feed.push({ id: m.id, title: m.title, action: 'Edited', ts: new Date(m.updatedAt as string).getTime(), iso: m.updatedAt });
+    }
+    feed.sort((a, b) => b.ts - a.ts);
+
+    const byCreated = [...movies].filter(m => m.createdAt).sort((a, b) => new Date(b.createdAt as string).getTime() - new Date(a.createdAt as string).getTime());
+    const byUpdated = [...movies].filter(m => m.updatedAt).sort((a, b) => new Date(b.updatedAt as string).getTime() - new Date(a.updatedAt as string).getTime());
 
     return {
-      totalViews, totalTrailerViews,
-      paidCount: paid.length, freeCount: free.length,
-      featuredCount: featured.length, avgPrice,
-      genres, topTrailers, topViewed,
-      genreCount: genres.length,
+      uploadedToday, editedToday, newCreatorsToday, feed,
+      newPaidToday: uploadedToday.filter(m => m.price > 0).length,
+      newFreeToday: uploadedToday.filter(m => m.price === 0).length,
+      featuredAddedToday: uploadedToday.filter(m => m.featured).length,
+      lastUpload: byCreated[0],
+      lastEdit: byUpdated[0],
     };
-  }, [movies]);
+  }, [movies, creators]);
 
-  const pendingModeration = films.filter(f => f.status === 'Pending Review').length;
+  const todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
   const kpis = [
-    { label: 'Total Movies', value: movies.length.toString() },
-    { label: 'Total Views', value: fmtK(cat.totalViews) },
-    { label: 'Trailer Views', value: fmtK(cat.totalTrailerViews) },
-    { label: 'Free Films', value: cat.freeCount.toString() },
-    { label: 'Paid Films', value: cat.paidCount.toString() },
-    { label: 'Featured', value: cat.featuredCount.toString() },
-    { label: 'Genres', value: cat.genreCount.toString() },
-    { label: 'Avg Paid Price', value: fmt$(cat.avgPrice) },
+    { label: 'New Movies Uploaded', value: t.uploadedToday.length },
+    { label: 'Movies Edited', value: t.editedToday.length },
+    { label: 'New Creators Onboarded', value: t.newCreatorsToday.length },
+    { label: 'New Paid Films', value: t.newPaidToday },
+    { label: 'New Free Films', value: t.newFreeToday },
+    { label: 'Featured Films Added', value: t.featuredAddedToday },
   ];
+
+  const anythingToday = t.feed.length > 0 || t.newCreatorsToday.length > 0;
 
   return (
     <div className="space-y-8">
       <div className="flex items-end justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-xl font-bold text-white">Dashboard</h2>
-          <p className="text-sm text-slate-500 mt-0.5">Live catalog &amp; engagement · sourced directly from the movie database</p>
+          <h2 className="text-xl font-bold text-white">Today</h2>
+          <p className="text-sm text-slate-500 mt-0.5">{todayLabel} · only what changed today</p>
         </div>
-        {pendingModeration > 0 && (
-          <button
-            onClick={() => onGoToSection('moderation')}
-            className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2 text-sm font-semibold text-amber-400 hover:bg-amber-500/20 transition"
-          >
-            {pendingModeration} awaiting moderation
-            <span>→</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2 text-xs text-slate-500">
+          <span className={`h-2 w-2 rounded-full inline-block ${anythingToday ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} />
+          {anythingToday ? 'Activity today' : 'Quiet so far today'}
+        </div>
       </div>
 
       {loading ? (
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-12 text-center text-sm text-slate-500">
-          Loading catalog…
-        </div>
-      ) : movies.length === 0 ? (
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-12 text-center text-sm text-slate-500">
-          No movies in the catalog yet.
+          Loading…
         </div>
       ) : (
         <>
-          {/* Real catalog KPIs */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
-            {kpis.map(k => <KpiCard key={k.label} label={k.label} value={k.value} />)}
+          {/* Today's real counts (0 on a quiet day) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {kpis.map(k => (
+              <div key={k.label} className={`rounded-2xl border p-5 space-y-1 ${k.value > 0 ? 'border-brand-purple/30 bg-brand-purple/5' : 'border-slate-800 bg-slate-900'}`}>
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-[0.14em]">{k.label}</p>
+                <p className={`text-3xl font-bold ${k.value > 0 ? 'text-brand-purple' : 'text-slate-600'}`}>{k.value}</p>
+                <p className="text-[11px] text-slate-600">today</p>
+              </div>
+            ))}
           </div>
 
-          {/* Genre distribution — real counts from the catalog */}
+          {/* Today's real activity feed from DB timestamps */}
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-            <p className="text-sm font-semibold text-white mb-4">Catalog by Genre</p>
-            <ResponsiveContainer width="100%" height={Math.max(180, cat.genres.length * 28)}>
-              <BarChart data={cat.genres} layout="vertical" margin={{ left: 12 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
-                <XAxis type="number" tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                <YAxis type="category" dataKey="genre" width={96} tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 8 }} labelStyle={{ color: '#94a3b8' }} formatter={(v) => [v, 'Movies']} cursor={{ fill: '#1e293b55' }} />
-                <Bar dataKey="count" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <p className="text-sm font-semibold text-white mb-4">Today’s Catalog Activity</p>
+            {t.feed.length === 0 ? (
+              <div className="py-8 text-center">
+                <p className="text-sm text-slate-500">No catalog changes today yet.</p>
+                <p className="text-xs text-slate-600 mt-1">Uploads and edits will appear here as they happen.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {t.feed.map(item => (
+                  <div key={`${item.id}-${item.action}`} className="flex items-center gap-3">
+                    <span className={`flex h-7 w-7 flex-none items-center justify-center rounded-full text-xs font-bold ${item.action === 'Uploaded' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-blue-500/10 text-blue-400'}`}>
+                      {item.action === 'Uploaded' ? '↑' : '✎'}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-slate-200 leading-snug truncate">
+                        <span className="font-semibold text-white">{item.action}</span> · {item.title}
+                      </p>
+                    </div>
+                    <span className="text-xs text-slate-600 flex-none">{relTime(item.iso)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Engagement leaderboards — real stored counts */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 space-y-4">
-              <p className="text-sm font-semibold text-white">Most-Watched Trailers</p>
-              {cat.topTrailers.map((m, i) => (
-                <div key={m.id} className="flex items-center gap-3">
-                  <span className="text-xs font-bold text-slate-600 w-5">{i + 1}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center mb-1">
-                      <p className="text-sm font-medium text-white truncate">{m.title}</p>
-                      <p className="text-sm font-bold text-brand-cyan flex-none ml-2">{fmtK(m.trailerViews ?? 0)}</p>
-                    </div>
-                    <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-brand-cyan rounded-full" style={{ width: `${cat.topTrailers[0].trailerViews ? ((m.trailerViews ?? 0) / (cat.topTrailers[0].trailerViews ?? 1)) * 100 : 0}%` }} />
-                    </div>
-                  </div>
-                </div>
-              ))}
+          {/* Catalog pulse — real "last change" markers so a quiet day still has context */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-[0.14em]">Last Movie Uploaded</p>
+              <p className="text-lg font-bold text-white mt-1 truncate">{t.lastUpload?.title ?? '—'}</p>
+              <p className="text-xs text-slate-600 mt-0.5">{t.lastUpload ? relTime(t.lastUpload.createdAt) : 'no uploads recorded'}</p>
             </div>
-
-            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 space-y-4">
-              <p className="text-sm font-semibold text-white">Most-Viewed Films</p>
-              {cat.topViewed.map((m, i) => (
-                <div key={m.id} className="flex items-center gap-3">
-                  <span className="text-xs font-bold text-slate-600 w-5">{i + 1}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center mb-1">
-                      <p className="text-sm font-medium text-white truncate">{m.title}</p>
-                      <p className="text-sm font-bold text-brand-purple flex-none ml-2">{fmtK(m.views ?? 0)}</p>
-                    </div>
-                    <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-brand-purple rounded-full" style={{ width: `${cat.topViewed[0].views ? ((m.views ?? 0) / (cat.topViewed[0].views ?? 1)) * 100 : 0}%` }} />
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-[0.14em]">Last Catalog Edit</p>
+              <p className="text-lg font-bold text-white mt-1 truncate">{t.lastEdit?.title ?? '—'}</p>
+              <p className="text-xs text-slate-600 mt-0.5">{t.lastEdit ? relTime(t.lastEdit.updatedAt) : 'no edits recorded'}</p>
             </div>
           </div>
 
-          <p className="text-xs text-slate-600 leading-relaxed max-w-3xl">
-            These figures come straight from the movie catalog. Live site-visit and real-time
-            trailer-play tracking are sent to your analytics provider (Google&nbsp;Analytics / Meta
-            Pixel) — connecting their reporting API is required before those can be shown here, so
-            they are intentionally not displayed rather than estimated.
-          </p>
+          {/* Honest note: events we don't yet store with timestamps are intentionally absent */}
+          <div className="rounded-2xl border border-slate-800/60 bg-slate-900/40 p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 mb-2">Not shown — needs event tracking</p>
+            <p className="text-xs text-slate-600 leading-relaxed max-w-3xl">
+              Trailer plays, purchases, new sign-ups and new subscriptions are currently sent to your
+              analytics provider (Google&nbsp;Analytics / Meta Pixel) but are not stored as dated events
+              in the database, so they can’t be counted per-day here. Rather than show a number that is
+              always 0, they’re left out until per-event logging (a Supabase events table or the GA Data
+              API) is connected — then each will appear above as a real “today” count.
+            </p>
+          </div>
         </>
       )}
     </div>
@@ -1933,9 +1950,8 @@ export default function SuperAdminDashboard() {
           {section === 'dashboard' && (
             <DashboardSection
               movies={liveMovies}
-              films={films}
+              creators={creators}
               loading={filmsLoading}
-              onGoToSection={setSection}
             />
           )}
 

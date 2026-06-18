@@ -31,6 +31,7 @@ import SuperAdminDashboard from './components/SuperAdminDashboard';
 import MockPaymentModal from './components/MockPaymentModal';
 import NotFoundPage from './components/NotFoundPage';
 import { initAnalytics, trackPageView } from './lib/analytics';
+import { logEvent } from './lib/eventService';
 
 export default function App() {
   const { movies } = useMovies();
@@ -89,6 +90,7 @@ export default function App() {
   const handleSignIn = (username: string, password: string) => {
     const premium = username.toLowerCase() === 'youmaketv' && password === '1234';
     setViewer({ username, premium });
+    logEvent('signup');
   };
 
   const handleSignOut = () => {
@@ -97,6 +99,7 @@ export default function App() {
 
   const handleSubscribe = () => {
     setViewer((current) => (current ? { ...current, premium: true } : demoViewerAccount));
+    logEvent('subscription');
     setModal({
       type: 'subscription',
       title: 'YouMake+ mock subscription activated',
@@ -139,6 +142,7 @@ export default function App() {
   const openTrailerModal = (title?: string) => {
     if (title) {
       const mergedMovie = movies.find((m) => m.title === title);
+      logEvent('trailer_play', { movieId: mergedMovie?.id, title });
       if (mergedMovie?.trailerUrl) {
         setTrailerModal({ title, url: mergedMovie.trailerUrl });
         return;
@@ -152,6 +156,7 @@ export default function App() {
   };
 
   const openPurchaseModal = () => {
+    logEvent('purchase');
     setModal({
       type: 'transaction',
       title: 'Payment integration coming later',

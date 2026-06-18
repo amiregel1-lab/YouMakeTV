@@ -25,6 +25,7 @@ import { movies as sourceMovies } from '../data/movies';
 import { getMovies, upsertMovie } from '../lib/movieService';
 import { uploadCover, uploadBackdrop, uploadTrailer } from '../lib/storageService';
 import { useMovies } from '../lib/MovieContext';
+import { getTodayEventCounts, type TodayEventCounts } from '../lib/eventService';
 
 // PROTOTYPE NOTE: Admin session is verified client-side only.
 // Production requires server-side JWT validation on every protected route.
@@ -189,12 +190,14 @@ function OverviewSection({ stats, metrics }: OverviewProps) {
 }
 
 // ── Dashboard — "Today" only ─────────────────────────────────────────────────────
-// Shows ONLY what actually happened TODAY, measured from real database timestamps:
-// movies uploaded today (created_at), movies edited today (updated_at), and creators
-// onboarded today (joinedAt). Everything is a real count — it shows 0 on a quiet day
-// rather than inventing activity. Metrics that the app does not yet store as dated
-// events (purchases, trailer plays, sign-ups, subscriptions — these go to GA / Meta)
-// are NOT shown as numbers, because a perpetual "0" would itself be a placeholder.
+// Shows ONLY what actually happened TODAY, all from real data:
+//  • Engagement (trailer plays, purchases, sign-ups, subscriptions) — counted from
+//    the events table via /api/track, recorded as users act on the live site.
+//  • Catalog (movies uploaded / edited today, creators onboarded today) — from the
+//    movies table timestamps (created_at / updated_at) and creator joinedAt.
+// Every figure is a genuine count and reads 0 on a quiet day rather than inventing
+// activity. If event tracking isn't connected yet, the engagement row explains the
+// one-time setup instead of showing fake numbers.
 
 function startOfTodayMs(): number {
   const n = new Date();
@@ -256,7 +259,21 @@ function DashboardSection({ movies, creators, loading }: DashboardProps) {
     };
   }, [movies, creators]);
 
+  const [events, setEvents] = useState<TodayEventCounts>({ configured: false, counts: {} });
+  useEffect(() => {
+    let alive = true;
+    getTodayEventCounts().then(e => { if (alive) setEvents(e); });
+    return () => { alive = false; };
+  }, []);
+
   const todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+  const engagementKpis = [
+    { label: 'Trailer Plays', value: events.counts.trailer_play ?? 0 },
+    { label: 'Purchases', value: events.counts.purchase ?? 0 },
+    { label: 'New Sign-ups', value: events.counts.signup ?? 0 },
+    { label: 'New Subscriptions', value: events.counts.subscription ?? 0 },
+  ];
 
   const kpis = [
     { label: 'New Movies Uploaded', value: t.uploadedToday.length },
@@ -267,7 +284,8 @@ function DashboardSection({ movies, creators, loading }: DashboardProps) {
     { label: 'Featured Films Added', value: t.featuredAddedToday },
   ];
 
-  const anythingToday = t.feed.length > 0 || t.newCreatorsToday.length > 0;
+  const eventsToday = engagementKpis.reduce((s, k) => s + k.value, 0);
+  const anythingToday = t.feed.length > 0 || t.newCreatorsToday.length > 0 || eventsToday > 0;
 
   return (
     <div className="space-y-8">
@@ -288,15 +306,46 @@ function DashboardSection({ movies, creators, loading }: DashboardProps) {
         </div>
       ) : (
         <>
-          {/* Today's real counts (0 on a quiet day) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {kpis.map(k => (
-              <div key={k.label} className={`rounded-2xl border p-5 space-y-1 ${k.value > 0 ? 'border-brand-purple/30 bg-brand-purple/5' : 'border-slate-800 bg-slate-900'}`}>
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-[0.14em]">{k.label}</p>
-                <p className={`text-3xl font-bold ${k.value > 0 ? 'text-brand-purple' : 'text-slate-600'}`}>{k.value}</p>
-                <p className="text-[11px] text-slate-600">today</p>
+          {/* Engagement today — real counts from the events table */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 mb-3">Engagement today</p>
+            {events.configured ? (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {engagementKpis.map(k => (
+                  <div key={k.label} className={`rounded-2xl border p-5 space-y-1 ${k.value > 0 ? 'border-brand-cyan/30 bg-brand-cyan/5' : 'border-slate-800 bg-slate-900'}`}>
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-[0.14em]">{k.label}</p>
+                    <p className={`text-3xl font-bold ${k.value > 0 ? 'text-brand-cyan' : 'text-slate-600'}`}>{k.value}</p>
+                    <p className="text-[11px] text-slate-600">today</p>
+                  </div>
+                ))}
               </div>
-            ))}
+            ) : (
+              <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5">
+                <p className="text-sm font-semibold text-amber-300/90 mb-1">Event tracking not connected yet</p>
+                <p className="text-xs text-slate-400 leading-relaxed max-w-3xl">
+                  Trailer plays, purchases, sign-ups and subscriptions are logged the moment they
+                  happen on the live site, but counting them here needs a one-time setup: run
+                  <span className="font-mono text-slate-300"> supabase/migrations/004_events.sql</span> in
+                  the Supabase SQL editor, then add <span className="font-mono text-slate-300">SUPABASE_SERVICE_ROLE_KEY</span> to
+                  your Vercel environment variables. Once both are in place these four cards fill with
+                  real same-day counts — no fake numbers in the meantime.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Catalog today — real counts from movie timestamps (0 on a quiet day) */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 mb-3">Catalog today</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              {kpis.map(k => (
+                <div key={k.label} className={`rounded-2xl border p-5 space-y-1 ${k.value > 0 ? 'border-brand-purple/30 bg-brand-purple/5' : 'border-slate-800 bg-slate-900'}`}>
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-[0.14em]">{k.label}</p>
+                  <p className={`text-3xl font-bold ${k.value > 0 ? 'text-brand-purple' : 'text-slate-600'}`}>{k.value}</p>
+                  <p className="text-[11px] text-slate-600">today</p>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Today's real activity feed from DB timestamps */}
@@ -338,18 +387,6 @@ function DashboardSection({ movies, creators, loading }: DashboardProps) {
               <p className="text-lg font-bold text-white mt-1 truncate">{t.lastEdit?.title ?? '—'}</p>
               <p className="text-xs text-slate-600 mt-0.5">{t.lastEdit ? relTime(t.lastEdit.updatedAt) : 'no edits recorded'}</p>
             </div>
-          </div>
-
-          {/* Honest note: events we don't yet store with timestamps are intentionally absent */}
-          <div className="rounded-2xl border border-slate-800/60 bg-slate-900/40 p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 mb-2">Not shown — needs event tracking</p>
-            <p className="text-xs text-slate-600 leading-relaxed max-w-3xl">
-              Trailer plays, purchases, new sign-ups and new subscriptions are currently sent to your
-              analytics provider (Google&nbsp;Analytics / Meta Pixel) but are not stored as dated events
-              in the database, so they can’t be counted per-day here. Rather than show a number that is
-              always 0, they’re left out until per-event logging (a Supabase events table or the GA Data
-              API) is connected — then each will appear above as a real “today” count.
-            </p>
           </div>
         </>
       )}

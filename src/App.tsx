@@ -15,6 +15,8 @@ import CreatorOnboarding from './components/CreatorOnboarding';
 import CreatorDashboard from './components/CreatorDashboard';
 import CreatorDemoPortal from './components/CreatorDemoPortal';
 import CreatorsPage from './components/CreatorsPage';
+import GreenlightPage from './components/GreenlightPage';
+import EarningsPage from './components/EarningsPage';
 import StudiosPage from './components/StudiosPage';
 import StudioPage from './components/StudioPage';
 import CreatorLoginPage from './components/CreatorLoginPage';
@@ -76,6 +78,7 @@ export default function App() {
   const activeRoute = useMemo(() => {
     if (location.pathname.startsWith('/creatorsLogin')) return 'creatorsLogin';
     if (location.pathname.startsWith('/creators')) return 'creators';
+    if (location.pathname.startsWith('/greenlight')) return 'greenlight';
     if (location.pathname.startsWith('/studios')) return 'studios';
     if (location.pathname.startsWith('/studio/')) return 'studios';
     if (location.pathname.startsWith('/creator/dashboard')) return 'dashboard';
@@ -187,6 +190,7 @@ export default function App() {
             subscribe: '/subscribe',
             creator: '/creator',
             creators: '/creators',
+            greenlight: '/greenlight',
             studios: '/studios',
             onboarding: '/creator/onboarding',
             dashboard: '/creator/dashboard',
@@ -213,6 +217,8 @@ export default function App() {
           <Route path="/login" element={<LoginPage viewer={viewer} onSignIn={handleSignIn} />} />
           <Route path="/account" element={<AccountPage viewer={viewer} onSignOut={handleSignOut} />} />
           <Route path="/creators" element={<CreatorsPage />} />
+          <Route path="/greenlight" element={<GreenlightPage />} />
+          <Route path="/earnings" element={<EarningsPage />} />
           <Route path="/studios" element={<StudiosPage />} />
           <Route path="/studio/:name" element={<StudioPage />} />
           <Route path="/creator" element={<CreatorPortal onStart={() => navigate('/creator/onboarding')} onDashboard={() => navigate('/creator/dashboard')} onViewDemo={() => navigate('/creator/demo')} onSignIn={() => navigate('/creatorsLogin')} />} />

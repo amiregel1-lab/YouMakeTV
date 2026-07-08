@@ -34,6 +34,7 @@ export default function Footer() {
             <h4 className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 mb-4">Browse</h4>
             <ul className="space-y-3">
               {link('Movies', '/')}
+              {link('Greenlight', '/greenlight')}
               {link('Creators', '/creators')}
               {link('YouMake+', '/subscribe')}
             </ul>
@@ -44,6 +45,7 @@ export default function Footer() {
             <h4 className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 mb-4">Creators</h4>
             <ul className="space-y-3">
               {link('Become a Creator', '/creator')}
+              {link('Creator Earnings', '/earnings')}
               {link('Creator Sign In', '/creatorsLogin')}
               {link('Creator Agreement', '/creator-agreement')}
             </ul>

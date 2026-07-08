@@ -4,7 +4,7 @@ import BrandLogo from './BrandLogo';
 interface NavbarProps {
   active: string;
   viewer?: ViewerAccount | null;
-  onRouteChange: (route: 'home' | 'subscribe' | 'creator' | 'creators' | 'studios' | 'onboarding' | 'dashboard' | 'login' | 'account' | 'creatorsLogin') => void;
+  onRouteChange: (route: 'home' | 'subscribe' | 'creator' | 'creators' | 'studios' | 'greenlight' | 'onboarding' | 'dashboard' | 'login' | 'account' | 'creatorsLogin') => void;
   onSignOut: () => void;
 }
 
@@ -56,6 +56,13 @@ export default function Navbar({ active, viewer, onRouteChange, onSignOut }: Nav
               className={`text-sm font-semibold transition ${active === 'subscribe' ? 'text-slate-950' : 'text-slate-500 hover:text-slate-900'}`}
             >
               YouMake+
+            </button>
+            <button
+              onClick={() => onRouteChange('greenlight')}
+              className={`flex items-center gap-1.5 text-sm font-semibold transition ${active === 'greenlight' ? 'text-slate-950' : 'text-slate-500 hover:text-slate-900'}`}
+            >
+              Greenlight
+              <span className="rounded-full bg-brand-pink/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-brand-pink">New</span>
             </button>
             <button
               onClick={() => onRouteChange('studios')}

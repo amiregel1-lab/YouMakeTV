@@ -243,6 +243,37 @@ export default function MovieDetailPage({ viewer, onPurchase, onSubscribe, onWat
         </div>
       </section>
 
+      {/* ── MADE BY A PERSON — provenance & authorship ────────────────────── */}
+      <section className="overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white shadow-soft">
+        <div className="grid gap-6 p-8 sm:grid-cols-[auto_1fr] sm:items-center">
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-slate-950 text-lg font-bold text-white">
+              {movie.creator.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()}
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.28em] text-emerald-600">Made by a person</p>
+              <p className="mt-1 text-lg font-semibold text-slate-950">
+                Directed &amp; prompted by {movie.creator}
+              </p>
+              <p className="text-sm text-slate-500">A human author, using AI as the camera and crew.</p>
+            </div>
+          </div>
+          <div className="rounded-[1.5rem] border border-slate-100 bg-slate-50 p-5">
+            <div className="flex items-center gap-2">
+              <svg viewBox="0 0 24 24" className="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M9 12l2 2 4-4" />
+                <path d="M12 3l7 4v5c0 4.5-3 8-7 9-4-1-7-4.5-7-9V7l7-4z" />
+              </svg>
+              <p className="text-sm font-semibold text-slate-950">Made with — content provenance</p>
+            </div>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Produced with {movie.tools.join(', ')}. This film carries content credentials so viewers
+              always know how it was made. All likenesses used with consent.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* ── PRICING SUMMARY ───────────────────────────────────────────────── */}
       <section className="rounded-[2rem] border border-slate-200/80 bg-white shadow-soft p-8">
         <div className="grid gap-4 sm:grid-cols-2">

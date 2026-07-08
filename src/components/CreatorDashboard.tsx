@@ -296,6 +296,83 @@ function buildPayouts(totalEarnings: number) {
   }));
 }
 
+// ── Demand signal — the marketplace feature that tells side-hustlers what to make ─
+// Platform-wide "what audiences search for vs. what creators supply". This is the
+// piece that turns hosting into a marketplace: it points supply at unmet demand.
+
+const DEMAND_SIGNALS = [
+  { genre: 'Sci-Fi Noir',      ratio: 4.2, avgEarnings: 1180, heat: 'Underserved' as const },
+  { genre: 'Grounded Horror',  ratio: 3.1, avgEarnings: 940,  heat: 'Underserved' as const },
+  { genre: 'Family Animation', ratio: 2.6, avgEarnings: 1320, heat: 'Hot' as const },
+  { genre: 'Romantic Comedy',  ratio: 1.9, avgEarnings: 760,  heat: 'Steady' as const },
+  { genre: 'True-Crime Doc',   ratio: 1.7, avgEarnings: 880,  heat: 'Steady' as const },
+];
+
+function DemandSignalPanel({ onPitch }: { onPitch: () => void }) {
+  const max = Math.max(...DEMAND_SIGNALS.map((d) => d.ratio));
+  const heatColor: Record<string, string> = {
+    Underserved: 'bg-brand-pink/10 text-brand-pink',
+    Hot: 'bg-amber-100 text-amber-700',
+    Steady: 'bg-slate-100 text-slate-500',
+  };
+  return (
+    <section className="rounded-[2rem] border border-slate-200/70 bg-white shadow-soft p-6 sm:p-8">
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-cyan/15 text-brand-cyan text-sm">📈</span>
+          <div>
+            <p className="text-xs uppercase tracking-[0.28em] text-slate-400">What audiences want</p>
+            <h2 className="text-lg font-semibold text-slate-950">Demand signal</h2>
+          </div>
+        </div>
+        <button
+          onClick={onPitch}
+          className="rounded-full border border-brand-purple/30 bg-brand-purple/5 px-4 py-2 text-xs font-semibold text-brand-purple transition hover:bg-brand-purple/10"
+        >
+          Pitch on Greenlight →
+        </button>
+      </div>
+
+      <p className="mb-5 text-sm text-slate-600">
+        Where viewer searches outpace available films right now. Make something here and you're
+        competing with fewer creators for more demand.
+      </p>
+
+      <div className="space-y-3.5">
+        {DEMAND_SIGNALS.map((d) => (
+          <div key={d.genre} className="flex items-center gap-4">
+            <div className="w-32 flex-none sm:w-40">
+              <p className="text-sm font-semibold text-slate-950">{d.genre}</p>
+              <span className={`mt-0.5 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${heatColor[d.heat]}`}>
+                {d.heat}
+              </span>
+            </div>
+            <div className="flex-1">
+              <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-brand-cyan to-brand-purple"
+                  style={{ width: `${(d.ratio / max) * 100}%` }}
+                />
+              </div>
+              <p className="mt-1 text-xs text-slate-500">
+                {d.ratio.toFixed(1)}× more searched than supplied
+              </p>
+            </div>
+            <div className="w-24 flex-none text-right">
+              <p className="text-sm font-semibold text-emerald-600">{formatCurrency(d.avgEarnings)}</p>
+              <p className="text-[10px] text-slate-400">avg / film</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <p className="mt-5 text-xs text-slate-400">
+        Platform-wide demand over the last 30 days. Prototype figures.
+      </p>
+    </section>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onStartOnboarding, onDeleteFilm, onEditFilm, showWelcome, onDismissWelcome }: CreatorDashboardProps) {
@@ -342,7 +419,8 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
   const totalViews     = creator.films.reduce((s, f) => s + f.views, 0) + trailerViews;
   const totalRevenue   = creator.films.reduce((s, f) => s + f.price * f.paidWatches, 0);
   const totalEarnings  = creator.films.reduce((s, f) => {
-    const share = f.paidWatches > 500 ? 0.4 : 0.3;
+    // Creators keep 70%; Founding Filmmakers (500+ paid watches on a film) keep 85%.
+    const share = f.paidWatches > 500 ? 0.85 : 0.7;
     return s + f.price * f.paidWatches * share;
   }, 0);
   const pendingPayout   = Math.round(totalEarnings * 0.35 * 100) / 100;
@@ -572,6 +650,8 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
                       </div>
                     </section>
                   )}
+
+                  <DemandSignalPanel onPitch={() => navigate('/greenlight')} />
                 </>
               )}
             </div>
@@ -765,8 +845,8 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-[1.5rem] border border-brand-purple/20 bg-brand-purple/5 p-5">
                     <p className="text-xs uppercase tracking-[0.22em] text-brand-purple mb-1">Your revenue share</p>
-                    <p className="text-2xl font-semibold text-slate-950">30–40%</p>
-                    <p className="text-xs text-slate-500 mt-1">40% unlocked after 500 paid watches per film</p>
+                    <p className="text-2xl font-semibold text-slate-950">70–85%</p>
+                    <p className="text-xs text-slate-500 mt-1">85% Founding Filmmaker rate unlocked after 500 paid watches per film</p>
                   </div>
                   <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
                     <p className="text-xs uppercase tracking-[0.22em] text-slate-400 mb-1">Payout schedule</p>

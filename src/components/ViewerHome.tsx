@@ -291,6 +291,81 @@ function GenreDiscoveryRow({ genre, movies, onSelectMovie, onWatchTrailer }: Gen
   );
 }
 
+// ── "You could make this" — the viewer → creator flywheel row ──────────────
+// After scrolling a catalog of AI films, the most valuable action a viewer can
+// take is to realize they could be on the other side of it. Deterministic mock
+// earnings keep the demo honest-looking without any backend.
+
+function firstTimerEarnings(movie: Movie) {
+  // Stable pseudo-figure from the movie id so it never jumps between renders.
+  const base = 180 + ((movie.id * 137) % 900);
+  return Math.round(base / 5) * 5;
+}
+
+function FlywheelCard({ movie, onSelect }: { movie: Movie; onSelect: () => void }) {
+  const [imgError, setImgError] = useState(false);
+  return (
+    <div className="flex-none w-32 sm:w-40 group cursor-pointer" onClick={onSelect}>
+      <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-slate-900 shadow-md transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl">
+        {!imgError ? (
+          <img
+            src={getPosterUrl(movie)}
+            alt={movie.title}
+            loading="lazy"
+            onError={() => setImgError(true)}
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="h-full w-full" style={{ background: fallbackGradient(movie.genre) }} />
+        )}
+        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/95 via-black/55 to-transparent pointer-events-none" />
+        <div className="absolute left-2 top-2 rounded-full bg-emerald-500/90 px-2 py-0.5 text-[9px] font-bold text-white backdrop-blur">
+          Made by a first-timer
+        </div>
+        <div className="absolute inset-x-0 bottom-0 p-2 pointer-events-none">
+          <p className="text-[10px] font-bold text-white leading-tight line-clamp-2">{movie.title}</p>
+          <p className="mt-0.5 text-[9px] font-semibold text-emerald-300">
+            earned ${firstTimerEarnings(movie).toLocaleString()}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FlywheelRow({ movies, onSelectMovie }: { movies: Movie[]; onSelectMovie: (id: number) => void }) {
+  const navigate = useNavigate();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  if (movies.length === 0) return null;
+  return (
+    <section className="overflow-hidden rounded-[2rem] border border-emerald-200/70 bg-gradient-to-br from-emerald-50 via-white to-white shadow-soft">
+      <div className="flex flex-col gap-6 p-6 sm:p-8 lg:flex-row lg:items-center">
+        <div className="lg:w-72 lg:flex-none">
+          <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.24em] text-emerald-700">
+            You could make this
+          </span>
+          <h2 className="mt-3 text-2xl font-semibold text-slate-950">Every film here started with one person.</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            No crew, no studio, no permission. Just a laptop and an idea. These were all made by
+            people who had never released a film before.
+          </p>
+          <button
+            onClick={() => navigate('/creator')}
+            className="mt-4 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
+          >
+            Start your first film →
+          </button>
+        </div>
+        <div ref={scrollRef} className="flex flex-1 gap-3 overflow-x-auto pb-2 scrollbar-hide">
+          {movies.map((movie) => (
+            <FlywheelCard key={movie.id} movie={movie} onSelect={() => onSelectMovie(movie.id)} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ── Main component ─────────────────────────────────────────────────────────
 
 export default function ViewerHome({ movies, viewer, onSelectMovie, onWatchTrailer }: ViewerHomeProps) {
@@ -330,6 +405,11 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onWatchTrail
 
   const topGrossing = useMemo(
     () => [...movies].filter((m) => m.price > 0).sort((a, b) => b.price - a.price).slice(0, 12),
+    [movies],
+  );
+
+  const firstTimerFilms = useMemo(
+    () => [...movies].sort((a, b) => (a.price || 0) - (b.price || 0)).slice(0, 12),
     [movies],
   );
 
@@ -678,6 +758,9 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onWatchTrail
         )}
       </section>
 
+      {/* ── FLYWHEEL: YOU COULD MAKE THIS ─────────────────────────────────── */}
+      <FlywheelRow movies={firstTimerFilms} onSelectMovie={onSelectMovie} />
+
       {/* ── PLATFORM PITCH / CREATOR CTA ──────────────────────────────────── */}
       <section className="rounded-[2.5rem] border border-slate-200/70 bg-white shadow-soft overflow-hidden">
         <div className="relative p-8 sm:p-12">
@@ -695,7 +778,7 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onWatchTrail
               <div className="mt-6 flex flex-wrap gap-4">
                 <div className="rounded-[1.5rem] border border-brand-purple/20 bg-brand-purple/5 px-5 py-4">
                   <p className="text-xs uppercase tracking-[0.24em] text-brand-purple">Creator earnings</p>
-                  <p className="mt-2 text-lg font-semibold text-slate-950">30–40% revenue share</p>
+                  <p className="mt-2 text-lg font-semibold text-slate-950">Keep 70% of every sale</p>
                 </div>
                 <div className="rounded-[1.5rem] border border-brand-cyan/20 bg-brand-cyan/5 px-5 py-4">
                   <p className="text-xs uppercase tracking-[0.24em] text-brand-cyan">Tools supported</p>

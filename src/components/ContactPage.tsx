@@ -5,10 +5,26 @@ type FormState = 'idle' | 'sending' | 'success' | 'error';
 
 const SUBJECTS = ['General', 'Creator Support', 'Viewer Support', 'Copyright / DMCA', 'Press & Media', 'Partnerships'];
 
+const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid'];
+
+const EMPTY_FORM = { name: '', email: '', phone: '', subject: 'General', message: '' };
+
+// Where the lead came from — attached to the submission so the CRM keeps attribution.
+function collectContext() {
+  if (typeof window === 'undefined') return { page: '', referrer: '', utm: {} };
+  const params = new URLSearchParams(window.location.search);
+  const utm: Record<string, string> = {};
+  for (const key of UTM_KEYS) {
+    const value = params.get(key);
+    if (value) utm[key] = value;
+  }
+  return { page: window.location.href, referrer: document.referrer || '', utm };
+}
+
 export default function ContactPage() {
   const [state, setState] = useState<FormState>('idle');
   const [errorMsg, setErrorMsg] = useState('');
-  const [form, setForm] = useState({ name: '', email: '', subject: 'General', message: '' });
+  const [form, setForm] = useState(EMPTY_FORM);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -23,7 +39,7 @@ export default function ContactPage() {
       const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, _gotcha: honeypot }),
+        body: JSON.stringify({ ...form, ...collectContext(), _gotcha: honeypot }),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -71,7 +87,7 @@ export default function ContactPage() {
             Thank you, <strong>{form.name}</strong>. We'll reply to <strong>{form.email}</strong> within one business day.
           </p>
           <button
-            onClick={() => { setState('idle'); setForm({ name: '', email: '', subject: 'General', message: '' }); }}
+            onClick={() => { setState('idle'); setForm(EMPTY_FORM); }}
             className="mt-2 text-sm font-semibold text-brand-purple hover:underline"
           >
             Send another message
@@ -117,15 +133,29 @@ export default function ContactPage() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 mb-2">Subject</label>
-            <select
-              value={form.subject}
-              onChange={(e) => setForm({ ...form, subject: e.target.value })}
-              className={inputClass}
-            >
-              {SUBJECTS.map((s) => <option key={s}>{s}</option>)}
-            </select>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 mb-2">
+                Phone <span className="normal-case tracking-normal text-slate-400">(optional)</span>
+              </label>
+              <input
+                type="tel"
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                placeholder="+1 555 000 0000"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 mb-2">Subject</label>
+              <select
+                value={form.subject}
+                onChange={(e) => setForm({ ...form, subject: e.target.value })}
+                className={inputClass}
+              >
+                {SUBJECTS.map((s) => <option key={s}>{s}</option>)}
+              </select>
+            </div>
           </div>
 
           <div>

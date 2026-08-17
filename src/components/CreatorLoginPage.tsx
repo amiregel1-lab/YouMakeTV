@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { saveAdminSession } from '../lib/storage';
 
 interface CreatorLoginPageProps {
   onSignIn: () => void;
@@ -25,20 +23,16 @@ const STATS = [
 ];
 
 export default function CreatorLoginPage({ onSignIn, onStart, onViewDemo }: CreatorLoginPageProps) {
-  const navigate = useNavigate();
   const [showPass, setShowPass] = useState(false);
   const [remember, setRemember] = useState(false);
   const [form, setForm] = useState({ email: '', password: '' });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Admin credentials entered on the creator login page → save session and
-    // route to the admin dashboard. Keeps Super Admin separate from creator auth.
-    if (form.email === 'YouMakeTV' && form.password === '123456') {
-      saveAdminSession({ isAdmin: true, loginAt: new Date().toISOString() });
-      navigate('/superadmin/dashboard');
-      return;
-    }
+    // Creator sign-in only. The admin shortcut that used to live here (admin
+    // credentials typed into this form granted the Super Admin dashboard) was a
+    // second copy of the credentials in the public bundle — admins sign in at
+    // /superadmin, which authenticates server-side.
     onSignIn();
   };
 

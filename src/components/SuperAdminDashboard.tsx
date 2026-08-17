@@ -1838,10 +1838,40 @@ export default function SuperAdminDashboard() {
   const navigate = useNavigate();
   const { movies: liveMovies, refreshMovies } = useMovies();
 
-  // Auth guard — redirect if no valid admin session
+  // Auth guard — the stored token is only trusted after the server revalidates
+  // its signature and expiry. Missing, expired, forged or edited → back to login.
+  const [authState, setAuthState] = useState<'checking' | 'ok'>('checking');
   useEffect(() => {
+    let cancelled = false;
+    const reject = () => {
+      clearAdminSession();
+      if (!cancelled) navigate('/superadmin', { replace: true });
+    };
+
     const session = loadAdminSession();
-    if (!session) navigate('/superadmin', { replace: true });
+    if (!session?.token || (session.expiresAt && session.expiresAt <= Date.now())) {
+      reject();
+      return;
+    }
+
+    (async () => {
+      try {
+        const res = await fetch('/api/admin/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: session.token }),
+        });
+        const data = await res.json().catch(() => ({ valid: false }));
+        if (cancelled) return;
+        if (res.ok && data.valid === true) setAuthState('ok');
+        else reject();
+      } catch {
+        // Can't confirm the session → fail closed.
+        if (!cancelled) reject();
+      }
+    })();
+
+    return () => { cancelled = true; };
   }, [navigate]);
 
   const [section, setSection] = useState<AdminSection>('dashboard');
@@ -2067,6 +2097,16 @@ export default function SuperAdminDashboard() {
 
   const pendingModCount = films.filter(f => f.status === 'Pending Review').length;
   const readyPayoutCount = payouts.filter(p => p.status === 'Ready' && p.pending > 0).length;
+
+  // Hold the console back until the server has confirmed the session, so an
+  // unauthenticated visitor never sees admin UI (all hooks above already ran).
+  if (authState !== 'ok') {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-sm text-slate-500">
+        Verifying session…
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex overflow-hidden" style={{ height: '100vh' }}>

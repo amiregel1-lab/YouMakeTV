@@ -1,24 +1,22 @@
 // Vercel serverless function — POST /api/contact
 //
 // A submission is delivered to two independent sinks:
-//   1. Growth OS CRM  (always on — no env var required, this is the durable lead store)
+//   1. Growth OS CRM  (only when CRM_WEBHOOK_URL is configured)
 //   2. info@youmaketv.ai via Resend (only when RESEND_API_KEY is configured)
 //
 // The visitor sees "sent" if EITHER sink accepted the lead, so a missing/expired
 // Resend key can no longer swallow leads with a 503, and a CRM outage can never
 // break the form when email is working. Only a total failure surfaces an error.
 //
-// Setup (optional, for the email copy): add RESEND_API_KEY to Vercel env vars and
-// verify youmaketv.ai in the Resend dashboard (DNS TXT + MX records).
+// Setup: add CRM_WEBHOOK_URL (the Growth OS lead hook, which embeds a secret
+// token — never hardcode it here) and, for the email copy, RESEND_API_KEY to the
+// Vercel env vars, then verify youmaketv.ai in Resend (DNS TXT + MX records).
 
 const TO_EMAIL = 'info@youmaketv.ai';
 const FROM_EMAIL = 'YouMakeTV <noreply@youmaketv.ai>';
 
-// Growth OS CRM lead webhook. Overridable via env, but defaulted so the lead
-// capture keeps working even if the env var is never set.
-const CRM_WEBHOOK_URL =
-  process.env.CRM_WEBHOOK_URL ||
-  'https://growth-os-sand.vercel.app/api/hooks/whk_6616edca717708b2524673609dc134ee5413';
+// Growth OS CRM lead webhook. The URL carries a secret token, so it lives in the
+// env only — there is deliberately no fallback value in this source file.
 const CRM_TIMEOUT_MS = 5000;
 
 const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid'];
@@ -63,10 +61,16 @@ const ALLOWED_ORIGINS = new Set([
 // ── Sink 1: Growth OS CRM ────────────────────────────────────────────────────
 // Never throws. Returns true only when the CRM confirmed receipt.
 async function forwardToCrm(payload) {
+  const webhookUrl = process.env.CRM_WEBHOOK_URL;
+  if (!webhookUrl) {
+    console.warn('CRM_WEBHOOK_URL is not set — skipping the CRM copy of this lead.');
+    return false;
+  }
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), CRM_TIMEOUT_MS);
   try {
-    const response = await fetch(CRM_WEBHOOK_URL, {
+    const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

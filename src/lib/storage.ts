@@ -46,14 +46,19 @@ export function saveCreator(creator: CreatorProfile | null) {
 }
 
 // ── Admin session ─────────────────────────────────────────────────────────
-// PROTOTYPE NOTE: This is a client-side session flag only.
-// Production requires server-issued signed tokens and server-side auth checks.
+// Holds the server-issued token from /api/admin/login. It is a cache, not an
+// authorisation: the dashboard revalidates it against /api/admin/verify on
+// every mount, so editing this entry by hand grants no access.
 const ADMIN_KEY = 'youmake_admin';
 
 export function loadAdminSession(): AdminSession | null {
   try {
     const raw = localStorage.getItem(ADMIN_KEY);
-    return raw ? (JSON.parse(raw) as AdminSession) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<AdminSession>;
+    // Sessions written before server-side auth (no token) are unusable.
+    if (!parsed || typeof parsed.token !== 'string' || !parsed.token) return null;
+    return parsed as AdminSession;
   } catch {
     return null;
   }

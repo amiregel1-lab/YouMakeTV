@@ -2,35 +2,49 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { saveAdminSession } from '../lib/storage';
 
-// PROTOTYPE NOTE: Credentials are checked client-side for demo purposes only.
-// Production requires server-side authentication with hashed passwords and
-// signed session tokens. NEVER store plaintext passwords in client code for real deployments.
-
-const ADMIN_USERNAME = 'YouMakeTV';
-const ADMIN_PASSWORD = '123456';
+// Credentials are never present in this bundle. The form posts to
+// /api/admin/login, which compares against the ADMIN_USERNAME / ADMIN_PASSWORD
+// env vars server-side and returns a signed session token on success.
 
 export default function SuperAdminLogin() {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(false);
-    // Simulate a brief network delay for realism
-    setTimeout(() => {
-      if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-        saveAdminSession({ isAdmin: true, loginAt: new Date().toISOString() });
-        navigate('/superadmin/dashboard', { replace: true });
-      } else {
-        setError(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await res.json().catch(() => ({} as { token?: string; expiresAt?: number; error?: string }));
+
+      if (!res.ok || !data.token) {
+        setError(data.error || 'Sign-in failed. Please try again.');
         setLoading(false);
+        return;
       }
-    }, 600);
+
+      saveAdminSession({
+        isAdmin: true,
+        loginAt: new Date().toISOString(),
+        token: data.token,
+        expiresAt: typeof data.expiresAt === 'number' ? data.expiresAt : 0,
+      });
+      navigate('/superadmin/dashboard', { replace: true });
+    } catch {
+      setError('Could not reach the server. Please check your connection and try again.');
+      setLoading(false);
+    }
   };
 
   return (
@@ -58,7 +72,7 @@ export default function SuperAdminLogin() {
 
           {error && (
             <div className="rounded-xl border border-red-800/50 bg-red-950/50 px-4 py-3 text-sm text-red-400 text-center">
-              Invalid Super Admin Credentials
+              {error}
             </div>
           )}
 
@@ -71,8 +85,8 @@ export default function SuperAdminLogin() {
                 type="text"
                 autoComplete="username"
                 value={username}
-                onChange={e => { setUsername(e.target.value); setError(false); }}
-                placeholder="YouMakeTV"
+                onChange={e => { setUsername(e.target.value); setError(''); }}
+                placeholder="Username"
                 className="w-full rounded-xl bg-slate-800 border border-slate-700 px-4 py-3 text-sm text-white placeholder-slate-600 outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple/30 transition"
               />
             </div>
@@ -86,8 +100,8 @@ export default function SuperAdminLogin() {
                   type={showPass ? 'text' : 'password'}
                   autoComplete="current-password"
                   value={password}
-                  onChange={e => { setPassword(e.target.value); setError(false); }}
-                  placeholder="••••••"
+                  onChange={e => { setPassword(e.target.value); setError(''); }}
+                  placeholder="••••••••"
                   className="w-full rounded-xl bg-slate-800 border border-slate-700 px-4 py-3 pr-11 text-sm text-white placeholder-slate-600 outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple/30 transition"
                 />
                 <button

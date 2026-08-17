@@ -72,14 +72,18 @@ export interface CreatorProfile {
 }
 
 // ── Super Admin Types ──────────────────────────────────────────────────────
-// PROTOTYPE NOTE: In production, all admin authentication must be handled
-// server-side with secure session tokens. Never store credentials or
-// role information in localStorage for real deployments.
-// Real RBAC (Role-Based Access Control) is required before launch.
+// Admin authentication is server-side: /api/admin/login checks the credentials
+// against env vars and returns an HMAC-signed token, which /api/admin/verify
+// re-validates on every dashboard load. The stored session below is only a
+// cache of that token — it grants nothing on its own.
 
 export interface AdminSession {
   isAdmin: true;
   loginAt: string;
+  /** HMAC-signed session token issued by /api/admin/login. */
+  token: string;
+  /** Epoch ms at which the token stops being accepted by the server. */
+  expiresAt: number;
 }
 
 export type AdminCreatorStatus = 'Active' | 'Suspended' | 'Pending';

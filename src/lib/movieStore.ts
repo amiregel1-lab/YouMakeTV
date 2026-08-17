@@ -2,7 +2,11 @@ import { movies } from '../data/movies';
 import type { AdminFilm, Movie } from '../types';
 
 const OVERRIDES_KEY = 'youmake_movie_overrides';
-const ADMIN_FILMS_KEY = 'youmake_admin_films';
+const ADMIN_FILMS_KEY = 'youmake_admin_films_v2';
+// v1 held film metadata derived from the old demo dataset (invented statuses,
+// purchases and revenue). Dropped on first load so a browser that used the admin
+// console before the demo data was removed doesn't keep that overlay forever.
+const LEGACY_ADMIN_FILMS_KEY = 'youmake_admin_films';
 // Thumbnails stored per-movie so a large base64 image never bloats the shared overrides JSON
 const THUMB_PREFIX = 'youmake_thumb_';
 
@@ -76,6 +80,9 @@ export function saveAdminFilms(films: AdminFilm[]) {
 }
 
 export function loadAdminFilms(): AdminFilm[] | null {
+  // Purge the stale v1 overlay before reading — otherwise old mock-derived
+  // statuses would keep overriding the real catalog on the owner's machine.
+  try { localStorage.removeItem(LEGACY_ADMIN_FILMS_KEY); } catch {}
   try {
     const raw = localStorage.getItem(ADMIN_FILMS_KEY);
     return raw ? (JSON.parse(raw) as AdminFilm[]) : null;

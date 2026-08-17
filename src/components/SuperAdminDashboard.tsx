@@ -8,10 +8,7 @@ import {
   AdminCreator, AdminFilm, AuditLogEntry, MonthlyMetric,
   Movie, PayoutRecord, PlatformSettings,
 } from '../types';
-import {
-  DEFAULT_SETTINGS, MOCK_AUDIT_LOG, MOCK_CREATORS, MOCK_FILMS,
-  MOCK_PAYOUTS, MONTHLY_METRICS,
-} from '../data/adminMockData';
+import { DEFAULT_SETTINGS } from '../data/adminDefaults';
 import { clearAdminSession, loadAdminSession } from '../lib/storage';
 import {
   applyAdminFilmToMovieStore,
@@ -41,6 +38,7 @@ function fmt$(n: number) {
   return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 function fmtK(n: number) {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
   return n >= 1000 ? (n / 1000).toFixed(1) + 'K' : n.toString();
 }
 function fmtDate(iso: string) {
@@ -80,6 +78,24 @@ function Td({ children, className = '' }: { children: React.ReactNode; className
   return <td className={`px-4 py-3 text-sm text-slate-300 ${className}`}>{children}</td>;
 }
 
+// ── Empty State ──────────────────────────────────────────────────────────────
+// Used wherever a section has no data behind it yet. Every figure in this console
+// is a genuine count, so a section with nothing to show says what it is waiting on
+// instead of rendering invented rows or an empty chart skeleton.
+
+function EmptyState({ icon, title, body, note }: { icon: string; title: string; body: string; note?: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-800 bg-slate-900 px-6 py-12 text-center">
+      <span className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-brand-purple/30 bg-brand-purple/10 text-lg text-brand-purple">
+        {icon}
+      </span>
+      <p className="text-sm font-semibold text-white">{title}</p>
+      <p className="mx-auto mt-1.5 max-w-md text-xs leading-relaxed text-slate-500">{body}</p>
+      {note && <p className="mx-auto mt-3 max-w-md text-[11px] leading-relaxed text-slate-600">{note}</p>}
+    </div>
+  );
+}
+
 // ── KPI Card ─────────────────────────────────────────────────────────────────
 
 function KpiCard({ label, value, sub, accent = false }: { label: string; value: string; sub?: string; accent?: boolean }) {
@@ -96,20 +112,32 @@ function KpiCard({ label, value, sub, accent = false }: { label: string; value: 
 
 interface OverviewProps { stats: ReturnType<typeof computeStats>; metrics: MonthlyMetric[] }
 
-function computeStats(creators: AdminCreator[], films: AdminFilm[], payouts: PayoutRecord[], settings: PlatformSettings) {
+// Every figure here is derived from real data — the movie catalog, the creator
+// list and the payout list. Areas with no live system behind them yet (creator
+// sign-ups, purchases, earnings, subscriptions) legitimately compute to 0; that
+// zero is the true count, never a stand-in for a number we don't have.
+function computeStats(creators: AdminCreator[], films: AdminFilm[], payouts: PayoutRecord[], settings: PlatformSettings, movies: Movie[]) {
+  const monthStart = (() => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), 1).getTime(); })();
+  const inThisMonth = (iso?: string) => {
+    if (!iso) return false;
+    const t = new Date(iso).getTime();
+    return !Number.isNaN(t) && t >= monthStart;
+  };
+
   const totalRevenue = creators.reduce((s, c) => s + c.totalRevenue, 0);
-  const totalViews = creators.reduce((s, c) => s + c.totalViews, 0);
+  const totalViews = films.reduce((s, f) => s + f.views, 0);
   const creatorPayouts = creators.filter(c => c.status === 'Active').reduce((s, c) => s + c.totalRevenue * c.revenueShare / 100, 0);
   const platformRevenue = totalRevenue - creatorPayouts;
   const totalPurchases = films.reduce((s, f) => s + f.purchases, 0);
   const pendingPayouts = payouts.reduce((s, p) => s + p.pending, 0);
-  const activeSubscribers = 267;
+  // No subscription system is live yet, so there is nothing to count.
+  const activeSubscribers = 0;
   const mrr = activeSubscribers * settings.membershipMonthlyPrice;
   const paidFilms = films.filter(f => f.price > 0);
   const avgPrice = paidFilms.length ? paidFilms.reduce((s, f) => s + f.price, 0) / paidFilms.length : 0;
   const conversionRate = totalViews ? (totalPurchases / totalViews * 100) : 0;
   const avgRevPerCreator = creators.length ? totalRevenue / creators.length : 0;
-  const totalTrailerViews = 146800;
+  const totalTrailerViews = movies.reduce((s, m) => s + (m.trailerViews ?? 0), 0);
   return {
     totalCreators: creators.length,
     totalMovies: films.length,
@@ -117,16 +145,23 @@ function computeStats(creators: AdminCreator[], films: AdminFilm[], payouts: Pay
     grossRevenue: totalRevenue, creatorPayouts, platformRevenue,
     pendingPayouts, activeSubscribers, mrr,
     conversionRate, avgPrice, avgRevPerCreator,
-    newCreatorsMonth: 1, newMoviesMonth: 5,
+    newCreatorsMonth: creators.filter(c => inThisMonth(c.joinedAt)).length,
+    newMoviesMonth: movies.filter(m => inThisMonth(m.createdAt)).length,
   };
 }
 
 function OverviewSection({ stats, metrics }: OverviewProps) {
+  const monthLabel = new Date().toLocaleDateString('en-US', { month: 'long' });
+
   const kpis = [
     { label: 'Total Creators', value: stats.totalCreators.toString() },
     { label: 'Total Movies', value: stats.totalMovies.toString() },
-    { label: 'Total Views', value: fmtK(stats.totalViews) },
-    { label: 'Trailer Views', value: fmtK(stats.totalTrailerViews) },
+    // These two come from the view counts stored on the catalog rows, which were
+    // seeded with the catalog rather than measured. Labelled so they are never
+    // mistaken for real traffic. Real measured views live in the events table
+    // (/api/track) and drive the Today dashboard.
+    { label: 'Total Views', value: fmtK(stats.totalViews), sub: 'Catalog figure — not measured traffic' },
+    { label: 'Trailer Views', value: fmtK(stats.totalTrailerViews), sub: 'Catalog figure — not measured traffic' },
     { label: 'Total Purchases', value: fmtK(stats.totalPurchases) },
     { label: 'Gross Revenue', value: fmt$(stats.grossRevenue), accent: true },
     { label: 'Creator Payouts', value: fmt$(stats.creatorPayouts) },
@@ -137,21 +172,42 @@ function OverviewSection({ stats, metrics }: OverviewProps) {
     { label: 'Conversion Rate', value: stats.conversionRate.toFixed(2) + '%' },
     { label: 'Avg Movie Price', value: fmt$(stats.avgPrice) },
     { label: 'Avg Rev / Creator', value: fmt$(stats.avgRevPerCreator) },
-    { label: 'New Creators (June)', value: stats.newCreatorsMonth.toString() },
-    { label: 'New Movies (June)', value: stats.newMoviesMonth.toString() },
+    { label: `New Creators (${monthLabel})`, value: stats.newCreatorsMonth.toString() },
+    { label: `New Movies (${monthLabel})`, value: stats.newMoviesMonth.toString() },
   ];
 
   return (
     <div className="space-y-8">
       <div>
         <h2 className="text-xl font-bold text-white mb-1">Platform Overview</h2>
-        <p className="text-sm text-slate-500">All-time platform metrics · updated in real time</p>
+        <p className="text-sm text-slate-500">All-time counts, read straight from the live catalog and admin records</p>
+        <p className="mt-2 max-w-3xl text-xs leading-relaxed text-slate-600">
+          Creator accounts, purchases, earnings and YouMake+ subscriptions have no live
+          system behind them yet, so those cards read zero — that is the true figure, not
+          a placeholder. The two view counts are the exception: they are the numbers stored
+          on the catalog rows themselves, which were seeded rather than measured, and are
+          marked as such. Real measured activity is on the Today dashboard.
+        </p>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
-        {kpis.map(k => <KpiCard key={k.label} label={k.label} value={k.value} accent={k.accent} />)}
+        {kpis.map(k => <KpiCard key={k.label} label={k.label} value={k.value} sub={k.sub} accent={k.accent} />)}
       </div>
 
+      {metrics.length === 0 ? (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <EmptyState
+            icon="◈"
+            title="No revenue history yet"
+            body="Monthly revenue is charted once purchases start being recorded. Nothing has been earned on the platform so far."
+          />
+          <EmptyState
+            icon="★"
+            title="No subscriber history yet"
+            body="YouMake+ isn't taking sign-ups yet, so there is no subscriber trend to plot."
+          />
+        </div>
+      ) : (
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
           <p className="text-sm font-semibold text-white mb-4">Revenue (6 months)</p>
@@ -185,6 +241,7 @@ function OverviewSection({ stats, metrics }: OverviewProps) {
           </ResponsiveContainer>
         </div>
       </div>
+      )}
     </div>
   );
 }
@@ -428,6 +485,13 @@ function CreatorsSection({ creators, search, selectedCreator, onSelect, onEdit, 
         </div>
       </div>
 
+      {creators.length === 0 ? (
+        <EmptyState
+          icon="◉"
+          title="No creators have signed up yet"
+          body="Creator accounts appear here the moment someone completes onboarding. Nobody has registered so far, so there is nothing to verify, suspend or edit."
+        />
+      ) : (
       <div className="flex gap-6">
         {/* Table */}
         <div className={`rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden ${selectedCreator ? 'flex-1 min-w-0' : 'w-full'}`}>
@@ -524,6 +588,7 @@ function CreatorsSection({ creators, search, selectedCreator, onSelect, onEdit, 
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }
@@ -663,12 +728,18 @@ function ModerationSection({ films, onApprove, onReject, onSuspend }: Moderation
     filter === 'All' ? films : films.filter(f => f.status === filter),
     [films, filter]);
 
+  const pendingCount = films.filter(f => f.status === 'Pending Review').length;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-xl font-bold text-white">Content Moderation</h2>
-          <p className="text-sm text-slate-500 mt-0.5">{films.filter(f => f.status === 'Pending Review').length} pending review</p>
+          <p className="text-sm text-slate-500 mt-0.5">
+            {pendingCount === 0
+              ? `Nothing waiting on you — all ${films.length} films in the catalog are cleared`
+              : `${pendingCount} pending review`}
+          </p>
         </div>
         <div className="flex gap-2">
           {['Pending Review', 'Approved', 'Rejected', 'Suspended', 'All'].map(s => (
@@ -681,9 +752,21 @@ function ModerationSection({ films, onApprove, onReject, onSuspend }: Moderation
 
       <div className="space-y-3">
         {filtered.length === 0 && (
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-12 text-center text-slate-500">
-            No films in this category.
-          </div>
+          filter === 'Pending Review' ? (
+            <EmptyState
+              icon="◻"
+              title="Nothing in the moderation queue"
+              body={films.length === 0
+                ? 'No films have been uploaded yet, so there is nothing to review.'
+                : `Every one of the ${films.length} films in the catalog has already been cleared. New uploads land here when they need a decision.`}
+            />
+          ) : (
+            <EmptyState
+              icon="◻"
+              title={`No films marked "${filter}"`}
+              body="Films move into this category only when an admin sets that status."
+            />
+          )
         )}
         {filtered.map(f => (
           <div key={f.id} className="rounded-2xl border border-slate-800 bg-slate-900 p-5 flex items-start gap-5">
@@ -735,9 +818,16 @@ function PayoutsSection({ payouts, onMarkPaid, onHold, onRelease }: PayoutsProps
       <div className="grid grid-cols-3 gap-4">
         <KpiCard label="Total Pending" value={fmt$(totalPending)} accent />
         <KpiCard label="Total Paid (All Time)" value={fmt$(totalPaid)} />
-        <KpiCard label="Creators with Pending" value={payouts.filter(p => p.pending > 0).toString()} />
+        <KpiCard label="Creators with Pending" value={payouts.filter(p => p.pending > 0).length.toString()} />
       </div>
 
+      {payouts.length === 0 ? (
+        <EmptyState
+          icon="◈"
+          title="No payouts to process"
+          body="Payout rows are created per creator once they have earnings. There are no creators and nothing has been earned yet, so there is nothing to pay out."
+        />
+      ) : (
       <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -778,6 +868,7 @@ function PayoutsSection({ payouts, onMarkPaid, onHold, onRelease }: PayoutsProps
           </table>
         </div>
       </div>
+      )}
     </div>
   );
 }
@@ -803,12 +894,12 @@ function SubscriptionsSection({ settings, onSave }: SubsProps) {
         <p className="text-sm text-slate-500 mt-0.5">Manage subscription pricing and limits</p>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <KpiCard label="Active Subscribers" value="267" accent />
-        <KpiCard label="MRR" value={fmt$(267 * settings.membershipMonthlyPrice)} accent />
-        <KpiCard label="Churn Rate" value="3.2%" />
-        <KpiCard label="Avg Sub Duration" value="4.1 mo" />
-      </div>
+      <EmptyState
+        icon="★"
+        title="YouMake+ isn't taking sign-ups yet"
+        body="Subscriber counts, MRR, churn and average subscription length appear here once the subscription system is live and the first member joins. Nothing is being billed today."
+        note="The pricing below is live configuration — it sets what viewers will be charged when subscriptions open."
+      />
 
       <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 space-y-6 max-w-lg">
         <p className="text-sm font-semibold text-white">Subscription Pricing</p>
@@ -841,16 +932,38 @@ function SubscriptionsSection({ settings, onSave }: SubsProps) {
 interface ReportsProps { metrics: MonthlyMetric[]; creators: AdminCreator[]; films: AdminFilm[] }
 
 function ReportsSection({ metrics, creators, films }: ReportsProps) {
+  // Ranked lists only mean something once there is revenue to rank by — a table of
+  // $0.00 rows would read as a real leaderboard when nothing has been earned.
   const topCreators = [...creators].sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 5);
   const topFilms = [...films].sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+  const hasCreatorRevenue = topCreators.some(c => c.totalRevenue > 0);
+  const hasFilmRevenue = topFilms.some(f => f.revenue > 0);
 
   return (
     <div className="space-y-8">
       <div>
         <h2 className="text-xl font-bold text-white">Reports & Analytics</h2>
-        <p className="text-sm text-slate-500 mt-0.5">Platform performance over the last 6 months</p>
+        <p className="text-sm text-slate-500 mt-0.5">
+          {metrics.length === 0
+            ? 'Trends appear here once the platform has recorded activity to report on'
+            : `Platform performance over the last ${metrics.length} months`}
+        </p>
       </div>
 
+      {metrics.length === 0 ? (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <EmptyState
+            icon="▦"
+            title="No revenue history to chart"
+            body="Revenue is plotted month by month as purchases come in. Nothing has been sold on the platform yet."
+          />
+          <EmptyState
+            icon="▦"
+            title="No purchase or subscriber history"
+            body="This chart fills in once purchases and YouMake+ sign-ups start being recorded."
+          />
+        </div>
+      ) : (
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
           <p className="text-sm font-semibold text-white mb-4">Revenue Growth</p>
@@ -886,8 +999,16 @@ function ReportsSection({ metrics, creators, films }: ReportsProps) {
           </ResponsiveContainer>
         </div>
       </div>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {!hasCreatorRevenue ? (
+          <EmptyState
+            icon="◉"
+            title="No creator earnings to rank"
+            body="Creators are ranked by revenue once they have some. No creator accounts exist yet, so there is no leaderboard to build."
+          />
+        ) : (
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 space-y-4">
           <p className="text-sm font-semibold text-white">Top Creators by Revenue</p>
           {topCreators.map((c, i) => (
@@ -905,7 +1026,15 @@ function ReportsSection({ metrics, creators, films }: ReportsProps) {
             </div>
           ))}
         </div>
+        )}
 
+        {!hasFilmRevenue ? (
+          <EmptyState
+            icon="▷"
+            title="No film earnings to rank"
+            body="Films are ranked once they start selling. No purchases have been recorded against the catalog yet."
+          />
+        ) : (
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 space-y-4">
           <p className="text-sm font-semibold text-white">Top Films by Revenue</p>
           {topFilms.map((f, i) => (
@@ -923,6 +1052,7 @@ function ReportsSection({ metrics, creators, films }: ReportsProps) {
             </div>
           ))}
         </div>
+        )}
       </div>
     </div>
   );
@@ -1034,9 +1164,21 @@ function AuditLogSection({ entries }: AuditLogProps) {
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-white">Audit Log</h2>
-        <p className="text-sm text-slate-500 mt-0.5">{entries.length} entries — most recent first</p>
+        <p className="text-sm text-slate-500 mt-0.5">
+          {entries.length === 0
+            ? 'Admin actions taken in this session — most recent first'
+            : `${entries.length} entries — most recent first`}
+        </p>
       </div>
 
+      {entries.length === 0 ? (
+        <EmptyState
+          icon="≡"
+          title="No admin actions recorded yet"
+          body="Approving a film, editing a creator or changing settings is written here as you do it."
+          note="The log lives in this browser session only — it starts empty again after a reload."
+        />
+      ) : (
       <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -1065,6 +1207,7 @@ function AuditLogSection({ entries }: AuditLogProps) {
           </table>
         </div>
       </div>
+      )}
     </div>
   );
 }
@@ -1648,14 +1791,15 @@ const NAV: { key: AdminSection; label: string; emoji: string }[] = [
 // ── Admin film init ───────────────────────────────────────────────────────────
 // Build the complete admin film list from a Movie[] array.
 // Source of truth for display fields: the movies array (from Supabase or local fallback).
-// Source of truth for admin-only fields: localStorage → MOCK_FILMS → sensible defaults.
+// Source of truth for admin-only fields: localStorage → sensible defaults.
+// A catalog film with no stored admin metadata is Approved and visible — that is
+// the real state of the live catalog — and carries no purchases or revenue,
+// because none have been recorded.
 function buildAdminFilmsFromMovies(mergedMovies: Movie[]): AdminFilm[] {
   const storedFilms = loadAdminFilms() ?? [];
 
   return mergedMovies.map(m => {
-    const stored = storedFilms.find(af => af.title.toLowerCase() === m.title.toLowerCase());
-    const mock   = MOCK_FILMS.find(af => af.title.toLowerCase() === m.title.toLowerCase());
-    const meta   = stored ?? mock;
+    const meta = storedFilms.find(af => af.title.toLowerCase() === m.title.toLowerCase());
 
     return {
       id:              meta?.id ?? `movie-${m.id}`,
@@ -1701,12 +1845,14 @@ export default function SuperAdminDashboard() {
   }, [navigate]);
 
   const [section, setSection] = useState<AdminSection>('dashboard');
-  const [creators, setCreators] = useState<AdminCreator[]>(MOCK_CREATORS);
+  // Creators, payouts and the audit log have no backing store yet — they start
+  // empty and only fill with what actually happens in this console.
+  const [creators, setCreators] = useState<AdminCreator[]>([]);
   const [films, setFilms] = useState<AdminFilm[]>([]);
   const [filmsLoading, setFilmsLoading] = useState(true);
-  const [payouts, setPayouts] = useState<PayoutRecord[]>(MOCK_PAYOUTS);
+  const [payouts, setPayouts] = useState<PayoutRecord[]>([]);
   const [settings, setSettings] = useState<PlatformSettings>(DEFAULT_SETTINGS);
-  const [auditLog, setAuditLog] = useState<AuditLogEntry[]>(MOCK_AUDIT_LOG);
+  const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
   const [search, setSearch] = useState('');
   const [selectedCreator, setSelectedCreator] = useState<AdminCreator | null>(null);
   const [editingCreator, setEditingCreator] = useState<AdminCreator | null>(null);
@@ -1731,8 +1877,13 @@ export default function SuperAdminDashboard() {
     })));
   }, [films, filmsLoading]);
 
-  const metrics: MonthlyMetric[] = MONTHLY_METRICS;
-  const stats = useMemo(() => computeStats(creators, films, payouts, settings), [creators, films, payouts, settings]);
+  // No historical metrics are collected yet — the reporting charts render an
+  // honest empty state rather than an axis with nothing on it.
+  const metrics: MonthlyMetric[] = [];
+  const stats = useMemo(
+    () => computeStats(creators, films, payouts, settings, liveMovies),
+    [creators, films, payouts, settings, liveMovies],
+  );
 
   // Audit helper
   const addAudit = (action: string, target: string, targetType: AuditLogEntry['targetType'], details: string) => {
@@ -1860,15 +2011,8 @@ export default function SuperAdminDashboard() {
     );
     if (sourceMovie) resetMovieOverride(sourceMovie.id);
 
-    // Restore admin-specific metadata: use MOCK_FILMS entry if it exists, else defaults
-    const mockEntry = MOCK_FILMS.find(f => f.id === film.id);
-    if (mockEntry) {
-      setFilms(p => p.map(x => x.id === film.id ? {
-        ...mockEntry,
-        thumbnail: sourceMovie?.thumbnail ?? mockEntry.thumbnail,
-        trailerUrl: sourceMovie?.trailerUrl,
-      } : x));
-    } else if (sourceMovie) {
+    // Restore the film's display fields from the source catalog entry
+    if (sourceMovie) {
       setFilms(p => p.map(x => x.id === film.id ? {
         ...x,
         title: sourceMovie.title,

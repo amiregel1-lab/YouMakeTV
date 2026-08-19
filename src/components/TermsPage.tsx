@@ -1,4 +1,5 @@
 import SEOHead from './SEOHead';
+import { PAGE_SEO } from '../lib/seo';
 
 function Section({ id, title, children }: { id?: string; title: string; children: React.ReactNode }) {
   return (
@@ -12,11 +13,7 @@ function Section({ id, title, children }: { id?: string; title: string; children
 export default function TermsPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-10">
-      <SEOHead
-        title="Terms of Service | YouMakeTV.ai"
-        description="Read the YouMakeTV.ai Terms of Service governing viewer and creator use of the platform."
-        canonical="/terms"
-      />
+      <SEOHead {...PAGE_SEO['/terms']} />
 
       {/* Header */}
       <div className="rounded-[2rem] border border-slate-200/70 bg-white shadow-soft p-8 sm:p-10">

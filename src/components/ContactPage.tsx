@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import SEOHead from './SEOHead';
+import { PAGE_SEO } from '../lib/seo';
 
 type FormState = 'idle' | 'sending' | 'success' | 'error';
 
@@ -61,11 +62,7 @@ export default function ContactPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
-      <SEOHead
-        title="Contact | YouMakeTV.ai"
-        description="Get in touch with the YouMakeTV team for creator support, viewer questions, press inquiries, or partnerships."
-        canonical="/contact"
-      />
+      <SEOHead {...PAGE_SEO['/contact']} />
 
       <div>
         <span className="inline-flex rounded-full bg-brand-purple/10 px-4 py-2 text-xs uppercase tracking-[0.32em] text-brand-purple mb-4">

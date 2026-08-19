@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { demoCreatorProfile } from '../data/mockData';
+import BetaNotice from './BetaNotice';
 import { CreatorFilm } from '../types';
 import AnalyticsCards from './AnalyticsCards';
 import CreatorAnalytics from './CreatorAnalytics';
@@ -319,6 +320,9 @@ export default function CreatorDemoPortal() {
 
           <div className="flex-1 p-6 xl:p-10 space-y-8">
 
+            {/* Same disclosure as the real dashboard — these numbers are not money. */}
+            <BetaNotice />
+
             {/* ── DASHBOARD ────────────────────────────────────────────────────── */}
             {activeTab === 'dashboard' && (
               <div className="space-y-8">
@@ -549,9 +553,9 @@ export default function CreatorDemoPortal() {
                       </div>
                     ))}
                   </div>
-                  <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-                    <span className="h-2 w-2 rounded-full bg-emerald-500 flex-none" />
-                    <p className="text-sm font-medium text-emerald-700">Identity verified · KYC complete</p>
+                  <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                    <span className="h-2 w-2 rounded-full bg-slate-400 flex-none" />
+                    <p className="text-sm text-slate-600">Sample profile — creator verification arrives with payouts.</p>
                   </div>
                 </section>
 

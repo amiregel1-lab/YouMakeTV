@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ViewerAccount } from '../types';
 import SEOHead from './SEOHead';
+import { PAGE_SEO } from '../lib/seo';
 
 interface SubscriptionPageProps {
   viewer?: ViewerAccount | null;
@@ -135,11 +136,7 @@ export default function SubscriptionPage({ viewer, onSubscribe }: SubscriptionPa
 
   return (
     <div className="mx-auto max-w-4xl space-y-16">
-      <SEOHead
-        title="YouMake+ | Watch More. Spend Less."
-        description="Get 50% off every paid AI movie and unlimited free streaming. YouMake+ pays for itself after just a few movies. $4.99/month, cancel anytime."
-        canonical="/subscribe"
-      />
+      <SEOHead {...PAGE_SEO['/subscribe']} />
 
       {/* ── 1. HERO ────────────────────────────────────────────────────────── */}
       <section className="overflow-hidden rounded-[2.5rem] border border-slate-200/70 bg-white shadow-soft">

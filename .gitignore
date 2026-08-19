@@ -21,3 +21,5 @@ npm-debug.log*
 /Rainbow Dealer/
 /public/trailers/
 *.ai.zip
+.vercel
+.env*

@@ -4,6 +4,7 @@ import { useMovies } from '../lib/MovieContext';
 import { Movie } from '../types';
 import { getPosterUrl, getBackdropUrl, fallbackGradient } from '../lib/posters';
 import SEOHead from './SEOHead';
+import { PAGE_SEO } from '../lib/seo';
 import StudioMonogram from './StudioMonogram';
 import {
   getBadge, isVerified, formatNum, topGenre, joinYear,
@@ -313,18 +314,7 @@ export default function StudiosPage() {
 
   return (
     <div className="space-y-8">
-      <SEOHead
-        title="AI Film Studios | YouMakeTV.ai"
-        description="Discover AI film studios building the next generation of entertainment. Browse studios, watch their films, and find your next favorite production house."
-        canonical="/studios"
-        structuredData={{
-          '@context': 'https://schema.org',
-          '@type': 'WebPage',
-          name: 'AI Film Studios — YouMakeTV.ai',
-          description: 'Discover AI film studios building the next generation of entertainment.',
-          url: 'https://youmaketv.ai/studios',
-        }}
-      />
+      <SEOHead {...PAGE_SEO['/studios']} />
 
       {/* Header — viewer-focused, no creator CTAs */}
       <div>

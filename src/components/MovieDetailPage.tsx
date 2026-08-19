@@ -6,6 +6,7 @@ import type { Movie, ViewerAccount } from '../types';
 import PurchaseOptions from './PurchaseOptions';
 import { getPosterUrl, fallbackGradient } from '../lib/posters';
 import SEOHead from './SEOHead';
+import { movieSeo } from '../lib/seo';
 
 interface MovieDetailPageProps {
   viewer?: ViewerAccount | null;
@@ -117,25 +118,7 @@ export default function MovieDetailPage({ viewer, onPurchase, onSubscribe, onWat
 
   return (
     <div className="space-y-8">
-      <SEOHead
-        title={`${movie.title} — ${movie.genre} AI Film`}
-        description={movie.description.slice(0, 155)}
-        canonical={`/movie/${movie.id}`}
-        ogImage={posterUrl}
-        ogType="video.movie"
-        structuredData={{
-          '@context': 'https://schema.org',
-          '@type': 'Movie',
-          name: movie.title,
-          description: movie.description,
-          genre: movie.genre,
-          duration: `PT${movie.duration.replace('m', 'M')}`,
-          image: posterUrl,
-          url: `https://youmaketv.ai/movie/${movie.id}`,
-          creator: { '@type': 'Person', name: movie.creator },
-          datePublished: movie.releaseYear?.toString(),
-        }}
-      />
+      <SEOHead {...movieSeo(movie, posterUrl)} />
 
       {/* ── MAIN DETAIL PANEL ─────────────────────────────────────────────── */}
       <section className="overflow-hidden rounded-[2.5rem] border border-slate-200/70 bg-white shadow-soft">
@@ -145,8 +128,18 @@ export default function MovieDetailPage({ viewer, onPurchase, onSubscribe, onWat
 
             {/* Left: metadata */}
             <div className="space-y-5">
-              <div className="inline-flex items-center gap-2 rounded-full bg-brand-pink/10 px-4 py-2 text-xs uppercase tracking-[0.28em] text-brand-pink">
-                {movie.badge}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-2 rounded-full bg-brand-pink/10 px-4 py-2 text-xs uppercase tracking-[0.28em] text-brand-pink">
+                  {movie.badge}
+                </span>
+                {movie.rating && (
+                  <span
+                    className="inline-flex items-center rounded-full border border-slate-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700"
+                    title={`Content rating: ${movie.rating}`}
+                  >
+                    Rated {movie.rating}
+                  </span>
+                )}
               </div>
               <h1 className="text-4xl font-semibold tracking-tight text-slate-950">{movie.title}</h1>
               <p className="text-lg leading-8 text-slate-600">{movie.subtitle}</p>

@@ -30,7 +30,8 @@ import SuperAdminLogin from './components/SuperAdminLogin';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
 import MockPaymentModal from './components/MockPaymentModal';
 import NotFoundPage from './components/NotFoundPage';
-import { initAnalytics, trackPageView } from './lib/analytics';
+import ConsentBanner from './components/ConsentBanner';
+import { trackPageView } from './lib/analytics';
 import { logEvent } from './lib/eventService';
 
 export default function App() {
@@ -46,7 +47,7 @@ export default function App() {
   useEffect(() => {
     setViewer(loadViewer());
     setCreator(loadCreator());
-    initAnalytics();
+    // Analytics are started by <ConsentBanner>, and only with consent.
   }, []);
 
   // CTRL+SHIFT+A → Super Admin login (hidden keyboard shortcut for demos)
@@ -233,6 +234,8 @@ export default function App() {
       </main>
 
       <Footer />
+
+      <ConsentBanner />
 
       {modal && <MockPaymentModal type={modal.type} title={modal.title} details={modal.details} onClose={() => setModal(null)} />}
 

@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import SEOHead from './SEOHead';
+import { PAGE_SEO } from '../lib/seo';
 
 interface CreatorPortalProps {
   onStart: () => void;
@@ -270,6 +272,7 @@ export default function CreatorPortal({ onStart, onDashboard, onViewDemo, onSign
 
   return (
     <div className="space-y-16">
+      <SEOHead {...PAGE_SEO['/creator']} />
 
       {/* ── 1. HERO ──────────────────────────────────────────────────────────── */}
       <section className="overflow-hidden rounded-[2.5rem] border border-slate-200/70 bg-white shadow-soft">

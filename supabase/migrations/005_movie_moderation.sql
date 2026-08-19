@@ -1,11 +1,9 @@
 -- YouMakeTV — moderation state on the movies table
 --
--- ⚠️ NOT APPLIED. Run this once in the Supabase SQL editor
--- (Dashboard → SQL Editor → New query) before the Growth OS YouMakeTV desk can
--- persist a moderation decision. Until it runs, /api/admin/movies answers a
--- PATCH that touches these columns with the database's own "column does not
--- exist" error, and the desk shows that sentence rather than pretending the
--- save worked.
+-- ✅ APPLIED in production. These columns exist on public.movies, so
+-- /api/admin/movies can persist a moderation decision and the desk's moderation
+-- controls are live. Every statement below is idempotent (`if not exists`), so
+-- re-running it in the Supabase SQL editor is safe and changes nothing.
 --
 -- ── Why ─────────────────────────────────────────────────────────────────────
 --

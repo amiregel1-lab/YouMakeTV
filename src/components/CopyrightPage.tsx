@@ -1,4 +1,5 @@
 import SEOHead from './SEOHead';
+import { PAGE_SEO } from '../lib/seo';
 
 function Section({ id, title, children }: { id?: string; title: string; children: React.ReactNode }) {
   return (
@@ -12,11 +13,7 @@ function Section({ id, title, children }: { id?: string; title: string; children
 export default function CopyrightPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-10">
-      <SEOHead
-        title="Copyright & DMCA Policy | YouMakeTV.ai"
-        description="YouMakeTV.ai copyright and DMCA takedown procedures for rights holders and creators."
-        canonical="/copyright"
-      />
+      <SEOHead {...PAGE_SEO['/copyright']} />
 
       {/* Header */}
       <div className="rounded-[2rem] border border-slate-200/70 bg-white shadow-soft p-8 sm:p-10">

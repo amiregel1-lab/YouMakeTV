@@ -1,16 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import SEOHead from './SEOHead';
+import { PAGE_SEO } from '../lib/seo';
 
 export default function AboutPage() {
   const navigate = useNavigate();
 
   return (
     <div className="max-w-3xl mx-auto space-y-12">
-      <SEOHead
-        title="About | YouMakeTV.ai"
-        description="YouMakeTV.ai is the world's first streaming platform built exclusively for AI-generated movies and the creators who make them."
-        canonical="/about"
-      />
+      <SEOHead {...PAGE_SEO['/about']} />
 
       {/* Hero */}
       <div className="rounded-[2.5rem] overflow-hidden border border-slate-200/70 bg-white shadow-soft p-10 sm:p-14">

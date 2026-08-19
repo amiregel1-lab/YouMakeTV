@@ -25,7 +25,7 @@
 // of the same standing — an attacker cannot compute either digest without it.
 
 import crypto from 'node:crypto';
-import { timingSafeEqualStrings } from './session.js';
+import { timingSafeEqualStrings, verifySessionToken } from './session.js';
 
 /** Longer than any real token; a cheap guard before any crypto runs. */
 const MAX_TOKEN_LENGTH = 512;
@@ -78,6 +78,55 @@ export function requireServiceToken(req, res) {
     return false;
   }
 
+  return true;
+}
+
+/**
+ * Gate a request that BOTH doors may open: Growth OS's machine token, or the
+ * browser Super Admin console's signed session.
+ *
+ * Why the console is let in here: `upsertMovie` and the cover/trailer uploads in
+ * the browser console used to write to PostgREST and Storage with the PUBLIC
+ * anon key. After migration 003 removed the anon write policies those saves
+ * fail silently at best; at worst the policies are still in place, in which case
+ * anyone holding the bundled anon key can overwrite the catalog. Either way the
+ * browser has no business writing directly. It now calls these endpoints, which
+ * write server-side with the service-role key behind an allowlist.
+ *
+ * The session token is proof of a password typed against ADMIN_PASSWORD and is
+ * checked exactly as /api/admin/verify checks it — signature first, expiry
+ * inside the signed payload. It arrives in `x-admin-token`. These endpoints
+ * still set no Access-Control-Allow-Origin header, so only a page this
+ * deployment served (same-origin) can reach them from a browser at all.
+ *
+ * Returns true when the caller may proceed; otherwise the response is already
+ * written. On success `req.authActor` names who it was, for the audit stamp.
+ */
+export function requireServiceOrAdmin(req, res) {
+  const adminToken = req.headers['x-admin-token'];
+  const serviceToken = req.headers['x-service-token'];
+
+  // Only consider the browser door when the machine door was not attempted, so
+  // a malformed service token still fails as a service token.
+  if (typeof adminToken === 'string' && adminToken && !(typeof serviceToken === 'string' && serviceToken)) {
+    const secret = process.env.ADMIN_SESSION_SECRET;
+    if (!secret) {
+      console.error('ADMIN_SESSION_SECRET is not set — no admin session can be validated.');
+      res.status(503).json({ error: 'admin session not configured' });
+      return false;
+    }
+    const payload = verifySessionToken(adminToken, secret);
+    if (!payload) {
+      res.status(401).json({ error: 'unauthorized' });
+      return false;
+    }
+    req.authActor = `admin:${String(payload.un ?? 'unknown').slice(0, 100)}`;
+    return true;
+  }
+
+  if (!requireServiceToken(req, res)) return false;
+  const actor = req.headers['x-service-actor'];
+  req.authActor = typeof actor === 'string' && actor ? actor.slice(0, 200) : 'growth-os';
   return true;
 }
 

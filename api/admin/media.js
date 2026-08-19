@@ -23,7 +23,10 @@
 // name the path, so it cannot overwrite an unrelated object: the name is built
 // from a sanitised basename, a timestamp and random bytes.
 //
-// Machine door — `x-service-token` against GROWTH_OS_SERVICE_TOKEN.
+// Two doors — Growth OS's `x-service-token` against GROWTH_OS_SERVICE_TOKEN, or
+// the browser Super Admin console's signed session in `x-admin-token`. The
+// console used to mint its upload tokens with the public anon key; it now asks
+// here, and the token is minted server-side with the service-role key.
 
 import crypto from 'node:crypto';
 import {
@@ -31,7 +34,7 @@ import {
   SUPABASE_URL,
   methodGuard,
   readJsonBody,
-  requireServiceToken,
+  requireServiceOrAdmin,
   requireSupabase,
   setServiceHeaders,
 } from '../_lib/service.js';
@@ -79,7 +82,7 @@ function safeStem(filename) {
 export default async function handler(req, res) {
   setServiceHeaders(res);
   if (!methodGuard(req, res, ['POST'])) return;
-  if (!requireServiceToken(req, res)) return;
+  if (!requireServiceOrAdmin(req, res)) return;
   if (!requireSupabase(res)) return;
 
   const { bucket, filename, contentType } = readJsonBody(req);

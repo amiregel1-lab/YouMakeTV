@@ -1,4 +1,26 @@
-import { supabase } from './supabase';
+import { loadAdminSession } from './storage';
+
+// Media uploads for the Super Admin console.
+//
+// These functions used to mint their own signed upload URLs with the PUBLIC
+// anon key — the key bundled into every visitor's browser — which meant anyone
+// who read it could upload arbitrary files into the public buckets (and
+// migration 003's closing note says any anon INSERT policy on storage.objects
+// should be dropped, which would have broken these uploads outright).
+//
+// The token is now minted by /api/admin/media with the service-role key,
+// server-side, scoped to one path the server chooses, with the content type
+// checked against a per-bucket allowlist. The bytes still travel straight from
+// this browser to Supabase Storage — they never pass through Vercel — so a
+// large trailer costs one upload, not three.
+
+type Bucket = 'covers' | 'trailers';
+
+interface MintedUpload {
+  uploadUrl: string;
+  publicUrl: string;
+  contentType: string;
+}
 
 function mimeToExt(mimeType: string): string {
   if (mimeType.includes('png')) return 'png';
@@ -15,85 +37,80 @@ function dataUrlToBlob(dataUrl: string): { blob: Blob; mimeType: string } {
   return { blob: new Blob([bytes], { type: mimeType }), mimeType };
 }
 
+/** Ask the server for a one-object, time-limited upload URL. */
+async function mintUpload(bucket: Bucket, filename: string, contentType: string): Promise<MintedUpload> {
+  const session = loadAdminSession();
+  if (!session?.token) {
+    throw new Error('Your admin session has expired. Sign in again to upload media.');
+  }
+
+  const res = await fetch('/api/admin/media', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-admin-token': session.token,
+    },
+    body: JSON.stringify({ bucket, filename, contentType }),
+  });
+
+  const data = (await res.json().catch(() => ({}))) as Partial<MintedUpload> & { error?: string };
+  if (!res.ok || !data.uploadUrl || !data.publicUrl) {
+    throw new Error(data.error ?? `Could not start the upload (HTTP ${res.status}).`);
+  }
+  return { uploadUrl: data.uploadUrl, publicUrl: data.publicUrl, contentType: data.contentType ?? contentType };
+}
+
+/**
+ * PUT the bytes to the signed URL. Multipart form body with the file under an
+ * empty field name is what Supabase Storage expects from a signed upload URL —
+ * the same request `uploadToSignedUrl` makes in the official client.
+ */
+async function putToSignedUrl(uploadUrl: string, body: Blob | File, label: string): Promise<void> {
+  const form = new FormData();
+  form.append('cacheControl', '3600');
+  form.append('', body);
+
+  const res = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { 'x-upsert': 'true' },
+    body: form,
+  });
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`${label} upload failed: ${detail.slice(0, 200) || `HTTP ${res.status}`}`);
+  }
+}
+
 /**
  * Upload a compressed poster base64 data URL to the `covers` bucket.
- * Uses signed upload URLs — works without a user session (anon key only).
  * Returns the public URL suitable for storing as cover_url in the movies table.
  */
 export async function uploadCover(filmKey: string, dataUrl: string): Promise<string> {
   const { blob, mimeType } = dataUrlToBlob(dataUrl);
-  const filename = `${filmKey}-${Date.now()}.${mimeToExt(mimeType)}`;
-
-  const { data: signed, error: signErr } = await supabase.storage
-    .from('covers')
-    .createSignedUploadUrl(filename);
-
-  if (signErr) throw new Error(`Failed to get signed upload URL: ${signErr.message}`);
-
-  const { data, error } = await supabase.storage
-    .from('covers')
-    .uploadToSignedUrl(signed.path, signed.token, blob, { contentType: mimeType });
-
-  if (error) throw new Error(`Cover upload failed: ${error.message}`);
-
-  const { data: { publicUrl } } = supabase.storage
-    .from('covers')
-    .getPublicUrl(data.path);
-
-  return publicUrl;
+  const minted = await mintUpload('covers', `${filmKey}.${mimeToExt(mimeType)}`, mimeType);
+  await putToSignedUrl(minted.uploadUrl, blob, 'Cover');
+  return minted.publicUrl;
 }
 
 /**
  * Upload a backdrop/hero image base64 data URL to the `covers` bucket.
- * Uses signed upload URLs. Returns the public URL for storing as backdrop_url.
+ * Returns the public URL for storing as backdrop_url.
  */
 export async function uploadBackdrop(filmKey: string, dataUrl: string): Promise<string> {
   const { blob, mimeType } = dataUrlToBlob(dataUrl);
-  const filename = `backdrop-${filmKey}-${Date.now()}.${mimeToExt(mimeType)}`;
-
-  const { data: signed, error: signErr } = await supabase.storage
-    .from('covers')
-    .createSignedUploadUrl(filename);
-
-  if (signErr) throw new Error(`Failed to get signed upload URL: ${signErr.message}`);
-
-  const { data, error } = await supabase.storage
-    .from('covers')
-    .uploadToSignedUrl(signed.path, signed.token, blob, { contentType: mimeType });
-
-  if (error) throw new Error(`Backdrop upload failed: ${error.message}`);
-
-  const { data: { publicUrl } } = supabase.storage
-    .from('covers')
-    .getPublicUrl(data.path);
-
-  return publicUrl;
+  const minted = await mintUpload('covers', `backdrop-${filmKey}.${mimeToExt(mimeType)}`, mimeType);
+  await putToSignedUrl(minted.uploadUrl, blob, 'Backdrop');
+  return minted.publicUrl;
 }
 
 /**
  * Upload a trailer video File to the `trailers` bucket.
- * Uses signed upload URLs — works without a user session (anon key only).
  * Returns the public URL suitable for storing as trailer_url in the movies table.
  */
 export async function uploadTrailer(filmKey: string, file: File): Promise<string> {
-  const ext = file.name.split('.').pop()?.toLowerCase() ?? 'mp4';
-  const filename = `${filmKey}-${Date.now()}.${ext}`;
-
-  const { data: signed, error: signErr } = await supabase.storage
-    .from('trailers')
-    .createSignedUploadUrl(filename);
-
-  if (signErr) throw new Error(`Failed to get signed upload URL: ${signErr.message}`);
-
-  const { data, error } = await supabase.storage
-    .from('trailers')
-    .uploadToSignedUrl(signed.path, signed.token, file, { contentType: file.type });
-
-  if (error) throw new Error(`Trailer upload failed: ${error.message}`);
-
-  const { data: { publicUrl } } = supabase.storage
-    .from('trailers')
-    .getPublicUrl(data.path);
-
-  return publicUrl;
+  const contentType = file.type || 'video/mp4';
+  const minted = await mintUpload('trailers', `${filmKey}-${file.name}`, contentType);
+  await putToSignedUrl(minted.uploadUrl, file, 'Trailer');
+  return minted.publicUrl;
 }

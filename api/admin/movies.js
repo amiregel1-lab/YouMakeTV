@@ -3,8 +3,10 @@
 //   GET                      → every movie in the catalog, admin shape
 //   PATCH  { id, patch:{…} } → write one movie
 //
-// Machine door: authenticated with `x-service-token` against
-// GROWTH_OS_SERVICE_TOKEN, never with a browser session. See api/_lib/service.js.
+// Two doors: Growth OS with `x-service-token` against GROWTH_OS_SERVICE_TOKEN,
+// or the browser Super Admin console with its signed session in `x-admin-token`.
+// See api/_lib/service.js — the console's own saves used to go through the
+// public anon key, which is what this endpoint exists to replace.
 //
 // ── Why this endpoint exists ────────────────────────────────────────────────
 //
@@ -22,7 +24,7 @@ import {
   methodGuard,
   pgrest,
   readJsonBody,
-  requireServiceToken,
+  requireServiceOrAdmin,
   requireSupabase,
   setServiceHeaders,
 } from '../_lib/service.js';
@@ -142,7 +144,7 @@ const WRITABLE = {
 export default async function handler(req, res) {
   setServiceHeaders(res);
   if (!methodGuard(req, res, ['GET', 'PATCH'])) return;
-  if (!requireServiceToken(req, res)) return;
+  if (!requireServiceOrAdmin(req, res)) return;
   if (!requireSupabase(res)) return;
 
   // ── List ────────────────────────────────────────────────────────────────
@@ -199,8 +201,7 @@ export default async function handler(req, res) {
   // Who decided, and when — recorded only when a decision was actually made.
   if (Object.hasOwn(row, 'status')) {
     row.moderated_at = new Date().toISOString();
-    const actor = req.headers['x-service-actor'];
-    row.moderated_by = typeof actor === 'string' && actor ? actor.slice(0, 200) : 'growth-os';
+    row.moderated_by = req.authActor ?? 'growth-os';
   }
   // 001 installed a trigger that maintains updated_at; setting it here as well
   // is harmless and keeps the answer correct even if the trigger was dropped.

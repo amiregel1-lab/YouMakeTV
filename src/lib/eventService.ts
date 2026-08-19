@@ -4,6 +4,8 @@
 
 export type EventType = 'trailer_play' | 'purchase' | 'signup' | 'subscription' | 'movie_view';
 
+import { loadAdminSession } from './storage';
+
 const ENDPOINT = '/api/track';
 
 export function logEvent(type: EventType, opts: { movieId?: number; title?: string } = {}): void {
@@ -31,9 +33,19 @@ function startOfTodayIso(): string {
   return new Date(n.getFullYear(), n.getMonth(), n.getDate()).toISOString();
 }
 
+/**
+ * Admin-only. GET /api/track returns platform-wide engagement — signups,
+ * purchases, subscriptions — so it is no longer public; the signed admin session
+ * token opens it, exactly as it opens the catalog write endpoints.
+ */
 export async function getTodayEventCounts(): Promise<TodayEventCounts> {
   try {
-    const res = await fetch(`${ENDPOINT}?since=${encodeURIComponent(startOfTodayIso())}`);
+    const session = loadAdminSession();
+    if (!session?.token) return { configured: false, counts: {} };
+
+    const res = await fetch(`${ENDPOINT}?since=${encodeURIComponent(startOfTodayIso())}`, {
+      headers: { 'x-admin-token': session.token },
+    });
     if (!res.ok) return { configured: false, counts: {} };
     const data = await res.json();
     return { configured: Boolean(data?.configured), counts: data?.counts ?? {} };

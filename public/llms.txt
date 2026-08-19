@@ -1,0 +1,54 @@
+# YouMakeTV.ai
+
+> YouMakeTV.ai is a streaming platform built exclusively for AI-generated films.
+> Viewers browse and watch original AI movies across ten-plus genres; creators
+> publish their films, keep full IP ownership, and earn a share of paid views.
+
+YouMakeTV is an independent, AI-native platform — not a studio, not a general
+video host. Every title in the catalog was made with generative tools (Sora,
+Runway, Veo, Kling, Midjourney, ElevenLabs and similar), and each film page lists
+the tools used to make it.
+
+## Status
+
+The platform is live and in **beta**. Films, studios and the catalog are real.
+Payments, subscriptions and creator payouts are **not yet processed** — purchase
+and payout figures shown in the creator workspace are illustrative until billing
+launches. Anything on the site that names a dollar amount for a creator is a
+projection, not a transaction that happened.
+
+## For viewers
+
+- [Browse the catalog](https://www.youmaketv.ai/) — every published AI film, by genre, studio and price.
+- [Film pages](https://www.youmaketv.ai/movie/0) — synopsis, studio, runtime, content rating, language, release year, price and trailer. URLs are `/movie/<id>`.
+- [Studios](https://www.youmaketv.ai/studios) — the production houses publishing on the platform. URLs are `/studio/<studio name>`.
+- [YouMake+](https://www.youmaketv.ai/subscribe) — the membership: 50% off every paid film and unlimited free streaming, $4.99/month.
+- Films are priced individually, from free to a few dollars. Content ratings run from G to R.
+
+## For creators
+
+- [Creator portal](https://www.youmaketv.ai/creator) — what publishing on YouMakeTV involves.
+- [Become a creator](https://www.youmaketv.ai/creators) — revenue share (30% starting, 35% at 1,000 paid views, 40% at 5,000), review process, FAQ.
+- [Creator Agreement](https://www.youmaketv.ai/creator-agreement) — licensing, ownership, moderation and payout terms.
+- Creators retain full intellectual property in their films and grant only a
+  non-exclusive distribution licence.
+
+## Company and policies
+
+- [About](https://www.youmaketv.ai/about)
+- [Contact](https://www.youmaketv.ai/contact) — creator support, viewer support, press, partnerships.
+- [Terms of Service](https://www.youmaketv.ai/terms)
+- [Privacy Policy](https://www.youmaketv.ai/privacy)
+- [Copyright & DMCA](https://www.youmaketv.ai/copyright)
+
+## Machine-readable
+
+- Sitemap: https://www.youmaketv.ai/sitemap.xml
+- Every public page carries JSON-LD: `Movie` (with `contentRating`, `duration`,
+  `offers`) and `VideoObject` on film pages, `Organization` on studio pages,
+  `Organization` + `WebSite` on the homepage.
+- Canonical host: `https://www.youmaketv.ai` (the apex redirects to it).
+
+## Contact
+
+info@youmaketv.ai

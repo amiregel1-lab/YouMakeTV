@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { CreatorFilm, CreatorProfile } from '../types';
 import AnalyticsCards from './AnalyticsCards';
+import BetaNotice from './BetaNotice';
 import CreatorAnalytics from './CreatorAnalytics';
 import CreatorEmptyState from './CreatorEmptyState';
 import FilmAnalyticsModal from './FilmAnalyticsModal';
@@ -369,7 +370,13 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
     { label: 'Trailer → paid',           value: `${conversionRate}%`,       accent: conversionRate >= 10 ? 'green' as const : 'default' as const, hint: conversionRate >= 10 ? 'Strong conversion' : 'Room to grow' },
   ];
 
-  const payouts  = useMemo(() => buildPayouts(totalEarnings), [totalEarnings]);
+  // Deliberately not useMemo: this line sits AFTER the `if (!creator)` early
+  // return, so a hook here runs on some renders and not others. Landing
+  // directly on /creator/dashboard renders once with creator === null (the
+  // profile is read from localStorage in an effect) and again with the profile,
+  // and React threw "Rendered more hooks than during the previous render",
+  // white-screening the dashboard. buildPayouts is a cheap pure function.
+  const payouts = buildPayouts(totalEarnings);
   const paidTotal = payouts.filter(p => p.status === 'Paid').reduce((s, p) => s + p.amount, 0);
 
   const initials = creator.studioName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -405,8 +412,12 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
             <div className="min-w-0">
               <p className="text-sm font-semibold text-slate-950 truncate">{creator.studioName}</p>
               <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 flex-none" />
-                <span className="text-xs text-slate-500">Verified creator</span>
+                <span
+                  className={`h-1.5 w-1.5 rounded-full flex-none ${creator.verified ? 'bg-emerald-400' : 'bg-slate-300'}`}
+                />
+                <span className="text-xs text-slate-500">
+                  {creator.verified ? 'Verified creator' : 'Verification coming soon'}
+                </span>
               </div>
             </div>
           </div>
@@ -474,6 +485,10 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
         </div>
 
         <div className="flex-1 p-6 xl:p-10 space-y-8">
+
+          {/* Every earnings figure below is simulated until billing launches —
+              said once, at the top, on every tab. */}
+          <BetaNotice />
 
           {/* ── DASHBOARD ──────────────────────────────────────────────────────── */}
           {activeTab === 'dashboard' && (
@@ -750,10 +765,22 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
                     </div>
                   ))}
                 </div>
-                <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 flex-none" />
-                  <p className="text-sm font-medium text-emerald-700">Identity verified · KYC complete</p>
-                </div>
+                {creator.verified ? (
+                  <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 flex-none" />
+                    <p className="text-sm font-medium text-emerald-700">Identity verified</p>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                    <span className="mt-1.5 h-2 w-2 rounded-full bg-slate-400 flex-none" />
+                    <p className="text-sm text-slate-600">
+                      <span className="font-medium text-slate-900">Verification coming soon.</span>{' '}
+                      Identity verification arrives with creator payouts — we will ask for what a
+                      payment processor actually requires, at the point it is required, and not
+                      before.
+                    </p>
+                  </div>
+                )}
                 <button className="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-slate-50">
                   Request profile edit
                 </button>

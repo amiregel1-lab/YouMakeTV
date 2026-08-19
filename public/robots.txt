@@ -3,8 +3,71 @@ Allow: /
 
 # Block private/functional routes
 Disallow: /account
+Disallow: /login
+Disallow: /creatorsLogin
 Disallow: /creator/dashboard
 Disallow: /creator/onboarding
-Disallow: /login
+Disallow: /creator/demo
+Disallow: /superadmin
 
-Sitemap: https://youmaketv.ai/sitemap.xml
+# ── AI crawlers ─────────────────────────────────────────────────────────────
+# Explicitly welcome. Every public page is prerendered with real text and
+# structured data, so these crawlers can describe the platform and name films
+# without executing JavaScript. See /llms.txt for a plain-language overview.
+
+User-agent: GPTBot
+Allow: /
+Disallow: /account
+Disallow: /login
+Disallow: /creatorsLogin
+Disallow: /creator/dashboard
+Disallow: /creator/onboarding
+Disallow: /creator/demo
+Disallow: /superadmin
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /account
+Disallow: /login
+Disallow: /creatorsLogin
+Disallow: /creator/dashboard
+Disallow: /creator/onboarding
+Disallow: /creator/demo
+Disallow: /superadmin
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /account
+Disallow: /login
+Disallow: /creatorsLogin
+Disallow: /creator/dashboard
+Disallow: /creator/onboarding
+Disallow: /creator/demo
+Disallow: /superadmin
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /account
+Disallow: /login
+Disallow: /creatorsLogin
+Disallow: /creator/dashboard
+Disallow: /creator/onboarding
+Disallow: /creator/demo
+Disallow: /superadmin
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+Sitemap: https://www.youmaketv.ai/sitemap.xml

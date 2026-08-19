@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ViewerAccount } from '../types';
 import SEOHead from './SEOHead';
+import { PAGE_SEO } from '../lib/seo';
 
 interface LoginPageProps {
   viewer?: ViewerAccount | null;
@@ -11,6 +12,7 @@ interface LoginPageProps {
 export default function LoginPage({ viewer, onSignIn }: LoginPageProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
@@ -22,12 +24,7 @@ export default function LoginPage({ viewer, onSignIn }: LoginPageProps) {
 
   return (
     <section className="overflow-hidden rounded-[2.5rem] border border-slate-200/70 bg-white shadow-soft">
-      <SEOHead
-        title="Sign In"
-        description="Sign in to your YouMakeTV.ai account to watch AI-generated films and manage your subscription."
-        canonical="/login"
-        noIndex
-      />
+      <SEOHead {...PAGE_SEO['/login']} />
       <div className="relative rounded-[2.5rem] bg-brand-fade/40 p-8 sm:p-10">
         <div className="absolute inset-0 bg-brand-soft opacity-80" />
         <div className="relative grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
@@ -54,6 +51,10 @@ export default function LoginPage({ viewer, onSignIn }: LoginPageProps) {
                 setError('Enter both username and password.');
                 return;
               }
+              if (!ageConfirmed) {
+                setError('Please confirm your age to continue.');
+                return;
+              }
               onSignIn(username.trim(), password.trim());
               navigate('/');
             }}
@@ -78,10 +79,23 @@ export default function LoginPage({ viewer, onSignIn }: LoginPageProps) {
                 placeholder="1234"
               />
             </div>
+            {/* Age affirmation — the catalog includes R-rated films. */}
+            <label className="flex items-start gap-3 text-sm text-slate-600">
+              <input
+                type="checkbox"
+                checked={ageConfirmed}
+                onChange={(event) => setAgeConfirmed(event.target.checked)}
+                className="mt-0.5 h-4 w-4 flex-none rounded border-slate-300 accent-brand-purple"
+              />
+              <span>
+                I confirm I am 18 or older. Some films in the catalog are rated R.
+              </span>
+            </label>
             {error ? <p className="text-sm text-pink-600">{error}</p> : null}
             <button
               type="submit"
-              className="w-full rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+              disabled={!ageConfirmed}
+              className="w-full rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {buttonLabel}
             </button>

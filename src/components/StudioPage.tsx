@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useMovies } from '../lib/MovieContext';
 import { getPosterUrl, getBackdropUrl, fallbackGradient } from '../lib/posters';
 import SEOHead from './SEOHead';
+import { studioSeo } from '../lib/seo';
 import StudioMonogram from './StudioMonogram';
 import { getBadge, isVerified, formatNum, topGenre, joinYear, BADGE_CONFIG } from '../lib/studioUtils';
 
@@ -73,18 +74,7 @@ export default function StudioPage() {
 
   return (
     <div className="space-y-8">
-      <SEOHead
-        title={`${studioName} | YouMakeTV.ai`}
-        description={`Browse ${films.length} films from ${studioName} on YouMakeTV.ai. ${formatNum(totalViews)} total views.`}
-        canonical={`/studio/${encodeURIComponent(studioName)}`}
-        structuredData={{
-          '@context': 'https://schema.org',
-          '@type': 'Organization',
-          name: studioName,
-          description: `AI film studio on YouMakeTV.ai. ${films.length} films, ${formatNum(totalViews)} total views.`,
-          url: `https://youmaketv.ai/studio/${encodeURIComponent(studioName)}`,
-        }}
-      />
+      <SEOHead {...studioSeo(studioName, films.length, formatNum(totalViews))} />
 
       {/* Back navigation */}
       <button

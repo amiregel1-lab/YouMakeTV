@@ -1,4 +1,16 @@
 import SEOHead from './SEOHead';
+import { PAGE_SEO } from '../lib/seo';
+
+// This policy describes what the platform actually does today.
+//
+// The previous version described a product that does not exist: banking and
+// payout data, tax identification numbers, KYC documents retained for five
+// years, a payment processor storing card last-4, seven-year transaction
+// records. None of that is collected, because none of it exists yet. At the
+// same time the real recipients of real data — Supabase, Vercel, Resend and the
+// CRM that every contact lead is forwarded to — were named nowhere.
+//
+// Anything added here later must describe something the code actually does.
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -12,11 +24,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default function PrivacyPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-10">
-      <SEOHead
-        title="Privacy Policy | YouMakeTV.ai"
-        description="Learn how YouMakeTV.ai collects, uses, and protects your personal data."
-        canonical="/privacy"
-      />
+      <SEOHead {...PAGE_SEO['/privacy']} />
 
       {/* Header */}
       <div className="rounded-[2rem] border border-slate-200/70 bg-white shadow-soft p-8 sm:p-10">
@@ -24,16 +32,17 @@ export default function PrivacyPage() {
           Legal
         </span>
         <h1 className="text-3xl font-semibold tracking-tight text-slate-950">Privacy Policy</h1>
-        <p className="mt-3 text-sm text-slate-500">Effective date: January 1, 2026 · Last updated: June 1, 2026</p>
+        <p className="mt-3 text-sm text-slate-500">Effective date: January 1, 2026 · Last updated: August 19, 2026</p>
         <p className="mt-4 text-slate-600 leading-7">
-          YouMakeTV.ai ("YouMakeTV," "we," "us," or "our") is committed to protecting your privacy.
-          This Privacy Policy describes how we collect, use, share, and protect personal information
-          when you use our website, applications, and services (collectively, the "Platform"). It also
-          describes your rights and choices regarding your information.
+          YouMakeTV.ai ("YouMakeTV," "we," "us," or "our") operates a streaming platform for
+          AI-generated films. This Privacy Policy describes what information we collect, how we use
+          it, who else sees it, and what you can ask us to do about it.
         </p>
         <p className="mt-3 text-slate-600 leading-7">
-          By using the Platform, you agree to the collection and use of information in accordance
-          with this Privacy Policy. If you do not agree, please discontinue use of the Platform.
+          It describes the platform as it works today. YouMakeTV is in beta: there is no payment
+          processing, no creator payout system and no identity verification, so we do not collect
+          payment details, banking information, tax identification or identity documents. If that
+          changes, this policy will change with it before the feature launches — not after.
         </p>
       </div>
 
@@ -41,289 +50,287 @@ export default function PrivacyPage() {
       <div className="rounded-[2rem] border border-slate-200/70 bg-white shadow-soft p-8 sm:p-10 space-y-10 divide-y divide-slate-100">
 
         <Section title="1. Information We Collect">
-          <p>We collect the following categories of information:</p>
-
-          <p><strong>Account Information</strong></p>
+          <p><strong>Viewer accounts (stored in your browser, not on our servers)</strong></p>
           <ul className="list-disc pl-5 space-y-1">
-            <li>Username, email address, and password when you create a viewer account;</li>
-            <li>Profile preferences and account settings you configure.</li>
+            <li>
+              A username and whether you have activated a YouMake+ membership in this prototype.
+              This is saved in your browser's local storage on the device you used. It is not sent
+              to us, and there is no account record on our servers to look up, export or breach.
+            </li>
+            <li>Passwords typed into the sign-in form are not transmitted or stored anywhere.</li>
           </ul>
 
-          <p><strong>Creator Information</strong></p>
+          <p><strong>Creator profiles (also stored in your browser)</strong></p>
           <ul className="list-disc pl-5 space-y-1">
-            <li>Full legal name, studio name, date of birth, and country of residence collected during creator onboarding;</li>
-            <li>Government-issued identity documents and selfie images collected for KYC verification;</li>
-            <li>Banking or payment account information for payout processing;</li>
-            <li>Tax identification numbers and related tax compliance documentation.</li>
+            <li>
+              Your name, studio name and email address, plus any film details you enter, saved in
+              your browser's local storage. Creator onboarding does not ask for a date of birth, a
+              government ID or a photograph, and does not upload anything to us.
+            </li>
           </ul>
 
-          <p><strong>Transaction and Payment Information</strong></p>
+          <p><strong>Messages you send us</strong></p>
           <ul className="list-disc pl-5 space-y-1">
-            <li>Purchase history, transaction identifiers, and subscription status;</li>
-            <li>Payment method type (e.g., credit card network) and last four digits — full card numbers are processed by our payment provider and not stored on our servers.</li>
+            <li>
+              What you type into the contact form: name, email address, optional phone number,
+              subject and message.
+            </li>
+            <li>
+              Attribution attached to that submission: the page you sent it from, the referring URL,
+              and any campaign parameters present in the address bar (<code>utm_source</code>,{' '}
+              <code>utm_medium</code>, <code>utm_campaign</code>, <code>utm_term</code>,{' '}
+              <code>utm_content</code>, <code>gclid</code>, <code>fbclid</code>). This tells us which
+              campaign or link brought you here.
+            </li>
           </ul>
 
-          <p><strong>Usage and Technical Data</strong></p>
+          <p><strong>Anonymous product events</strong></p>
           <ul className="list-disc pl-5 space-y-1">
-            <li>Pages and films viewed, search queries, and interactions with Platform features;</li>
-            <li>IP address, browser type and version, operating system, device identifiers, and referring URLs;</li>
-            <li>Session duration, click-through data, and other engagement metrics.</li>
+            <li>
+              One record per meaningful action — a trailer played, a purchase button clicked, a
+              sign-in, a membership activation, a film page opened — containing the event type, the
+              film's catalog id and title, and a timestamp.
+            </li>
+            <li>
+              These records carry no IP address, no account identifier and no cookie. They cannot be
+              traced back to you, which also means we cannot delete "your" events on request: there
+              is no "your" in them.
+            </li>
           </ul>
 
-          <p><strong>Content You Upload (Creators)</strong></p>
+          <p><strong>Content creators publish</strong></p>
           <ul className="list-disc pl-5 space-y-1">
-            <li>Films, thumbnails, trailers, titles, descriptions, and other metadata you submit.</li>
+            <li>Films, trailers, cover images, titles, descriptions and other metadata submitted for publication.</li>
           </ul>
 
-          <p><strong>Communications</strong></p>
+          <p><strong>Standard server logs</strong></p>
           <ul className="list-disc pl-5 space-y-1">
-            <li>Messages you send to our support team or through contact forms.</li>
+            <li>
+              Our hosting provider records ordinary request logs (IP address, user agent, URL,
+              timestamp) for delivery, security and abuse prevention. We do not build profiles from
+              them.
+            </li>
           </ul>
         </Section>
 
         <div className="pt-10">
-          <Section title="2. How We Collect Information">
-            <p>We collect information in the following ways:</p>
-            <ul className="list-disc pl-5 space-y-2">
-              <li><strong>Directly from you:</strong> When you create an account, complete onboarding, make a purchase, or contact support;</li>
-              <li><strong>Automatically:</strong> Through cookies, web beacons, log files, and similar tracking technologies as you use the Platform;</li>
-              <li><strong>From third parties:</strong> From payment processors, identity verification providers, and analytics providers, subject to their own privacy policies;</li>
-              <li><strong>From your device:</strong> Device identifiers, browser settings, and similar technical information collected when you access the Platform.</li>
-            </ul>
-          </Section>
-        </div>
-
-        <div className="pt-10">
-          <Section title="3. How We Use Your Information">
-            <p>We use the information we collect to:</p>
-            <ul className="list-disc pl-5 space-y-2">
-              <li>Provide, operate, maintain, and improve the Platform;</li>
-              <li>Process purchases and distribute creator earnings;</li>
-              <li>Verify identity and complete KYC requirements for creator accounts;</li>
-              <li>Personalize your content discovery and viewing experience;</li>
-              <li>Send transactional communications including purchase confirmations, payout notifications, and account security alerts;</li>
-              <li>Respond to your support requests and inquiries;</li>
-              <li>Detect, investigate, and prevent fraud, abuse, and violations of our Terms;</li>
-              <li>Comply with applicable legal obligations, including tax reporting and regulatory compliance;</li>
-              <li>Analyze Platform usage trends to improve features and content recommendations;</li>
-              <li>Send marketing communications where you have consented (see Section 5).</li>
-            </ul>
-            <p>We do not sell your personal information to third parties for their own marketing purposes.</p>
-          </Section>
-        </div>
-
-        <div className="pt-10">
-          <Section title="4. Cookies and Tracking Technologies">
+          <Section title="2. What We Do Not Collect">
             <p>
-              We use cookies and similar tracking technologies to maintain your session, remember your
-              preferences, and analyze Platform usage. Types of cookies we use include:
-            </p>
-            <ul className="list-disc pl-5 space-y-2">
-              <li><strong>Essential cookies:</strong> Required for core Platform functions such as authentication and session management. These cannot be disabled without affecting Platform functionality;</li>
-              <li><strong>Analytics cookies:</strong> Used to understand how visitors interact with the Platform (e.g., pages visited, time on site). We use anonymized or aggregated analytics data and do not link it to your personally identifiable information;</li>
-              <li><strong>Preference cookies:</strong> Store your settings such as language, content preferences, and display options;</li>
-              <li><strong>Security cookies:</strong> Help detect fraud and protect account security.</li>
-            </ul>
-            <p>
-              We do not use third-party advertising networks or allow ad retargeting based on your
-              Platform activity. You may disable non-essential cookies through your browser settings.
-              Note that disabling certain cookies may impair Platform functionality.
+              To be explicit, because prior versions of this policy said otherwise: we do not
+              collect or store payment card details, bank account or payout information, tax
+              identification numbers, government-issued identity documents, photographs taken for
+              identity verification, or dates of birth. No payment processor is connected to the
+              platform, and creator earnings figures shown in the creator workspace are simulated
+              until billing launches.
             </p>
           </Section>
         </div>
 
         <div className="pt-10">
-          <Section title="5. Marketing Communications">
-            <p>
-              With your consent, we may send you marketing communications about new content, creator
-              opportunities, platform features, and promotions. You can opt out of marketing
-              communications at any time by:
-            </p>
+          <Section title="3. How We Use Information">
             <ul className="list-disc pl-5 space-y-2">
-              <li>Clicking the "unsubscribe" link in any marketing email;</li>
-              <li>Updating your communication preferences in your account settings;</li>
-              <li>Contacting us at <span className="text-brand-purple">privacy@youmaketv.ai</span>.</li>
+              <li>To operate the platform and serve the film catalog;</li>
+              <li>To answer the messages you send us, and to follow up about a request you made;</li>
+              <li>To understand, in aggregate, which films and pages people engage with, so we can improve the catalog and the site;</li>
+              <li>To detect and prevent abuse, fraud and automated traffic;</li>
+              <li>To comply with legal obligations that apply to us.</li>
             </ul>
             <p>
-              Opting out of marketing emails does not affect transactional or account communications
-              (such as purchase receipts or payout notifications), which we send based on our contract
-              with you.
+              We do not sell personal information, and we do not share it with third parties for
+              their own marketing purposes.
             </p>
           </Section>
         </div>
 
         <div className="pt-10">
-          <Section title="6. Data Sharing and Disclosure">
-            <p>We may share your information with the following categories of recipients:</p>
+          <Section title="4. Cookies, Local Storage and Analytics">
+            <p>
+              <strong>Local storage.</strong> We use your browser's local storage to remember your
+              viewer or creator profile and your analytics choice. This is functional storage on
+              your device — clearing your browser data removes it, and nothing is copied to us.
+            </p>
+            <p>
+              <strong>Analytics.</strong> If analytics are enabled on this deployment, we ask before
+              anything loads: a banner offers "Allow analytics" or "Decline". If you decline, or if
+              you never answer, no analytics or advertising script is loaded, and no analytics cookie
+              is set. If you accept, Google Analytics / Google Tag Manager and the Meta Pixel may be
+              loaded to measure page views and engagement. You can change your mind by clearing this
+              site's data in your browser, which restores the choice prompt.
+            </p>
+            <p>
+              We do not run advertising on the platform and do not allow ad retargeting based on
+              your activity here.
+            </p>
+          </Section>
+        </div>
+
+        <div className="pt-10">
+          <Section title="5. Service Providers We Share Data With">
+            <p>
+              These are the companies and systems that process data on our behalf. This list is
+              exhaustive as of the date at the top of this page:
+            </p>
             <ul className="list-disc pl-5 space-y-2">
               <li>
-                <strong>Payment processors:</strong> To facilitate viewer purchases and creator payouts.
-                Payment processors receive only the information necessary to process transactions and
-                are not authorized to use it for other purposes.
+                <strong>Vercel Inc.</strong> (United States) — hosting, content delivery and the
+                serverless functions behind the site. Processes request logs and anything you submit
+                in transit.
               </li>
               <li>
-                <strong>Identity verification providers:</strong> To complete creator KYC requirements.
-                These providers process your identity documents under their own privacy policies.
+                <strong>Supabase Inc.</strong> (United States) — the database and file storage
+                holding the film catalog, cover images, trailers and the anonymous product events
+                described in Section 1.
               </li>
               <li>
-                <strong>Analytics providers:</strong> To analyze Platform usage using aggregated or
-                anonymized data. We do not share personally identifiable information with analytics
-                providers for their own marketing purposes.
+                <strong>Resend</strong> (United States) — delivers contact-form submissions to our
+                support inbox by email.
               </li>
               <li>
-                <strong>Cloud infrastructure and CDN providers:</strong> To host the Platform and
-                deliver content to viewers globally.
+                <strong>Growth OS</strong> — our own internal business system. Every contact-form
+                submission is forwarded to it, including the attribution parameters listed in
+                Section 1, so we can track and answer enquiries. It is operated by us, not sold to
+                or shared with anyone else.
               </li>
               <li>
-                <strong>Legal and regulatory authorities:</strong> When required by law, court order,
-                legal process, or to protect the rights, safety, or property of YouMakeTV or others.
-              </li>
-              <li>
-                <strong>Business transfers:</strong> In connection with a merger, acquisition,
-                reorganization, or sale of assets, subject to the acquirer agreeing to honor this
-                Privacy Policy or a materially equivalent policy.
+                <strong>Google (Analytics / Tag Manager) and Meta (Pixel)</strong> — loaded{' '}
+                <em>only</em> if analytics are enabled on this deployment <em>and</em> you have
+                accepted the analytics banner. Declining means these are never contacted.
               </li>
             </ul>
             <p>
-              All third-party service providers are contractually required to protect your information
-              and may use it only for the purposes for which it was shared.
+              We may also disclose information where required by law, court order or valid legal
+              process, or to protect the rights, safety or property of YouMakeTV or others; and, in
+              the event of a merger, acquisition or sale of assets, to the acquiring party, subject
+              to this policy or a materially equivalent one.
             </p>
           </Section>
         </div>
 
         <div className="pt-10">
-          <Section title="7. International Data Transfers">
+          <Section title="6. International Data Transfers">
             <p>
-              YouMakeTV is based in the United States. If you use the Platform from outside the
-              United States, your information may be transferred to, processed, and stored in the
-              United States and other countries where data protection laws may differ from those in
-              your home country.
-            </p>
-            <p>
-              For users in the European Economic Area (EEA), United Kingdom, or Switzerland, we transfer
-              personal data to the United States pursuant to Standard Contractual Clauses (SCCs) approved
-              by the European Commission, or other appropriate transfer mechanisms. By using the Platform,
-              you acknowledge and consent to such transfers.
+              YouMakeTV is operated from the United States and the providers listed in Section 5
+              store data in the United States. If you use the Platform from elsewhere, the limited
+              information described above is processed in the United States, where data protection
+              law may differ from that of your home country.
             </p>
           </Section>
         </div>
 
         <div className="pt-10">
-          <Section title="8. Data Retention">
-            <p>
-              We retain personal information for as long as necessary to fulfill the purposes described
-              in this Policy, maintain your account, comply with legal obligations, and resolve disputes.
-              Specific retention periods:
-            </p>
+          <Section title="7. How Long We Keep Information">
             <ul className="list-disc pl-5 space-y-2">
-              <li><strong>Account data:</strong> Retained while your account is active; deleted or anonymized within 90 days of account deletion, subject to legal retention requirements;</li>
-              <li><strong>Transaction records:</strong> Retained for seven (7) years for tax and accounting compliance;</li>
-              <li><strong>Creator KYC documents:</strong> Retained for the duration of your creator account and for five (5) years thereafter as required by anti-money laundering laws;</li>
-              <li><strong>Usage logs:</strong> Retained for up to 24 months in identifiable form, then deleted or aggregated;</li>
-              <li><strong>Support communications:</strong> Retained for three (3) years after resolution.</li>
+              <li>
+                <strong>Profiles in your browser:</strong> until you clear your browser data or sign
+                out. We hold no copy.
+              </li>
+              <li>
+                <strong>Contact-form submissions:</strong> kept in our support inbox and internal
+                business system for as long as needed to handle the enquiry and to keep a record of
+                our correspondence; deleted on request.
+              </li>
+              <li>
+                <strong>Anonymous product events:</strong> retained to measure trends over time.
+                Because they contain no identifier, they are not linked to any person.
+              </li>
+              <li>
+                <strong>Published film content:</strong> retained while it remains on the platform
+                and for a short period afterwards, as set out in the Creator Agreement.
+              </li>
+              <li>
+                <strong>Server logs:</strong> retained by our hosting provider under its standard
+                retention period.
+              </li>
             </ul>
           </Section>
         </div>
 
         <div className="pt-10">
-          <Section title="9. Security Practices">
+          <Section title="8. Security">
             <p>
-              We implement industry-standard security measures to protect your information, including:
+              All traffic is served over TLS. Database credentials with write access exist only on
+              the server side and are never sent to the browser; the public key shipped with the site
+              can read the film catalog and nothing else, enforced by row-level security. The
+              analytics event table is closed to that key entirely. Administrative access requires a
+              signed, expiring session issued server-side.
             </p>
+            <p>
+              No system is perfectly secure and we cannot guarantee absolute security. If we become
+              aware of a breach materially affecting personal data, we will notify affected people as
+              required by applicable law.
+            </p>
+          </Section>
+        </div>
+
+        <div className="pt-10">
+          <Section title="9. Your Rights and Choices">
+            <p>Depending on where you live, you may have the right to:</p>
             <ul className="list-disc pl-5 space-y-2">
-              <li>Encryption in transit using Transport Layer Security (TLS);</li>
-              <li>Encryption at rest for sensitive data including payment information and identity documents;</li>
-              <li>Access controls limiting which personnel can access personal information based on job function;</li>
-              <li>Regular security assessments and vulnerability management;</li>
-              <li>Incident response procedures for potential data breaches.</li>
+              <li>Ask what personal information we hold about you, and receive a copy;</li>
+              <li>Ask us to correct information that is wrong or incomplete;</li>
+              <li>Ask us to delete information we hold about you;</li>
+              <li>Object to or ask us to restrict certain processing;</li>
+              <li>Withdraw consent you previously gave (for example, for analytics).</li>
             </ul>
             <p>
-              No security system is completely impenetrable. We cannot guarantee the absolute security
-              of your information. If we become aware of a security breach materially affecting your
-              personal data, we will notify you as required by applicable law.
+              In practice, most of what the platform stores about you is on your own device: clearing
+              this site's data in your browser deletes your viewer or creator profile immediately,
+              without asking us. For anything else — chiefly a message you sent us — email{' '}
+              <span className="text-brand-purple">privacy@youmaketv.ai</span> and we will respond
+              within thirty (30) days.
+            </p>
+            <p>
+              <strong>California residents:</strong> we do not sell or share personal information as
+              those terms are defined by the CCPA/CPRA.
             </p>
           </Section>
         </div>
 
         <div className="pt-10">
-          <Section title="10. Your Rights and Choices">
+          <Section title="10. Children and Content Ratings">
             <p>
-              Depending on your jurisdiction, you may have the following rights regarding your personal information:
-            </p>
-            <ul className="list-disc pl-5 space-y-2">
-              <li><strong>Access:</strong> Request a copy of the personal information we hold about you;</li>
-              <li><strong>Correction:</strong> Request correction of inaccurate or incomplete information;</li>
-              <li><strong>Deletion:</strong> Request deletion of your personal information, subject to legal retention requirements and ongoing contractual obligations;</li>
-              <li><strong>Portability:</strong> Request your information in a structured, commonly used, machine-readable format;</li>
-              <li><strong>Objection:</strong> Object to processing of your information based on legitimate interests;</li>
-              <li><strong>Restriction:</strong> Request that we restrict processing of your information in certain circumstances;</li>
-              <li><strong>Withdrawal of consent:</strong> Withdraw consent for processing based on consent at any time (without affecting prior processing).</li>
-            </ul>
-            <p>
-              <strong>California residents (CCPA):</strong> You have the right to know what personal
-              information we collect, the right to delete your information, and the right to opt out
-              of the "sale" of personal information. We do not sell personal information.
+              The Platform is not directed at children under 13, and we do not knowingly collect
+              personal information from them. The catalog carries content ratings from G to R; each
+              film page displays its rating, and signing in requires confirming that you are 18 or
+              older.
             </p>
             <p>
-              To exercise any of these rights, contact us at{' '}
-              <span className="text-brand-purple">privacy@youmaketv.ai</span>. We will respond within
-              thirty (30) days. We may need to verify your identity before fulfilling your request.
+              If you believe a child under 13 has provided us with personal information, contact us
+              at <span className="text-brand-purple">privacy@youmaketv.ai</span> and we will delete
+              it.
             </p>
           </Section>
         </div>
 
         <div className="pt-10">
-          <Section title="11. Children's Privacy">
+          <Section title="11. Third-Party Links">
             <p>
-              The Platform is not directed at children under the age of 13. We do not knowingly collect
-              personal information from children under 13. If we become aware that we have collected
-              personal information from a child under 13 without verifiable parental consent, we will
-              take steps to delete that information promptly.
-            </p>
-            <p>
-              If you believe that a child under 13 has provided us with personal information, please
-              contact us at <span className="text-brand-purple">privacy@youmaketv.ai</span>.
+              The Platform links to third-party websites and AI tool providers. We are not
+              responsible for their privacy practices; review their policies before using them.
             </p>
           </Section>
         </div>
 
         <div className="pt-10">
-          <Section title="12. Third-Party Links">
+          <Section title="12. Changes to This Policy">
             <p>
-              The Platform may contain links to third-party websites, services, or AI tool providers.
-              We are not responsible for the privacy practices of those third parties. We encourage
-              you to review the privacy policies of any third-party services you access through the Platform.
+              We will update this Policy when our practices change. Material changes will be
+              announced by email or a prominent notice on the Platform at least fifteen (15) days
+              before they take effect, and the "Last updated" date above will change.
             </p>
           </Section>
         </div>
 
         <div className="pt-10">
-          <Section title="13. Changes to This Policy">
-            <p>
-              We may update this Privacy Policy periodically to reflect changes in our practices,
-              technology, legal requirements, or other factors. When we make material changes, we
-              will notify you via email or a prominent notice on the Platform at least fifteen (15)
-              days before the change takes effect.
-            </p>
-            <p>
-              Your continued use of the Platform after the updated Policy takes effect constitutes
-              your acceptance. We encourage you to review this Policy periodically.
-            </p>
-          </Section>
-        </div>
-
-        <div className="pt-10">
-          <Section title="14. Contact and Data Protection">
-            <p>
-              For privacy-related questions, requests, or complaints, contact our Data Protection team:
-            </p>
+          <Section title="13. Contact">
+            <p>For privacy questions, requests or complaints:</p>
             <div className="rounded-2xl bg-slate-50 border border-slate-200 px-5 py-4 space-y-1">
               <p className="font-semibold text-slate-950">Privacy — YouMakeTV.ai</p>
               <p>Email: <span className="text-brand-purple">privacy@youmaketv.ai</span></p>
             </div>
             <p>
-              EEA/UK residents who are not satisfied with our response may lodge a complaint with their
-              local data protection authority.
+              EEA/UK residents who are not satisfied with our response may lodge a complaint with
+              their local data protection authority.
             </p>
           </Section>
         </div>

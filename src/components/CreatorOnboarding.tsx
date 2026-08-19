@@ -1,33 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CreatorProfile } from '../types';
+import BetaNotice from './BetaNotice';
 
 interface CreatorOnboardingProps {
   onComplete: (profile: CreatorProfile) => void;
 }
 
-const STEPS = ['Create Account', 'Verify Identity', 'Creator Agreement'];
-
-const COUNTRIES = [
-  'Afghanistan', 'Albania', 'Algeria', 'Angola', 'Argentina', 'Armenia', 'Australia',
-  'Austria', 'Azerbaijan', 'Bahrain', 'Bangladesh', 'Belarus', 'Belgium', 'Bolivia',
-  'Bosnia and Herzegovina', 'Brazil', 'Bulgaria', 'Cambodia', 'Canada', 'Chile',
-  'China', 'Colombia', 'Costa Rica', 'Croatia', 'Cuba', 'Cyprus', 'Czech Republic',
-  'Denmark', 'Dominican Republic', 'Ecuador', 'Egypt', 'El Salvador', 'Estonia',
-  'Ethiopia', 'Finland', 'France', 'Georgia', 'Germany', 'Ghana', 'Greece',
-  'Guatemala', 'Honduras', 'Hong Kong', 'Hungary', 'Iceland', 'India', 'Indonesia',
-  'Iran', 'Iraq', 'Ireland', 'Israel', 'Italy', 'Jamaica', 'Japan', 'Jordan',
-  'Kazakhstan', 'Kenya', 'Kuwait', 'Latvia', 'Lebanon', 'Libya', 'Lithuania',
-  'Luxembourg', 'Malaysia', 'Malta', 'Mexico', 'Moldova', 'Mongolia', 'Morocco',
-  'Myanmar', 'Nepal', 'Netherlands', 'New Zealand', 'Nicaragua', 'Nigeria',
-  'Norway', 'Oman', 'Pakistan', 'Palestine', 'Panama', 'Paraguay', 'Peru',
-  'Philippines', 'Poland', 'Portugal', 'Qatar', 'Romania', 'Russia',
-  'Saudi Arabia', 'Serbia', 'Singapore', 'Slovakia', 'Slovenia', 'South Africa',
-  'South Korea', 'Spain', 'Sri Lanka', 'Sudan', 'Sweden', 'Switzerland', 'Syria',
-  'Taiwan', 'Tanzania', 'Thailand', 'Tunisia', 'Turkey', 'Uganda', 'Ukraine',
-  'United Arab Emirates', 'United Kingdom', 'United States', 'Uruguay',
-  'Uzbekistan', 'Venezuela', 'Vietnam', 'Yemen', 'Zimbabwe',
-];
+const STEPS = ['Create Account', 'Creator Agreement'];
 
 const BENEFITS = [
   'Start earning 30% revenue share from day one',
@@ -164,41 +144,6 @@ function RightPanel({ step }: { step: number }) {
     );
   }
 
-  if (step === 1) {
-    return (
-      <div className="hidden lg:flex flex-col justify-between bg-slate-950 px-10 py-12 text-white">
-        <div className="space-y-8">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400 mb-3">Security & Trust</p>
-            <h2 className="text-xl font-bold text-white leading-snug">Your information is<br />protected.</h2>
-          </div>
-          <ul className="space-y-4">
-            {[
-              { icon: '🔒', title: 'Encrypted at rest', desc: 'All identity documents are encrypted using AES-256.' },
-              { icon: '🛡️', title: 'GDPR & CCPA compliant', desc: 'We comply with major privacy regulations worldwide.' },
-              { icon: '📋', title: 'Minimum required', desc: 'We only collect what is legally required for creator payouts.' },
-              { icon: '🗑️', title: 'Deletion on request', desc: 'Close your account and your data is deleted within 90 days.' },
-            ].map((item) => (
-              <li key={item.title} className="flex items-start gap-3">
-                <span className="text-lg flex-none mt-0.5">{item.icon}</span>
-                <div>
-                  <p className="text-sm font-semibold text-white">{item.title}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">{item.desc}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="mt-8 space-y-3">
-          <div className="h-px bg-white/10" />
-          <p className="text-xs text-slate-500 leading-relaxed">
-            Identity verification is required by payment processors for creator payouts. Your data is never sold to third parties.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="hidden lg:flex flex-col justify-between bg-slate-950 px-10 py-12 text-white">
       <div className="space-y-8">
@@ -242,21 +187,15 @@ export default function CreatorOnboarding({ onComplete }: CreatorOnboardingProps
   const [activeStep, setActiveStep] = useState(0);
 
   // Step 0 — Account
-  const [account, setAccount] = useState({ studioName: '', email: '', password: '', confirmPassword: '' });
+  const [account, setAccount] = useState({
+    fullName: '',
+    studioName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
 
-  // Step 1 — KYC
-  const [kyc, setKyc] = useState({ legalName: '', dob: '', country: '', agreeAccuracy: false });
-  const [countrySearch, setCountrySearch] = useState('');
-  const [showCountryList, setShowCountryList] = useState(false);
-  const [govIdFile, setGovIdFile] = useState<File | null>(null);
-  const [selfieDataUrl, setSelfieDataUrl] = useState<string | null>(null);
-  const [cameraState, setCameraState] = useState<'idle' | 'active' | 'captured' | 'error'>('idle');
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const countryRef = useRef<HTMLDivElement>(null);
-
-  // Step 2 — Agreement
+  // Step 1 — Agreement
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
   const [agreement, setAgreement] = useState({
     agreeTerms: false,
@@ -278,47 +217,13 @@ export default function CreatorOnboarding({ onComplete }: CreatorOnboardingProps
     return () => clearTimeout(timer);
   }, [showSuccess, onComplete]);
 
-  // Camera: set srcObject after state update causes video to render
-  useEffect(() => {
-    if (cameraState === 'active' && streamRef.current && videoRef.current) {
-      videoRef.current.srcObject = streamRef.current;
-    }
-  }, [cameraState]);
-
-  // Stop camera when leaving step 1
-  useEffect(() => {
-    if (activeStep !== 1) stopCamera();
-  }, [activeStep]);
-
-  // Stop camera on unmount
-  useEffect(() => () => stopCamera(), []);
-
   // Check if agreement box needs scrolling
   useEffect(() => {
-    if (activeStep === 2 && agreementRef.current) {
+    if (activeStep === 1 && agreementRef.current) {
       const el = agreementRef.current;
       if (el.scrollHeight <= el.clientHeight + 4) setHasScrolledToBottom(true);
     }
   }, [activeStep]);
-
-  // Close country dropdown on outside click
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (countryRef.current && !countryRef.current.contains(e.target as Node)) {
-        setShowCountryList(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  const today = new Date().toISOString().split('T')[0];
-  const minDob = new Date(new Date().getFullYear() - 100, 0, 1).toISOString().split('T')[0];
-
-  const filteredCountries = useMemo(
-    () => COUNTRIES.filter((c) => c.toLowerCase().includes(countrySearch.toLowerCase())),
-    [countrySearch]
-  );
 
   const passwordChecks = useMemo(() => ({
     length: account.password.length >= 6,
@@ -328,57 +233,15 @@ export default function CreatorOnboarding({ onComplete }: CreatorOnboardingProps
   const canContinue = useMemo(() => {
     if (activeStep === 0) {
       return (
+        account.fullName.trim().length > 0 &&
         account.studioName.trim().length > 0 &&
         account.email.trim().includes('@') &&
         passwordChecks.length &&
         passwordChecks.match
       );
     }
-    if (activeStep === 1) {
-      return (
-        kyc.legalName.trim().length > 0 &&
-        kyc.dob !== '' &&
-        kyc.country !== '' &&
-        govIdFile !== null &&
-        selfieDataUrl !== null &&
-        kyc.agreeAccuracy
-      );
-    }
     return hasScrolledToBottom && Object.values(agreement).every(Boolean);
-  }, [activeStep, account, passwordChecks, kyc, govIdFile, hasScrolledToBottom, agreement]);
-
-  // Camera helpers
-  const stopCamera = () => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-  };
-
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-      streamRef.current = stream;
-      setCameraState('active');
-    } catch {
-      setCameraState('error');
-    }
-  };
-
-  const capturePhoto = () => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas) return;
-    canvas.width = video.videoWidth || 320;
-    canvas.height = video.videoHeight || 240;
-    canvas.getContext('2d')?.drawImage(video, 0, 0);
-    setSelfieDataUrl(canvas.toDataURL('image/jpeg', 0.85));
-    stopCamera();
-    setCameraState('captured');
-  };
-
-  const retakePhoto = () => {
-    setSelfieDataUrl(null);
-    setCameraState('idle');
-  };
+  }, [activeStep, account, passwordChecks, hasScrolledToBottom, agreement]);
 
   const handleGoogleSignUp = () => {
     setShowGoogleModal(true);
@@ -392,12 +255,15 @@ export default function CreatorOnboarding({ onComplete }: CreatorOnboardingProps
 
   const createProfile = () => {
     const dateLabel = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    // Nothing here is verified, so nothing here claims to be. Identity
+    // verification arrives with billing; until then the profile says so rather
+    // than stamping itself `verified: true` on the strength of a form.
     const profile: CreatorProfile = {
-      fullName: kyc.legalName.trim() || account.studioName.trim(),
+      fullName: account.fullName.trim() || account.studioName.trim(),
       studioName: account.studioName.trim() || 'My Studio',
       email: account.email.trim(),
-      verified: true,
-      kycCompleted: true,
+      verified: false,
+      kycCompleted: false,
       createdAt: dateLabel,
       films: [],
     };
@@ -495,6 +361,9 @@ export default function CreatorOnboarding({ onComplete }: CreatorOnboardingProps
           </div>
         </div>
 
+        {/* Honest state of the platform, stated before anyone signs up. */}
+        <BetaNotice className="mb-5" />
+
         {/* Card */}
         <div className="rounded-[2rem] overflow-hidden border border-slate-200/70 shadow-2xl lg:grid lg:grid-cols-2">
 
@@ -536,6 +405,16 @@ export default function CreatorOnboarding({ onComplete }: CreatorOnboardingProps
 
                 {/* Manual form */}
                 <div className="space-y-4">
+                  <div>
+                    <label className={labelClass}>Your Name</label>
+                    <input
+                      type="text"
+                      placeholder="Alex Rivera"
+                      value={account.fullName}
+                      onChange={(e) => setAccount((p) => ({ ...p, fullName: e.target.value }))}
+                      className={inputClass}
+                    />
+                  </div>
                   <div>
                     <label className={labelClass}>Studio Name</label>
                     <input
@@ -604,185 +483,8 @@ export default function CreatorOnboarding({ onComplete }: CreatorOnboardingProps
               </>
             )}
 
-            {/* ── STEP 1: Verify Identity ─────────────────────────────────── */}
+            {/* ── STEP 1: Creator Agreement ───────────────────────────────── */}
             {activeStep === 1 && (
-              <>
-                <div>
-                  <span className="inline-flex rounded-full bg-brand-purple/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] text-brand-purple mb-4">
-                    Identity Verification
-                  </span>
-                  <h1 className="text-2xl font-bold tracking-tight text-slate-950">Verify Your Identity</h1>
-                  <p className="mt-2 text-sm text-slate-500">Required by payment processors to enable creator payouts. Your data is encrypted and never sold.</p>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className={labelClass}>Legal Full Name</label>
-                    <input
-                      type="text"
-                      placeholder="As it appears on your government ID"
-                      value={kyc.legalName}
-                      onChange={(e) => setKyc((p) => ({ ...p, legalName: e.target.value }))}
-                      className={inputClass}
-                    />
-                  </div>
-
-                  <div>
-                    <label className={labelClass}>Date of Birth</label>
-                    <input
-                      type="date"
-                      min={minDob}
-                      max={today}
-                      value={kyc.dob}
-                      onChange={(e) => setKyc((p) => ({ ...p, dob: e.target.value }))}
-                      className={inputClass}
-                    />
-                  </div>
-
-                  {/* Searchable country dropdown */}
-                  <div>
-                    <label className={labelClass}>Country of Residence</label>
-                    <div ref={countryRef} className="relative">
-                      <input
-                        type="text"
-                        placeholder="Search country…"
-                        value={kyc.country || countrySearch}
-                        onFocus={() => {
-                          setCountrySearch('');
-                          setShowCountryList(true);
-                        }}
-                        onChange={(e) => {
-                          setCountrySearch(e.target.value);
-                          setKyc((p) => ({ ...p, country: '' }));
-                          setShowCountryList(true);
-                        }}
-                        className={inputClass}
-                      />
-                      {showCountryList && filteredCountries.length > 0 && (
-                        <ul className="absolute z-10 mt-1 max-h-52 w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-lg">
-                          {filteredCountries.map((country) => (
-                            <li key={country}>
-                              <button
-                                type="button"
-                                className="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-brand-purple/5 hover:text-brand-purple transition"
-                                onMouseDown={(e) => {
-                                  e.preventDefault();
-                                  setKyc((p) => ({ ...p, country }));
-                                  setCountrySearch(country);
-                                  setShowCountryList(false);
-                                }}
-                              >
-                                {country}
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      {showCountryList && filteredCountries.length === 0 && (
-                        <div className="absolute z-10 mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-400 shadow-lg">
-                          No country found
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Government ID upload */}
-                  <div>
-                    <label className={labelClass}>Upload Government ID</label>
-                    <p className="text-xs text-slate-400 mb-2">Passport, Driver License, or National ID</p>
-                    <label className="cursor-pointer block">
-                      <input
-                        type="file"
-                        accept="image/*,.pdf"
-                        className="sr-only"
-                        onChange={(e) => setGovIdFile(e.target.files?.[0] ?? null)}
-                      />
-                      <div className={`flex items-center gap-3 rounded-2xl border border-dashed px-5 py-4 transition ${govIdFile ? 'border-emerald-300 bg-emerald-50' : 'border-slate-300 bg-slate-50 hover:border-brand-purple hover:bg-brand-purple/5'}`}>
-                        <div className={`flex h-8 w-8 items-center justify-center rounded-full flex-none ${govIdFile ? 'bg-emerald-100' : 'bg-slate-200'}`}>
-                          {govIdFile ? (
-                            <svg className="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                          ) : (
-                            <svg className="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                          )}
-                        </div>
-                        <span className={`text-sm truncate ${govIdFile ? 'font-medium text-emerald-700' : 'text-slate-500'}`}>
-                          {govIdFile ? govIdFile.name : 'Click to upload document'}
-                        </span>
-                      </div>
-                    </label>
-                  </div>
-
-                  {/* Selfie — camera only */}
-                  <div>
-                    <label className={labelClass}>Take Selfie</label>
-                    <p className="text-xs text-slate-400 mb-2">Live camera required to verify your identity matches your government ID</p>
-                    <canvas ref={canvasRef} className="hidden" />
-
-                    {cameraState === 'idle' && !selfieDataUrl && (
-                      <button
-                        type="button"
-                        onClick={startCamera}
-                        className="w-full flex items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 py-3.5 text-sm font-semibold text-slate-600 hover:border-brand-purple hover:text-brand-purple transition"
-                      >
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><circle cx="12" cy="13" r="3" /></svg>
-                        Open Camera
-                      </button>
-                    )}
-
-                    {cameraState === 'active' && (
-                      <div className="space-y-2">
-                        <video ref={videoRef} autoPlay playsInline className="w-full rounded-2xl object-cover aspect-video" />
-                        <button type="button" onClick={capturePhoto} className="w-full rounded-full bg-slate-950 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition">
-                          Take Photo
-                        </button>
-                      </div>
-                    )}
-
-                    {cameraState === 'captured' && selfieDataUrl && (
-                      <div className="space-y-2">
-                        <img src={selfieDataUrl} alt="Selfie preview" className="w-full rounded-2xl object-cover aspect-video" />
-                        <button type="button" onClick={retakePhoto} className="w-full rounded-full border border-slate-300 bg-white py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">
-                          Retake
-                        </button>
-                      </div>
-                    )}
-
-                    {cameraState === 'error' && (
-                      <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                        Camera access is required to complete identity verification.
-                      </div>
-                    )}
-                  </div>
-
-                  <label className="flex items-start gap-3 text-sm text-slate-700 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={kyc.agreeAccuracy}
-                      onChange={(e) => setKyc((p) => ({ ...p, agreeAccuracy: e.target.checked }))}
-                      className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-brand-purple flex-none"
-                    />
-                    I confirm that all information I have provided is accurate and matches my government-issued ID.
-                  </label>
-                </div>
-
-                <div className="flex gap-3">
-                  <button type="button" onClick={() => setActiveStep(0)} className="rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">
-                    Back
-                  </button>
-                  <button
-                    type="button"
-                    disabled={!canContinue}
-                    onClick={() => setActiveStep(2)}
-                    className="flex-1 rounded-full bg-brand-purple py-3 text-sm font-semibold text-white transition hover:bg-brand-indigo disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    Continue →
-                  </button>
-                </div>
-              </>
-            )}
-
-            {/* ── STEP 2: Creator Agreement ───────────────────────────────── */}
-            {activeStep === 2 && (
               <>
                 <div>
                   <span className="inline-flex rounded-full bg-brand-purple/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] text-brand-purple mb-4">
@@ -840,7 +542,7 @@ export default function CreatorOnboarding({ onComplete }: CreatorOnboardingProps
                 )}
 
                 <div className="flex gap-3">
-                  <button type="button" onClick={() => setActiveStep(1)} className="rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">
+                  <button type="button" onClick={() => setActiveStep(0)} className="rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">
                     Back
                   </button>
                   <button

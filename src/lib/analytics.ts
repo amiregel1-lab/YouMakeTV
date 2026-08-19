@@ -1,12 +1,24 @@
 // Analytics integration points.
 // Set the corresponding env vars in .env (see .env.example) to activate.
 // This file is a no-op until IDs are configured — safe to ship as-is.
+//
+// initAnalytics() is NOT called on mount any more. <ConsentBanner> calls it, and
+// only after the visitor has said yes; declining means no tag is ever injected.
 
 const GA_ID = import.meta.env.VITE_GA_ID as string | undefined;
 const GTM_ID = import.meta.env.VITE_GTM_ID as string | undefined;
 const META_PIXEL_ID = import.meta.env.VITE_META_PIXEL_ID as string | undefined;
 
+/** Is there anything to ask consent for? With no IDs set, there is not. */
+export function analyticsConfigured(): boolean {
+  return Boolean(GA_ID || GTM_ID || META_PIXEL_ID);
+}
+
+let started = false;
+
 export function initAnalytics() {
+  if (started) return;
+  started = true;
   if (GA_ID) loadGA(GA_ID);
   if (GTM_ID) loadGTM(GTM_ID);
   if (META_PIXEL_ID) loadMetaPixel(META_PIXEL_ID);

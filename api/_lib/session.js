@@ -79,7 +79,11 @@ const ALLOWED_ORIGINS = new Set([
 
 // Deploy previews live on *.vercel.app. '*' is never used — these endpoints
 // mint and validate admin credentials.
-function isAllowedOrigin(origin) {
+//
+// Anchored at BOTH ends, deliberately: an unanchored /youmaketv\.ai$/ also
+// matches https://evil-youmaketv.ai, and an unanchored /\.vercel\.app$/ matches
+// every deployment on the internet.
+export function isAllowedOrigin(origin) {
   if (!origin) return false;
   if (ALLOWED_ORIGINS.has(origin)) return true;
   return /^https:\/\/[a-z0-9._-]+\.vercel\.app$/i.test(origin);

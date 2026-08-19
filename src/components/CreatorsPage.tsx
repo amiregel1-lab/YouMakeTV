@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SEOHead from './SEOHead';
+import { PAGE_SEO } from '../lib/seo';
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
@@ -239,18 +240,7 @@ export default function CreatorsPage() {
 
   return (
     <div className="space-y-5">
-      <SEOHead
-        title="Become a Creator | YouMakeTV.ai"
-        description="Publish AI-generated films and earn revenue from every paid view. 30–40% revenue share. Free to join. Monthly payouts."
-        canonical="/creators"
-        structuredData={{
-          '@context': 'https://schema.org',
-          '@type': 'WebPage',
-          name: 'Become a Creator — YouMakeTV.ai',
-          description: 'Turn your AI films into income on YouMakeTV.ai.',
-          url: 'https://youmaketv.ai/creators',
-        }}
-      />
+      <SEOHead {...PAGE_SEO['/creators']} />
 
       {/* ── 1. HERO ──────────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden rounded-[2.5rem] bg-slate-950">

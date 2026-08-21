@@ -397,13 +397,14 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onWatchTrail
           <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900" />
           <div className="absolute inset-0 flex items-end pb-10 sm:pb-14 px-4 sm:px-6 lg:px-8">
             <div className="max-w-2xl space-y-4">
-              <div className="h-7 w-36 rounded-full bg-white/10 animate-pulse" />
+              <div className="h-7 w-64 max-w-full rounded-full bg-white/10 animate-pulse" />
               <div className="h-12 w-80 max-w-full rounded-xl bg-white/10 animate-pulse" />
               <div className="h-5 w-96 max-w-full rounded-lg bg-white/5 animate-pulse" />
               <div className="flex gap-3">
                 <div className="h-11 w-32 rounded-full bg-white/15 animate-pulse" />
                 <div className="h-11 w-28 rounded-full bg-white/10 animate-pulse" />
               </div>
+              <div className="h-4 w-52 max-w-full rounded bg-white/5 animate-pulse" />
             </div>
           </div>
         </section>
@@ -464,8 +465,11 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onWatchTrail
 
         <div className="absolute inset-0 flex items-end pb-10 sm:pb-14 px-4 sm:px-6 lg:px-8">
           <div className="max-w-2xl">
-            <span className="inline-flex rounded-full border border-brand-pink/30 bg-brand-pink/20 px-4 py-1.5 text-xs uppercase tracking-[0.32em] text-brand-pink mb-4">
-              Featured Film
+            {/* Positioning line — a first-time visitor learns what this site is
+                before they meet a film they have never heard of. Sentence-cased
+                and tighter than the old two-word pill so it does not read cramped. */}
+            <span className="inline-flex rounded-full border border-brand-pink/30 bg-brand-pink/20 px-4 py-1.5 text-xs tracking-[0.12em] text-brand-pink mb-4">
+              Every film here was made with AI.
             </span>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-white tracking-tight leading-[1.08] mb-3">
               {featured.title}
@@ -494,6 +498,11 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onWatchTrail
                 )}
               </div>
             </div>
+            {/* Counted, not estimated: 20 of the 100 catalog films are priced at 0.
+                If the catalog changes, this number has to change with it. */}
+            <p className="mt-5 text-xs text-slate-300/70">
+              20 of the 100 films are free to watch.
+            </p>
           </div>
         </div>
       </section>

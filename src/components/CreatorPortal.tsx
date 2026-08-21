@@ -36,14 +36,6 @@ function ToolBadge({ name, initials, color, bg }: typeof AI_TOOLS[number]) {
   );
 }
 
-// ── Creator spotlight data ────────────────────────────────────────────────────
-
-const SPOTLIGHTS = [
-  { name: 'AI Noir Studio',   films: 12, earned: '$1,240', views: '14.2K', badge: 'Top Earner',  initials: 'AN' },
-  { name: 'Future Worlds',    films: 8,  earned: '$860',   views: '9.8K',  badge: 'Rising',      initials: 'FW' },
-  { name: 'Pixel Dreams',     films: 6,  earned: '$540',   views: '6.1K',  badge: 'New Creator', initials: 'PD' },
-];
-
 // ── Benefit icons ─────────────────────────────────────────────────────────────
 
 const IconLock = () => (
@@ -96,10 +88,10 @@ const IconChevron = ({ open }: { open: boolean }) => (
 const BENEFITS = [
   { icon: <IconLock />,    title: 'Keep full ownership',             desc: 'Your films remain yours. YouMakeTV distributes — you retain all intellectual property.',       iconColor: 'text-brand-purple', iconBg: 'bg-brand-purple/10' },
   { icon: <IconTag />,     title: 'Set your own prices',             desc: 'Charge what your content is worth. Free, pay-per-view, or anything in between.',              iconColor: 'text-brand-cyan',   iconBg: 'bg-brand-cyan/10'   },
-  { icon: <IconRepeat />,  title: 'Earn recurring revenue',          desc: 'Every new view on existing films generates income. Build a catalog that pays over time.',      iconColor: 'text-emerald-600',  iconBg: 'bg-emerald-50'      },
+  { icon: <IconRepeat />,  title: 'Earn recurring revenue',          desc: 'Revenue share applies to every paid view, including on films you published months ago.',       iconColor: 'text-emerald-600',  iconBg: 'bg-emerald-50'      },
   { icon: <IconSparkle />, title: 'Built for AI-generated films',    desc: 'Not a generic platform — every feature is designed around AI filmmaking workflows.',           iconColor: 'text-amber-600',    iconBg: 'bg-amber-50'        },
   { icon: <IconUsers />,   title: 'Reach viewers seeking AI films',  desc: 'Viewers on YouMakeTV are specifically looking for AI-generated entertainment.',                iconColor: 'text-brand-pink',   iconBg: 'bg-brand-pink/10'  },
-  { icon: <IconCheck />,   title: 'No subscribers required',         desc: 'Start earning from day one. Upload, set a price, and earn when viewers buy.',                  iconColor: 'text-indigo-600',   iconBg: 'bg-indigo-50'       },
+  { icon: <IconCheck />,   title: 'No subscribers required',         desc: 'No follower count required. Publish your first film the day you join.',                        iconColor: 'text-indigo-600',   iconBg: 'bg-indigo-50'       },
 ];
 
 // ── FAQ data ──────────────────────────────────────────────────────────────────
@@ -107,11 +99,11 @@ const BENEFITS = [
 const FAQS = [
   { q: 'Who owns my films?',                  a: 'Creators retain ownership of their content and grant YouMakeTV the right to distribute it on the platform.' },
   { q: 'What AI tools can I use?',             a: 'Films created with Veo, Runway, Sora, Kling, Midjourney, ElevenLabs, Stable Diffusion, DALL·E, and similar AI tools are supported.' },
-  { q: 'How do payouts work?',                 a: 'Creators earn a share of revenue generated from paid views and purchases. Earnings are tracked inside the creator portal and paid out monthly.' },
+  { q: 'How do payouts work?',                 a: 'Revenue share is 30% of paid views, rising to 40% for the Pro tier. Billing is not connected yet — no viewer has been charged and no payout has been sent, so any figures in the creator portal are simulated. We will email every creator before real payments begin, and publish the payout schedule then.' },
   { q: 'Can I upload free films?',             a: 'Yes. Creators can choose whether a film is free or paid.' },
   { q: 'Can I change my pricing later?',       a: 'Yes. Pricing can be updated at any time from the creator portal.' },
   { q: 'Can I remove my films?',               a: 'Yes. Creators can unpublish or remove content at any time, subject to platform policies.' },
-  { q: 'Do I need subscribers to earn money?', a: 'No. Any creator can upload content and start earning when viewers purchase or watch their films.' },
+  { q: 'Do I need subscribers to earn money?', a: 'No. There is no follower threshold — any approved creator can publish a film and set a price on it. Revenue share applies to paid views once billing is connected.' },
   { q: 'How long does approval take?',         a: 'Most creator applications are reviewed within a few business days.' },
 ];
 
@@ -144,10 +136,18 @@ function DashboardPreview() {
           <div className="h-3 w-3 rounded-full bg-green-400/80" />
         </div>
         <span className="text-xs text-slate-400 font-medium ml-1">YouMakeTV · Creator Dashboard</span>
-        <div className="ml-auto flex items-center gap-1.5">
-          <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-          <span className="text-[10px] text-slate-500">Live</span>
-        </div>
+      </div>
+
+      {/* Every figure below is invented for the preview. Say so on the card
+          itself — a footnote under it would not be read. */}
+      <div className="flex items-center gap-2 border-b border-amber-200 bg-amber-50 px-5 py-2.5">
+        <span
+          aria-hidden="true"
+          className="flex h-4 w-4 flex-none items-center justify-center rounded-full bg-amber-400/30 text-[9px] font-bold text-amber-700"
+        >
+          i
+        </span>
+        <p className="text-[11px] font-semibold text-amber-900">Sample data — illustrative dashboard</p>
       </div>
 
       {/* Dashboard body */}
@@ -186,7 +186,7 @@ function DashboardPreview() {
             <div>
               <p className="text-[9px] uppercase tracking-widest text-brand-purple font-semibold">Welcome back</p>
               <p className="text-[13px] font-semibold text-slate-950 mt-0.5">AI Noir Studio</p>
-              <p className="text-[10px] text-slate-400">12 films · Analytics updated live</p>
+              <p className="text-[10px] text-slate-400">12 films · Example figures</p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-semibold text-slate-700 flex-none">
               + Upload
@@ -287,14 +287,14 @@ export default function CreatorPortal({ onStart, onDashboard, onViewDemo, onSign
               </span>
 
               <h1 className="text-5xl font-semibold tracking-tight text-slate-950 leading-[1.06]">
-                Turn AI Movies<br />
+                Your AI film deserves<br />
                 <span className="bg-gradient-to-r from-brand-purple to-brand-cyan bg-clip-text text-transparent">
-                  Into Income.
+                  a real release.
                 </span>
               </h1>
 
               <p className="text-lg leading-8 text-slate-600 max-w-xl">
-                Upload AI-generated films, set your own price, grow an audience, and earn revenue from viewers around the world.
+                Publish AI-generated films to an audience that came looking for exactly that. Set your own price, keep your rights, and build a studio page that belongs to you.
               </p>
 
               <p className="text-sm leading-7 text-slate-500 max-w-xl">
@@ -304,9 +304,9 @@ export default function CreatorPortal({ onStart, onDashboard, onViewDemo, onSign
               {/* Stats */}
               <div className="flex flex-wrap gap-10 pt-2">
                 {[
-                  { value: 'Up to 40%', label: 'Revenue share per paid view' },
-                  { value: 'Free',      label: 'To join and publish' },
-                  { value: 'Monthly',   label: 'Payout schedule' },
+                  { value: 'Up to 40%',   label: 'Revenue share per paid view' },
+                  { value: 'Free',        label: 'To join and publish' },
+                  { value: 'You keep it', label: 'Full ownership of your work' },
                 ].map((s) => (
                   <div key={s.label}>
                     <p className="text-2xl font-semibold text-slate-950">{s.value}</p>
@@ -321,7 +321,7 @@ export default function CreatorPortal({ onStart, onDashboard, onViewDemo, onSign
               <p className="text-xs uppercase tracking-[0.28em] text-brand-purple">Get started</p>
               <h2 className="text-xl font-semibold text-slate-950">Launch your first AI film today</h2>
               <p className="text-sm leading-7 text-slate-600">
-                Complete a short onboarding to set up your profile, then upload your first film and start earning.
+                Complete a short onboarding to set up your profile, then upload your first film and set your price.
               </p>
               <div className="space-y-3 pt-1">
                 <button
@@ -336,6 +336,26 @@ export default function CreatorPortal({ onStart, onDashboard, onViewDemo, onSign
                 >
                   Already a creator? Sign in
                 </button>
+              </div>
+
+              {/* The disclosure belongs before the decision, not after it. Worded
+                  for someone who has not signed up yet — BetaNotice speaks about
+                  figures "shown here", and there are none on this page. */}
+              <div
+                role="note"
+                className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3"
+              >
+                <span
+                  aria-hidden="true"
+                  className="mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full bg-amber-400/30 text-[11px] font-bold text-amber-700"
+                >
+                  i
+                </span>
+                <p className="text-sm leading-6 text-amber-900">
+                  <strong className="font-semibold">Creator beta</strong> — uploads and studio pages are
+                  live. Billing is not connected yet, so no payouts have been made. We will email every
+                  creator before real payments begin.
+                </p>
               </div>
             </div>
           </div>
@@ -364,9 +384,9 @@ export default function CreatorPortal({ onStart, onDashboard, onViewDemo, onSign
 
               <div className="space-y-4">
                 <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white leading-[1.1]">
-                  Creators Are Earning.<br />
+                  Everything you publish,<br />
                   <span className="bg-gradient-to-r from-brand-purple to-brand-cyan bg-clip-text text-transparent">
-                    Track Everything.
+                    measured.
                   </span>
                 </h2>
                 <p className="text-base leading-7 text-slate-300 max-w-sm">
@@ -406,7 +426,7 @@ export default function CreatorPortal({ onStart, onDashboard, onViewDemo, onSign
               </div>
 
               <p className="text-xs text-slate-500 text-center">
-                Used by AI filmmakers to track performance and grow revenue.
+                The demo dashboard runs on sample data, so you can see the whole thing before you sign up.
               </p>
             </div>
 
@@ -418,40 +438,6 @@ export default function CreatorPortal({ onStart, onDashboard, onViewDemo, onSign
         </div>
       </section>
 
-      {/* ── 3. CREATOR SPOTLIGHT ─────────────────────────────────────────────── */}
-      <section>
-        <div className="mb-7">
-          <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Platform demo</p>
-          <h2 className="mt-1.5 text-2xl font-semibold text-slate-950">Creator Spotlight</h2>
-          <p className="mt-1 text-slate-500 text-sm">Example creator dashboard snapshots — illustrative demo data.</p>
-        </div>
-        <div className="grid gap-5 sm:grid-cols-3">
-          {SPOTLIGHTS.map((creator) => (
-            <div key={creator.name} className="rounded-[2rem] border border-slate-200/70 bg-white shadow-soft p-7 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 flex-none items-center justify-center rounded-xl bg-slate-950 text-white text-sm font-bold">
-                  {creator.initials}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-slate-950">{creator.name}</h3>
-                  <span className="inline-flex rounded-full bg-brand-purple/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-purple">
-                    {creator.badge}
-                  </span>
-                </div>
-              </div>
-              <div className="rounded-[1.5rem] bg-brand-purple/5 border border-brand-purple/15 px-5 py-4 text-center">
-                <p className="text-3xl font-semibold text-brand-purple">{creator.earned}</p>
-                <p className="text-xs text-slate-500 mt-1">example earnings (demo)</p>
-              </div>
-              <div className="flex justify-between text-sm text-slate-500">
-                <span><strong className="text-slate-950">{creator.films}</strong> films</span>
-                <span><strong className="text-slate-950">{creator.views}</strong> views</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* ── 3. PLATFORM TERMS BAR ────────────────────────────────────────────── */}
       <section className="rounded-[2rem] border border-slate-200/70 bg-white shadow-soft p-8 sm:p-10">
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 text-center sm:text-left">
@@ -459,7 +445,7 @@ export default function CreatorPortal({ onStart, onDashboard, onViewDemo, onSign
             { value: '30–40%',        label: 'Revenue share tiers',      accent: 'text-brand-purple' },
             { value: 'Free',          label: 'To join and publish',       accent: 'text-emerald-600' },
             { value: '$0.99–$4.99',   label: 'Suggested film pricing',    accent: 'text-brand-cyan'  },
-            { value: 'Monthly',       label: 'Payout schedule',           accent: 'text-amber-600'   },
+            { value: 'You keep it',   label: 'Full ownership of your work', accent: 'text-amber-600' },
           ].map((m) => (
             <div key={m.label} className="space-y-1.5">
               <p className={`text-3xl font-semibold ${m.accent}`}>{m.value}</p>
@@ -507,7 +493,7 @@ export default function CreatorPortal({ onStart, onDashboard, onViewDemo, onSign
         </div>
       </section>
 
-      {/* ── 7. FAQ ───────────────────────────────────────────────────────────── */}
+      {/* ── 6. FAQ ───────────────────────────────────────────────────────────── */}
       <section className="rounded-[2rem] border border-slate-200/70 bg-white shadow-soft p-8 sm:p-10">
         <div className="mb-8">
           <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Support</p>
@@ -533,7 +519,7 @@ export default function CreatorPortal({ onStart, onDashboard, onViewDemo, onSign
         </div>
       </section>
 
-      {/* ── 8. FINAL CTA ─────────────────────────────────────────────────────── */}
+      {/* ── 7. FINAL CTA ─────────────────────────────────────────────────────── */}
       <section className="overflow-hidden rounded-[2.5rem] border border-slate-200/70 bg-white shadow-soft">
         <div className="relative overflow-hidden bg-brand-fade/40 px-8 py-16 sm:px-12 sm:py-20 text-center">
           <div className="absolute inset-0 bg-brand-soft opacity-70" />
@@ -545,7 +531,7 @@ export default function CreatorPortal({ onStart, onDashboard, onViewDemo, onSign
               Ready to publish your first AI film?
             </h2>
             <p className="text-lg text-slate-600 leading-8">
-              Join creators building audiences and earning revenue from AI-generated entertainment.
+              Set up your studio page, upload your film, and give it a shelf built for AI cinema.
             </p>
             <div className="flex flex-col items-center gap-3 pt-2">
               <button
@@ -565,7 +551,7 @@ export default function CreatorPortal({ onStart, onDashboard, onViewDemo, onSign
         </div>
       </section>
 
-      {/* ── 9. STICKY CTA ────────────────────────────────────────────────────── */}
+      {/* ── 8. STICKY CTA ────────────────────────────────────────────────────── */}
       <div
         className={`fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-slate-950/95 backdrop-blur-xl px-4 py-4 transition-transform duration-300 ${
           showSticky ? 'translate-y-0' : 'translate-y-full'

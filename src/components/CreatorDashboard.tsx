@@ -358,7 +358,7 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
 
   const moneyMetrics = [
     { label: 'Your estimated earnings', value: formatCurrency(totalEarnings),  accent: 'purple' as const, hint: 'Your share after platform fee' },
-    { label: 'Pending payout',          value: formatCurrency(pendingPayout),  accent: 'green'  as const, hint: 'Available for withdrawal' },
+    { label: 'Pending payout',          value: formatCurrency(pendingPayout),  accent: 'green'  as const, hint: 'Your share once billing is live' },
     { label: 'Total gross revenue',     value: formatCurrency(totalRevenue),   accent: 'cyan'   as const },
     { label: 'Avg watch price',         value: formatCurrency(paidWatches ? totalRevenue / paidWatches : 0), accent: 'default' as const },
   ];
@@ -633,7 +633,7 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
             <div className="space-y-6">
               <div>
                 <h2 className="text-2xl font-semibold text-slate-950">Payout History</h2>
-                <p className="mt-1 text-sm text-slate-500">Your earnings and withdrawal history</p>
+                <p className="mt-1 text-sm text-slate-500">Simulated earnings and payout history — no money has moved</p>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-3">
@@ -645,19 +645,19 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
                 <div className="rounded-[1.75rem] border border-emerald-200 bg-emerald-50 p-6">
                   <p className="text-xs uppercase tracking-[0.28em] text-emerald-700">Pending payout</p>
                   <p className="mt-3 text-3xl font-semibold text-emerald-600">{formatCurrency(pendingPayout)}</p>
-                  <p className="text-xs text-slate-500 mt-1">Processing this month</p>
+                  <p className="text-xs text-slate-500 mt-1">Nothing is processing yet</p>
                 </div>
                 <div className="rounded-[1.75rem] border border-slate-200 bg-white p-6">
                   <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Paid out (lifetime)</p>
                   <p className="mt-3 text-3xl font-semibold text-slate-950">{formatCurrency(paidTotal)}</p>
-                  <p className="text-xs text-slate-500 mt-1">Successfully transferred</p>
+                  <p className="text-xs text-slate-500 mt-1">No money has been transferred</p>
                 </div>
               </div>
 
               {payouts.length === 0 ? (
                 <div className="rounded-[2rem] border border-slate-200/70 bg-white shadow-soft p-12 text-center">
                   <p className="text-slate-500 font-medium">No payout history yet.</p>
-                  <p className="text-slate-400 text-sm mt-1">Upload and monetize films to start earning.</p>
+                  <p className="text-slate-400 text-sm mt-1">Upload and price your films — revenue share accrues once billing is live.</p>
                 </div>
               ) : (
                 <div className="rounded-[2rem] border border-slate-200/70 bg-white shadow-soft overflow-hidden">
@@ -704,7 +704,7 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
               )}
 
               <p className="text-xs text-center text-slate-400">
-                Payouts are processed on the 1st of each month. Minimum payout threshold: $25.
+                When billing goes live, payouts will be processed monthly with a $25 minimum. No payouts have been made yet.
               </p>
             </div>
           )}
@@ -797,8 +797,8 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
                   </div>
                   <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
                     <p className="text-xs uppercase tracking-[0.22em] text-slate-400 mb-1">Payout schedule</p>
-                    <p className="text-2xl font-semibold text-slate-950">Monthly</p>
-                    <p className="text-xs text-slate-500 mt-1">Processed on the 1st of each month</p>
+                    <p className="text-2xl font-semibold text-slate-950">Not live yet</p>
+                    <p className="text-xs text-slate-500 mt-1">Monthly once billing is connected</p>
                   </div>
                 </div>
               </section>
@@ -809,7 +809,7 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
                 <div className="space-y-3">
                   {[
                     { label: 'New paid watch',       desc: 'When a viewer pays to watch one of your films',          on: true  },
-                    { label: 'Monthly payout ready', desc: 'When your monthly earnings are ready to transfer',       on: true  },
+                    { label: 'Payout ready',         desc: 'When your earnings are ready to transfer, once billing is live', on: true  },
                     { label: 'Film status change',   desc: 'When a submitted film is approved or rejected',          on: true  },
                     { label: 'Marketing tips',       desc: 'Platform tips for growing your audience',                on: false },
                   ].map((pref) => (

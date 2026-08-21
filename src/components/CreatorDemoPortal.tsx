@@ -190,7 +190,7 @@ export default function CreatorDemoPortal() {
 
   const moneyMetrics = [
     { label: 'Your estimated earnings', value: formatCurrency(totalEarnings),  accent: 'purple' as const, hint: 'Your share after platform fee' },
-    { label: 'Pending payout',          value: formatCurrency(pendingPayout),  accent: 'green'  as const, hint: 'Available for withdrawal' },
+    { label: 'Pending payout',          value: formatCurrency(pendingPayout),  accent: 'green'  as const, hint: 'Your share once billing is live' },
     { label: 'Total gross revenue',     value: formatCurrency(totalRevenue),   accent: 'cyan'   as const },
     { label: 'Avg watch price',         value: formatCurrency(paidWatches ? totalRevenue / paidWatches : 0), accent: 'default' as const },
   ];
@@ -378,9 +378,9 @@ export default function CreatorDemoPortal() {
                         </div>
                       )}
                       <div className="rounded-[1.75rem] border border-brand-purple/20 bg-brand-purple/5 p-5">
-                        <p className="text-xs uppercase tracking-[0.24em] text-brand-purple mb-2">Ready to earn?</p>
+                        <p className="text-xs uppercase tracking-[0.24em] text-brand-purple mb-2">Ready to publish?</p>
                         <p className="font-semibold text-slate-950">Start your account</p>
-                        <p className="text-sm text-slate-600 mt-2">Upload real films and start earning. Onboarding takes about 5 minutes.</p>
+                        <p className="text-sm text-slate-600 mt-2">Upload real films and set your own price. Onboarding takes about 5 minutes.</p>
                         <button
                           onClick={() => navigate('/creator/onboarding')}
                           className="mt-3 rounded-full bg-brand-purple px-4 py-2 text-xs font-semibold text-white hover:bg-brand-indigo transition"
@@ -419,7 +419,7 @@ export default function CreatorDemoPortal() {
                       'Click "+ Upload new film" and fill in title, genre, price, and description.',
                       'Your film enters "Pending Review" status — typically approved within a few business days.',
                       'Once approved, your film goes live and viewers can purchase it.',
-                      'Earnings accumulate in real time on your Dashboard.',
+                      'Your Dashboard tracks views and revenue share — simulated until billing is connected.',
                     ].map((step, i) => (
                       <li key={i} className="flex items-start gap-3 text-sm text-slate-700">
                         <span className="flex h-5 w-5 flex-none items-center justify-center rounded-full bg-brand-purple text-white text-[10px] font-bold mt-0.5">{i + 1}</span>
@@ -452,14 +452,14 @@ export default function CreatorDemoPortal() {
                     <p className="text-xs text-slate-500 mt-1">After platform fee</p>
                   </div>
                   <div className="rounded-[1.75rem] border border-emerald-200 bg-emerald-50 p-6">
-                    <p className="text-xs uppercase tracking-[0.28em] text-emerald-700">Pending payout</p>
+                    <p className="text-xs uppercase tracking-[0.28em] text-emerald-700">Pending payout (demo)</p>
                     <p className="mt-3 text-3xl font-semibold text-emerald-600">{formatCurrency(pendingPayout)}</p>
-                    <p className="text-xs text-slate-500 mt-1">Processing this month</p>
+                    <p className="text-xs text-slate-500 mt-1">Nothing is processing yet</p>
                   </div>
                   <div className="rounded-[1.75rem] border border-slate-200 bg-white p-6">
-                    <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Paid out (lifetime)</p>
+                    <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Paid out (demo)</p>
                     <p className="mt-3 text-3xl font-semibold text-slate-950">{formatCurrency(paidTotal)}</p>
-                    <p className="text-xs text-slate-500 mt-1">Successfully transferred</p>
+                    <p className="text-xs text-slate-500 mt-1">No money has been transferred</p>
                   </div>
                 </div>
 
@@ -500,7 +500,7 @@ export default function CreatorDemoPortal() {
                 </div>
 
                 <p className="text-xs text-center text-slate-400">
-                  Demo data only. Real payouts are processed on the 1st of each month. Minimum threshold: $25.
+                  Demo data only. When billing goes live, payouts will be processed monthly with a $25 minimum. No payouts have been made yet.
                 </p>
               </div>
             )}
@@ -569,8 +569,8 @@ export default function CreatorDemoPortal() {
                     </div>
                     <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
                       <p className="text-xs uppercase tracking-[0.22em] text-slate-400 mb-1">Payout schedule</p>
-                      <p className="text-2xl font-semibold text-slate-950">Monthly</p>
-                      <p className="text-xs text-slate-500 mt-1">Processed on the 1st of each month</p>
+                      <p className="text-2xl font-semibold text-slate-950">Not live yet</p>
+                      <p className="text-xs text-slate-500 mt-1">Monthly once billing is connected</p>
                     </div>
                   </div>
                 </section>

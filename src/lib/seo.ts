@@ -169,13 +169,13 @@ export const PAGE_SEO = {
   '/creators': {
     title: 'Become a Creator | YouMakeTV.ai',
     description:
-      'Publish AI-generated films and earn revenue from every paid view. 30–40% revenue share. Free to join. Monthly payouts.',
+      'Publish AI-generated films to an audience that came for them. Set your own price, keep your rights. 30–40% revenue share. Free to join.',
     canonical: '/creators',
     structuredData: {
       '@context': 'https://schema.org',
       '@type': 'WebPage',
       name: 'Become a Creator — YouMakeTV.ai',
-      description: 'Turn your AI films into income on YouMakeTV.ai.',
+      description: 'Publish your AI film on YouMakeTV.ai — set your own price and keep your rights.',
       url: `${BASE_URL}/creators`,
     },
   },

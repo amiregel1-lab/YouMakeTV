@@ -10,19 +10,19 @@ interface CreatorOnboardingProps {
 const STEPS = ['Create Account', 'Creator Agreement'];
 
 const BENEFITS = [
-  'Start earning 30% revenue share from day one',
-  'Grow to 35% at 1,000 views, 40% at 5,000 views',
-  'Real-time earnings dashboard',
+  '30% revenue share on paid views from your first film',
+  'Grows to 35% at 1,000 views, 40% at 5,000 views',
+  'A dashboard for your films, views and revenue share',
   'Upload, edit, and manage your films',
-  'Monthly payouts direct to your account',
+  'Set your own price — free or paid — and change it anytime',
   'Full IP ownership retained',
 ];
 
 const CREATOR_STATS = [
   { label: 'Starting revenue share', value: '30%' },
   { label: 'Pro tier revenue share', value: '40%' },
-  { label: 'Minimum payout', value: '$25' },
-  { label: 'Payout schedule', value: 'Monthly' },
+  { label: 'Ownership of your work', value: 'Yours' },
+  { label: 'To join and publish', value: 'Free' },
 ];
 
 const AGREEMENT_TEXT = `CREATOR AGREEMENT — YouMakeTV.ai
@@ -155,8 +155,8 @@ function RightPanel({ step }: { step: number }) {
           {[
             { num: '1', title: 'Dashboard access', desc: 'Instant access to your creator workspace.' },
             { num: '2', title: 'Upload your first film', desc: 'Use the dashboard upload tool to publish your first AI film.' },
-            { num: '3', title: 'Start earning', desc: 'Start earning 30% revenue share from day one — grows as your audience scales.' },
-            { num: '4', title: 'Get paid monthly', desc: 'Payouts are processed on the 1st of each month.' },
+            { num: '3', title: 'Set your price', desc: 'Free or paid, your call. Revenue share is 30%, growing as paid views accumulate.' },
+            { num: '4', title: 'Payouts, once billing is live', desc: 'Billing is not connected yet. We will email every creator before real payments begin.' },
           ].map((item) => (
             <li key={item.num} className="flex items-start gap-4">
               <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full border border-white/20 bg-white/10 text-xs font-bold text-white">
@@ -173,7 +173,7 @@ function RightPanel({ step }: { step: number }) {
       <div className="mt-8 space-y-3">
         <div className="h-px bg-white/10" />
         <p className="text-xs text-slate-500 leading-relaxed">
-          Creators retain full IP ownership. Revenue share is based on your original film price. Payouts require $25 minimum.
+          Creators retain full IP ownership. Revenue share is based on your original film price. Billing is not connected yet, so no payouts have been made.
         </p>
       </div>
     </div>
@@ -378,7 +378,7 @@ export default function CreatorOnboarding({ onComplete }: CreatorOnboardingProps
                     Creator Portal
                   </span>
                   <h1 className="text-2xl font-bold tracking-tight text-slate-950">Create Your Creator Account</h1>
-                  <p className="mt-2 text-sm text-slate-500">Start publishing AI-generated films and earning revenue from viewers worldwide.</p>
+                  <p className="mt-2 text-sm text-slate-500">Start publishing AI-generated films to viewers who came looking for exactly that.</p>
                 </div>
 
                 {/* Google — primary CTA */}

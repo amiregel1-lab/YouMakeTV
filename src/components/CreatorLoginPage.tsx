@@ -7,19 +7,19 @@ interface CreatorLoginPageProps {
 }
 
 const BENEFITS = [
-  'Start earning 30% revenue share from day one',
-  'Grow to 35% at 1,000 views, 40% at 5,000 views',
-  'Real-time earnings dashboard',
+  '30% revenue share on paid views from your first film',
+  'Grows to 35% at 1,000 views, 40% at 5,000 views',
+  'A dashboard for your films, views and revenue share',
   'Upload, edit, and manage your films',
-  'Monthly payouts direct to your account',
+  'Set your own price — free or paid — and change it anytime',
   'Creator community & dedicated support',
 ];
 
 const STATS = [
   { label: 'Starting revenue share', value: '30%' },
   { label: 'Pro tier revenue share', value: '40%' },
-  { label: 'Minimum payout', value: '$25' },
-  { label: 'Payout schedule', value: 'Monthly' },
+  { label: 'Ownership of your work', value: 'Yours' },
+  { label: 'To join and publish', value: 'Free' },
 ];
 
 export default function CreatorLoginPage({ onSignIn, onStart, onViewDemo }: CreatorLoginPageProps) {
@@ -49,7 +49,7 @@ export default function CreatorLoginPage({ onSignIn, onStart, onViewDemo }: Crea
               Creator Portal
             </span>
             <h1 className="text-2xl font-bold tracking-tight text-slate-950">Sign in to your creator account</h1>
-            <p className="mt-2 text-sm text-slate-500">Manage your films, track earnings, and grow your audience.</p>
+            <p className="mt-2 text-sm text-slate-500">Manage your films, track performance, and grow your audience.</p>
           </div>
 
           {/* Form */}
@@ -148,6 +148,26 @@ export default function CreatorLoginPage({ onSignIn, onStart, onViewDemo }: Crea
             >
               Start Creator Onboarding →
             </button>
+          </div>
+
+          {/* Sparse page, so the compact form of the notice: same facts, one
+              sentence fewer. BetaNotice speaks about figures "shown here" and
+              there are none on this page. */}
+          <div
+            role="note"
+            className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3"
+          >
+            <span
+              aria-hidden="true"
+              className="mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full bg-amber-400/30 text-[11px] font-bold text-amber-700"
+            >
+              i
+            </span>
+            <p className="text-sm leading-6 text-amber-900">
+              <strong className="font-semibold">Creator beta</strong> — uploads and studio pages are
+              live. Billing is not connected yet, so no payouts have been made. We will email every
+              creator before real payments begin.
+            </p>
           </div>
         </div>
 

@@ -16,7 +16,7 @@ const FAQS = [
   },
   {
     q: 'How do payouts work?',
-    a: 'Starter creators earn 30% of paid-view revenue, growing automatically to 35% after 1,000 paid views (Growth) and 40% after 5,000 (Pro). Payouts are processed monthly with a $25 minimum threshold.',
+    a: 'Revenue share starts at 30% of paid-view revenue, rising automatically to 35% after 1,000 paid views (Growth) and 40% after 5,000 (Pro). Billing is not connected yet — no viewer has been charged and no payout has been sent, so any figures in the creator portal are simulated. We will email every creator before real payments begin, and publish the payout schedule then.',
   },
   {
     q: 'Can I publish free films?',
@@ -254,11 +254,11 @@ export default function CreatorsPage() {
               For AI Filmmakers
             </span>
             <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-white leading-[1.08]">
-              Turn AI Films<br />Into Income
+              Made With AI.<br />Released For Real.
             </h1>
             <p className="mt-5 text-lg text-slate-300 leading-relaxed max-w-md">
-              Publish AI-generated films. Build your audience.<br className="hidden sm:block" />
-              Earn revenue from every paid view.
+              Publish AI-generated films to an audience that came for them.<br className="hidden sm:block" />
+              Set your own price, keep your rights, own your studio page.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <button
@@ -275,7 +275,7 @@ export default function CreatorsPage() {
               </button>
             </div>
             <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2">
-              {['Free to join', 'Keep your IP', 'Monthly payouts'].map((item) => (
+              {['Free to join', 'Keep your IP', 'Set your own price'].map((item) => (
                 <span key={item} className="flex items-center gap-1.5 text-sm text-slate-400">
                   <svg className="h-4 w-4 text-emerald-400 flex-none" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -283,6 +283,26 @@ export default function CreatorsPage() {
                   {item}
                 </span>
               ))}
+            </div>
+
+            {/* The disclosure belongs before the decision, not after it. Same
+                wording as the creator landing page, recoloured for a dark
+                ground — amber-on-white is unreadable here. */}
+            <div
+              role="note"
+              className="mt-8 flex items-start gap-3 rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 max-w-md"
+            >
+              <span
+                aria-hidden="true"
+                className="mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full bg-amber-400/25 text-[11px] font-bold text-amber-300"
+              >
+                i
+              </span>
+              <p className="text-sm leading-6 text-amber-200">
+                <strong className="font-semibold">Creator beta</strong> — uploads and studio pages are
+                live. Billing is not connected yet, so no payouts have been made. We will email every
+                creator before real payments begin.
+              </p>
             </div>
           </div>
 
@@ -305,7 +325,7 @@ export default function CreatorsPage() {
               </svg>
             ),
             title: 'Earn Revenue',
-            desc: 'Monetize approved films through paid views. Start at 30% and grow automatically to 40% as your audience builds.',
+            desc: 'Put a price on approved films and take a share of every paid view. Revenue share starts at 30% and rises automatically to 40% as paid views accumulate.',
             iconClass: 'bg-violet-50 text-brand-purple border-violet-100',
           },
           {
@@ -353,7 +373,7 @@ export default function CreatorsPage() {
             </span>
             <h2 className="text-2xl sm:text-3xl font-semibold text-white">See Your Studio Dashboard</h2>
             <p className="mt-3 text-slate-400 leading-relaxed">
-              Manage films, track earnings, and watch your studio grow — all from one dashboard.
+              Manage films, track views, and watch your studio grow — all from one dashboard.
             </p>
           </div>
 
@@ -363,7 +383,7 @@ export default function CreatorsPage() {
               {[
                 { title: 'Film Management', desc: 'Upload, edit metadata, set pricing, track approval status.' },
                 { title: 'Revenue Analytics', desc: 'Views, conversions, and revenue — by film and time period.' },
-                { title: 'Payout Dashboard', desc: 'Track earnings history, pending balance, and next payout date.' },
+                { title: 'Payout Dashboard', desc: 'Your revenue-share balance in one place, ready for when billing goes live.' },
                 { title: 'Performance Tracking', desc: 'Audience trends, trailer engagement, and conversion rates.' },
                 { title: 'Studio Profile', desc: 'Public studio page with your films, brand identity, and badges.' },
               ].map(({ title, desc }, i) => (
@@ -416,7 +436,7 @@ export default function CreatorsPage() {
               Default for all new creators
             </div>
             <div className="mt-auto rounded-xl bg-slate-800 px-4 py-4 space-y-1.5">
-              <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Example payout</p>
+              <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Example calculation</p>
               <p className="text-sm text-slate-300">Film sold 100× at $2.99</p>
               <p className="text-lg font-bold text-white">
                 You earn <span className="text-brand-purple">$89</span>
@@ -437,7 +457,7 @@ export default function CreatorsPage() {
               <p className="text-xs text-slate-500 mt-0.5">Cumulative across all your films</p>
             </div>
             <div className="mt-auto rounded-xl bg-sky-950/40 border border-sky-800/30 px-4 py-4 space-y-1.5">
-              <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Example payout</p>
+              <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Example calculation</p>
               <p className="text-sm text-slate-300">Film sold 1,000× at $2.99</p>
               <p className="text-lg font-bold text-white">
                 You earn <span className="text-sky-400">$1,047</span>
@@ -463,7 +483,7 @@ export default function CreatorsPage() {
               <p className="text-xs text-slate-500 mt-0.5">Cumulative across all your films</p>
             </div>
             <div className="mt-auto rounded-xl bg-violet-950/40 border border-violet-800/30 px-4 py-4 space-y-1.5">
-              <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Example payout</p>
+              <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Example calculation</p>
               <p className="text-sm text-slate-300">Film sold 10,000× at $2.99</p>
               <p className="text-lg font-bold text-white">
                 You earn <span className="text-violet-400">$11,960</span>
@@ -473,15 +493,17 @@ export default function CreatorsPage() {
         </div>
 
         <p className="text-center text-xs text-slate-600 mt-6">
-          Examples based on $2.99 film price. Revenue share is calculated on Net Revenue after payment processing fees.
+          Examples based on a $2.99 film price. Revenue share is calculated on Net Revenue after payment
+          processing fees. These illustrate the revenue-share terms, not results — billing is not connected
+          yet and no payout has been sent.
         </p>
       </section>
 
       {/* ── 5. HOW IT WORKS ──────────────────────────────────────────────────── */}
       <section className="rounded-[2.5rem] border border-slate-100 bg-white shadow-soft p-8 sm:p-12">
         <div className="text-center max-w-lg mx-auto mb-12">
-          <h2 className="text-2xl sm:text-3xl font-semibold text-slate-950">From Upload to Payout</h2>
-          <p className="mt-3 text-slate-500">Six steps from first upload to first earning.</p>
+          <h2 className="text-2xl sm:text-3xl font-semibold text-slate-950">From Upload to Release</h2>
+          <p className="mt-3 text-slate-500">Six steps from first upload to a published film.</p>
         </div>
 
         <div className="relative">
@@ -495,7 +517,7 @@ export default function CreatorsPage() {
               { num: '3', title: 'Submit for Review',  desc: 'Complete package sent to our team.' },
               { num: '4', title: 'Get Approved',       desc: 'Reviewed within 3–7 business days.' },
               { num: '5', title: 'Set Pricing',        desc: 'Suggest your price — we review and confirm.' },
-              { num: '6', title: 'Go Live & Earn',     desc: 'Published immediately. Revenue starts.' },
+              { num: '6', title: 'Go Live',            desc: 'Published immediately, at your price.' },
             ].map(({ num, title, desc }) => (
               <div key={num} className="flex flex-col items-center text-center">
                 <div className="relative flex h-14 w-14 flex-none items-center justify-center rounded-full bg-slate-950 text-white font-bold text-lg shadow-md z-10">
@@ -574,7 +596,7 @@ export default function CreatorsPage() {
           </h2>
           <p className="mt-4 text-slate-300 leading-relaxed max-w-md mx-auto">
             Create your account, upload your film package, and submit for review.
-            Start earning from the moment you go live.
+            Once it clears, your film goes live on a shelf built for AI cinema.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
             <button

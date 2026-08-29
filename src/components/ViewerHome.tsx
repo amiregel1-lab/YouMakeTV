@@ -491,16 +491,6 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onWatchTrail
               >
                 ▶ Trailer
               </button>
-              <a
-                href="https://www.google.com/preferences/source?q=www.youmaketv.ai"
-                className="flex min-h-11 items-center rounded-full border border-white/30 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
-                rel="noopener noreferrer"
-                onClick={() => logEvent('preferred_source_click', { title: 'homepage_hero' })}
-                data-event="preferred_source_click"
-                data-placement="homepage_hero"
-              >
-                Follow in Google
-              </a>
               <div className="flex gap-2">
                 <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-white backdrop-blur">{featured.genre}</span>
                 <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-white backdrop-blur">{featured.duration}</span>

@@ -2,7 +2,7 @@
 // logEvent() is fire-and-forget and NEVER throws — tracking must not break the UI.
 // getTodayEventCounts() powers the admin "Today" dashboard's real engagement counts.
 
-export type EventType = 'trailer_play' | 'purchase' | 'signup' | 'subscription' | 'movie_view';
+export type EventType = 'trailer_play' | 'purchase' | 'signup' | 'subscription' | 'movie_view' | 'preferred_source_click';
 
 import { loadAdminSession } from './storage';
 

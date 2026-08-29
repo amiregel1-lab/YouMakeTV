@@ -31,7 +31,7 @@ import {
   verifySessionToken,
 } from './_lib/session.js';
 
-const ALLOWED_TYPES = new Set(['trailer_play', 'purchase', 'signup', 'subscription', 'movie_view']);
+const ALLOWED_TYPES = new Set(['trailer_play', 'purchase', 'signup', 'subscription', 'movie_view', 'preferred_source_click']);
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;

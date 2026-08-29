@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { logEvent } from '../lib/eventService';
 
 export default function Footer() {
   const navigate = useNavigate();
@@ -70,6 +71,23 @@ export default function Footer() {
             </ul>
           </div>
         </div>
+
+        <aside className="mt-10 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-5 sm:flex sm:items-center sm:justify-between sm:gap-6" aria-label="Add YouMakeTV as a preferred Google source">
+          <div>
+            <p className="text-sm font-bold text-slate-950">Follow YouMakeTV in Google</p>
+            <p className="mt-1 text-sm text-slate-500">See more AI filmmaking, creator and platform updates from YouMakeTV.</p>
+          </div>
+          <a
+            href="https://www.google.com/preferences/source?q=www.youmaketv.ai"
+            className="mt-4 inline-flex min-h-11 flex-none items-center justify-center rounded-xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 sm:mt-0"
+            rel="noopener noreferrer"
+            onClick={() => logEvent('preferred_source_click', { title: 'site_footer' })}
+            data-event="preferred_source_click"
+            data-placement="site_footer"
+          >
+            Add as a preferred source
+          </a>
+        </aside>
 
         {/* Bottom row */}
         <div className="mt-12 pt-8 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

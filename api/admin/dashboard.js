@@ -26,7 +26,7 @@ import {
   setServiceHeaders,
 } from '../_lib/service.js';
 
-const EVENT_TYPES = ['trailer_play', 'purchase', 'signup', 'subscription', 'movie_view'];
+const EVENT_TYPES = ['trailer_play', 'purchase', 'signup', 'subscription', 'movie_view', 'preferred_source_click'];
 const FEED_LIMIT = 40;
 
 function isoOrNull(value) {

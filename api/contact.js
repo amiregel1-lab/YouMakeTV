@@ -17,7 +17,10 @@ const FROM_EMAIL = 'YouMakeTV <noreply@youmaketv.ai>';
 
 // Growth OS CRM lead webhook. The URL carries a secret token, so it lives in the
 // env only — there is deliberately no fallback value in this source file.
-const CRM_TIMEOUT_MS = 5000;
+// 15 s, not 5: the Growth OS hook cold-starts on Vercel and then files the lead,
+// assigns an owner and sends a push before answering. A 5 s leash aborted a
+// delivery that had already succeeded and showed the visitor a 502 (2026-09-03).
+const CRM_TIMEOUT_MS = 15000;
 
 const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid'];
 

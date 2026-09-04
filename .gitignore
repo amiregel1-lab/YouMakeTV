@@ -23,3 +23,6 @@ npm-debug.log*
 *.ai.zip
 .vercel
 .env*
+
+# Claude Code machine-local settings (permissions differ per machine)
+.claude/settings.local.json

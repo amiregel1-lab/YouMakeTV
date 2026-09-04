@@ -28,6 +28,8 @@ function rowToMovie(row: Record<string, any>): Movie {
     trailerViews: (row.trailer_views as number) ?? 0,
     featured: (row.featured as boolean) ?? false,
     subscriberDiscountEligible: (row.subscriber_discount_eligible as boolean) ?? false,
+    status: (row.status as string) ?? 'Approved',
+    visible: (row.visible as boolean) ?? true,
     trailerUrl: (row.trailer_url as string) || undefined,
     backdropUrl: (row.backdrop_url as string) || undefined,
     posterPrompt: (row.poster_prompt as string) || undefined,

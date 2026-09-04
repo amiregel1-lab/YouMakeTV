@@ -1823,11 +1823,11 @@ function buildAdminFilmsFromMovies(mergedMovies: Movie[]): AdminFilm[] {
       creatorId:       meta?.creatorId ?? `creator-${m.creator.toLowerCase().replace(/\s+/g, '-')}`,
       creatorName:     meta?.creatorName ?? m.creator,
       studioName:      meta?.studioName ?? m.creator,
-      status:          meta?.status ?? 'Approved',
+      status:          (m.status ?? meta?.status ?? 'Approved') as AdminFilm['status'],
       featured:        m.featured ?? meta?.featured ?? false,
       trending:        meta?.trending ?? false,
       newRelease:      meta?.newRelease ?? false,
-      visible:         meta?.visible ?? true,
+      visible:         m.visible ?? meta?.visible ?? true,
       views:           m.views ?? meta?.views ?? 0,
       purchases:       meta?.purchases ?? 0,
       revenue:         meta?.revenue ?? 0,
@@ -1843,7 +1843,7 @@ function buildAdminFilmsFromMovies(mergedMovies: Movie[]): AdminFilm[] {
 
 export default function SuperAdminDashboard() {
   const navigate = useNavigate();
-  const { movies: liveMovies, refreshMovies } = useMovies();
+  const { allMovies: liveMovies, refreshMovies } = useMovies();
 
   // Auth guard — the stored token is only trusted after the server revalidates
   // its signature and expiry. Missing, expired, forged or edited → back to login.

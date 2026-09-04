@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -11,12 +12,14 @@ import { getMovies } from './movieService';
 
 interface MovieContextValue {
   movies: Movie[];
+  allMovies: Movie[];
   loading: boolean;
   refreshMovies: () => Promise<void>;
 }
 
 const MovieContext = createContext<MovieContextValue>({
   movies: [],
+  allMovies: [],
   loading: true,
   refreshMovies: async () => {},
 });
@@ -27,14 +30,18 @@ export function MovieProvider({ children }: { children: React.ReactNode }) {
   // swapping in Supabase data is exactly the "stale image flash" bug.
   // getMovies() itself falls back to local data if Supabase is unreachable,
   // so state still resolves exactly once on error.
-  const [movies, setMovies] = useState<Movie[]>([]);
+  const [allMovies, setAllMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
   const mounted = useRef(true);
+  const movies = useMemo(
+    () => allMovies.filter((movie) => movie.visible !== false && (movie.status ?? 'Approved') === 'Approved'),
+    [allMovies],
+  );
 
   const refreshMovies = useCallback(async () => {
     try {
       const data = await getMovies();
-      if (mounted.current) setMovies(data);
+      if (mounted.current) setAllMovies(data);
     } catch {
       // keep whatever is already in state
     }
@@ -52,7 +59,7 @@ export function MovieProvider({ children }: { children: React.ReactNode }) {
   }, [refreshMovies]);
 
   return (
-    <MovieContext.Provider value={{ movies, loading, refreshMovies }}>
+    <MovieContext.Provider value={{ movies, allMovies, loading, refreshMovies }}>
       {children}
     </MovieContext.Provider>
   );

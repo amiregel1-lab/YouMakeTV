@@ -180,6 +180,8 @@ export default function FilmUploadForm({ creatorName, onSubmit, onCancel }: Film
               rating: form.rating,
               language: form.language,
               tools: form.tools.split(',').map((tool) => tool.trim()).filter(Boolean),
+              trailerUrl: form.trailer.trim() || undefined,
+              filmUrl: form.filmFile.trim() || undefined,
             })}
             disabled={!canSubmit}
             className="rounded-full bg-cyan-500 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"

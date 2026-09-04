@@ -846,8 +846,8 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
                     <h3 className="text-xl font-semibold text-slate-950">{creator.studioName}</h3>
                     <div className="flex flex-wrap items-center gap-2 mt-2">
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 flex-none" />
-                        Verified Creator
+                        <span className={`h-1.5 w-1.5 rounded-full flex-none ${creator.verified ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                        {creator.verified ? 'Verified creator' : 'Verification coming soon'}
                       </span>
                       <span className="inline-flex rounded-full bg-brand-purple/10 px-3 py-1 text-xs font-semibold text-brand-purple">
                         {creator.films.length} Film{creator.films.length !== 1 ? 's' : ''}
@@ -862,7 +862,7 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
                     { label: 'Studio name',   value: creator.studioName },
                     { label: 'Email',         value: creator.email },
                     { label: 'Member since',  value: creator.createdAt },
-                    { label: 'Verification',  value: 'KYC Complete' },
+                    { label: 'Verification',  value: creator.kycCompleted ? 'KYC Complete' : 'Verification coming soon' },
                     { label: 'Status',        value: 'Active' },
                   ].map((f) => (
                     <div key={f.label}>
@@ -965,6 +965,8 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
                   rating: payload.rating,
                   language: payload.language,
                   tools: payload.tools,
+                  trailerUrl: payload.trailerUrl,
+                  filmUrl: payload.filmUrl,
                   uploadDate: dateLabel,
                   updatedDate: dateLabel,
                 });

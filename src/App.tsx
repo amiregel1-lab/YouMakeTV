@@ -143,8 +143,8 @@ export default function App() {
   const openTrailerModal = (title?: string) => {
     if (title) {
       const mergedMovie = movies.find((m) => m.title === title);
-      logEvent('trailer_play', { movieId: mergedMovie?.id, title });
       if (mergedMovie?.trailerUrl) {
+        logEvent('trailer_play', { movieId: mergedMovie.id, title });
         setTrailerModal({ title, url: mergedMovie.trailerUrl });
         return;
       }

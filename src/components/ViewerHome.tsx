@@ -26,6 +26,13 @@ const PRICE_TIERS = [
   { label: 'Under $8', maxPrice: 7.99 },
 ];
 
+function matchesDiscoveryGenre(movie: Movie, genre: typeof DISCOVERY_GENRES[number]) {
+  const target = genre === 'Animation' ? ['anime', 'animation'] : [genre.toLowerCase()];
+  return (movie.genres ?? [movie.genre]).some((g) =>
+    target.some((t) => g.toLowerCase().includes(t))
+  );
+}
+
 // ── Arrow button used in all scroll rows ───────────────────────────────────
 
 function ArrowBtn({ dir, onClick }: { dir: 'left' | 'right'; onClick: () => void }) {
@@ -375,6 +382,17 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onWatchTrail
     return result;
   }, [movies, searchQuery, selectedGenre, priceTier, sortBy]);
 
+  const leftoverGenreRows = useMemo(() => {
+    const leftovers = filteredMovies.filter((movie) =>
+      !DISCOVERY_GENRES.some((genre) => matchesDiscoveryGenre(movie, genre))
+    );
+    const genres = [...new Set(leftovers.map((movie) => movie.genre))].sort((a, b) => a.localeCompare(b));
+    return genres.map((genre) => ({
+      genre,
+      movies: leftovers.filter((movie) => movie.genre === genre),
+    }));
+  }, [filteredMovies]);
+
   const activeFilterCount =
     (searchQuery ? 1 : 0) +
     (selectedGenre !== 'All' ? 1 : 0) +
@@ -642,14 +660,7 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onWatchTrail
         ) : (
           <div className="space-y-10">
             {DISCOVERY_GENRES.map((genre) => {
-              const target = genre === 'Animation'
-                ? ['anime', 'animation']
-                : [genre.toLowerCase()];
-              const genreMovies = filteredMovies.filter((m) =>
-                (m.genres ?? [m.genre]).some((g) =>
-                  target.some((t) => g.toLowerCase().includes(t))
-                )
-              );
+              const genreMovies = filteredMovies.filter((movie) => matchesDiscoveryGenre(movie, genre));
               return (
                 <GenreDiscoveryRow
                   key={genre}
@@ -660,6 +671,15 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onWatchTrail
                 />
               );
             })}
+            {leftoverGenreRows.map(({ genre, movies: genreMovies }) => (
+              <GenreDiscoveryRow
+                key={genre}
+                genre={genre}
+                movies={genreMovies}
+                onSelectMovie={onSelectMovie}
+                onWatchTrailer={onWatchTrailer}
+              />
+            ))}
           </div>
         )}
       </section>

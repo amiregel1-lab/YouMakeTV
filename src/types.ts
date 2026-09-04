@@ -27,6 +27,9 @@ export interface Movie {
   trailerViews?: number;
   featured?: boolean;
   subscriberDiscountEligible?: boolean;
+  // Catalog moderation state; missing values remain approved and visible.
+  status?: string;
+  visible?: boolean;
   trailerUrl?: string;
   backdropUrl?: string;
   posterPrompt?: string;
@@ -57,6 +60,8 @@ export interface CreatorFilm {
   rating: string;
   language: string;
   tools: string[];
+  trailerUrl?: string;
+  filmUrl?: string;
   uploadDate: string;
   updatedDate: string;
 }

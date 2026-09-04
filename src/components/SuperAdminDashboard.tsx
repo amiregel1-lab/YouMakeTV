@@ -19,7 +19,7 @@ import {
 } from '../lib/movieStore';
 import { compressPosterImage, compressBackdropImage } from '../lib/imageUtils';
 import { movies as sourceMovies } from '../data/movies';
-import { getMovies, upsertMovie } from '../lib/movieService';
+import { getMovies, patchMovie, upsertMovie } from '../lib/movieService';
 import { uploadCover, uploadBackdrop, uploadTrailer } from '../lib/storageService';
 import { useMovies } from '../lib/MovieContext';
 import { getTodayEventCounts, type TodayEventCounts } from '../lib/eventService';
@@ -1274,7 +1274,7 @@ const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 function FilmEditModal({ film, onSave, onReset, onClose }: {
   film: AdminFilm;
-  onSave: (f: AdminFilm, originalTitle: string) => void;
+  onSave: (f: AdminFilm, originalTitle: string) => Promise<void>;
   onReset: (f: AdminFilm) => void;
   onClose: () => void;
 }) {
@@ -1345,6 +1345,7 @@ function FilmEditModal({ film, onSave, onReset, onClose }: {
         // so localStorage writes always succeed (5 MB limit).
         const compressed = await compressPosterImage(raw);
         setCoverPreview(compressed);
+        setStaticPath('');
         set('thumbnail', compressed);
       } catch {
         setCoverError('Image processing failed. Please try a different file.');
@@ -1442,8 +1443,14 @@ function FilmEditModal({ film, onSave, onReset, onClose }: {
       }
     }
 
-    setSaving(false);
-    onSave(finalDraft, originalTitle);
+    try {
+      await onSave(finalDraft, originalTitle);
+      setSaving(false);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : String(err));
+      setSaving(false);
+      return;
+    }
   };
 
   return (
@@ -1959,26 +1966,72 @@ export default function SuperAdminDashboard() {
   };
 
   // Film handlers
-  const approveFilm = (id: string) => {
+  const resolveMovieId = (film: AdminFilm, originalTitle?: string): number | null => {
+    const idMatch = /^movie-(\d+)$/.exec(film.id);
+    if (idMatch) return Number(idMatch[1]);
+
+    const lookupTitle = (originalTitle ?? film.title).toLowerCase();
+    const liveMovie = liveMovies.find(m => m.title.toLowerCase() === lookupTitle)
+      ?? liveMovies.find(m => m.title.toLowerCase() === film.title.toLowerCase());
+    return liveMovie?.id ?? null;
+  };
+
+  const approveFilm = async (id: string) => {
     const f = films.find(x => x.id === id);
+    try {
+      const movieId = f ? resolveMovieId(f) : null;
+      if (movieId === null) throw new Error(`No live movie found for admin id "${id}".`);
+      await patchMovie(movieId, { status: 'Approved', visible: true });
+    } catch (err) {
+      addAudit('Failed to approve film', f?.title ?? id, 'movie', `Film approval did not persist: ${err instanceof Error ? err.message : String(err)}`);
+      return;
+    }
     setFilms(p => p.map(x => x.id === id ? { ...x, status: 'Approved', visible: true } : x));
     addAudit('Approved film', f?.title ?? '', 'movie', 'Film approved for distribution.');
+    await refreshMovies();
   };
-  const rejectFilm = (id: string) => {
+  const rejectFilm = async (id: string) => {
     const f = films.find(x => x.id === id);
+    try {
+      const movieId = f ? resolveMovieId(f) : null;
+      if (movieId === null) throw new Error(`No live movie found for admin id "${id}".`);
+      await patchMovie(movieId, { status: 'Rejected', visible: false });
+    } catch (err) {
+      addAudit('Failed to reject film', f?.title ?? id, 'movie', `Film rejection did not persist: ${err instanceof Error ? err.message : String(err)}`);
+      return;
+    }
     setFilms(p => p.map(x => x.id === id ? { ...x, status: 'Rejected', visible: false } : x));
     addAudit('Rejected film', f?.title ?? '', 'movie', 'Film rejected during review.');
+    await refreshMovies();
   };
-  const suspendFilm = (id: string) => {
+  const suspendFilm = async (id: string) => {
     const f = films.find(x => x.id === id);
+    try {
+      const movieId = f ? resolveMovieId(f) : null;
+      if (movieId === null) throw new Error(`No live movie found for admin id "${id}".`);
+      await patchMovie(movieId, { status: 'Suspended', visible: false });
+    } catch (err) {
+      addAudit('Failed to suspend film', f?.title ?? id, 'movie', `Film suspension did not persist: ${err instanceof Error ? err.message : String(err)}`);
+      return;
+    }
     setFilms(p => p.map(x => x.id === id ? { ...x, status: 'Suspended', visible: false } : x));
     addAudit('Suspended film', f?.title ?? '', 'movie', 'Film suspended.');
+    await refreshMovies();
   };
-  const featureFilm = (id: string) => {
+  const featureFilm = async (id: string) => {
     const f = films.find(x => x.id === id);
     const nf = !f?.featured;
+    try {
+      const movieId = f ? resolveMovieId(f) : null;
+      if (movieId === null) throw new Error(`No live movie found for admin id "${id}".`);
+      await patchMovie(movieId, { featured: nf });
+    } catch (err) {
+      addAudit('Failed to change featured film', f?.title ?? id, 'movie', `Featured status did not persist: ${err instanceof Error ? err.message : String(err)}`);
+      return;
+    }
     setFilms(p => p.map(x => x.id === id ? { ...x, featured: nf } : x));
     addAudit(nf ? 'Featured film' : 'Unfeatured film', f?.title ?? '', 'movie', `Featured status changed to ${nf}.`);
+    await refreshMovies();
   };
   const deleteFilm = (id: string) => {
     const f = films.find(x => x.id === id);
@@ -1986,45 +2039,41 @@ export default function SuperAdminDashboard() {
     addAudit('Deleted film', f?.title ?? '', 'movie', 'Film permanently deleted.');
   };
   const saveFilmEdit = async (updated: AdminFilm, originalTitle?: string) => {
-    // Find the numeric movie id from the source catalog by original title
-    const lookupTitle = (originalTitle ?? updated.title).toLowerCase();
-    const srcMovie = sourceMovies.find(m => m.title.toLowerCase() === lookupTitle)
-      ?? sourceMovies.find(m => m.title.toLowerCase() === updated.title.toLowerCase());
-
-    const movieId = srcMovie?.id
-      ?? (updated.id.startsWith('movie-') ? parseInt(updated.id.replace('movie-', ''), 10) : -1);
-
-    if (movieId >= 0) {
-      const movieUpdate: Movie = {
-        id: movieId,
-        title: updated.title,
-        subtitle: updated.subtitle ?? '',
-        description: updated.description ?? '',
-        genre: updated.genre,
-        genres: [updated.genre],
-        duration: updated.duration,
-        creator: updated.studioName,
-        price: updated.price,
-        thumbnail: updated.thumbnail,
-        badge: srcMovie?.badge ?? '',
-        tools: srcMovie?.tools ?? [],
-        rating: updated.rating,
-        language: srcMovie?.language ?? 'English',
-        tags: updated.tags ? updated.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
-        releaseYear: updated.releaseYear,
-        views: updated.views,
-        trailerViews: srcMovie?.trailerViews ?? 0,
-        featured: updated.featured,
-        subscriberDiscountEligible: srcMovie?.subscriberDiscountEligible ?? false,
-        trailerUrl: updated.trailerUrl,
-        backdropUrl: updated.backdropUrl,
-        posterPrompt: srcMovie?.posterPrompt,
-      };
-
-      upsertMovie(movieUpdate, updated.status)
-        .then(() => refreshMovies())
-        .catch(err => console.error('[admin] Supabase save error:', err));
+    const movieId = resolveMovieId(updated, originalTitle);
+    const liveMovie = movieId === null ? undefined : liveMovies.find(m => m.id === movieId);
+    if (!liveMovie) {
+      throw new Error(`No live movie found for admin id "${updated.id}".`);
     }
+
+    const genres = Array.isArray(liveMovie.genres) && liveMovie.genres.some(genre => typeof genre === 'string' && genre.trim())
+      ? [...liveMovie.genres]
+      : [updated.genre];
+    if (updated.genre !== liveMovie.genre) {
+      const primaryGenreIndex = genres.indexOf(liveMovie.genre);
+      if (primaryGenreIndex >= 0) genres[primaryGenreIndex] = updated.genre;
+    }
+
+    const movieUpdate: Movie = {
+      ...liveMovie,
+      title: updated.title,
+      subtitle: updated.subtitle ?? '',
+      description: updated.description ?? '',
+      genre: updated.genre,
+      genres,
+      duration: updated.duration,
+      creator: updated.studioName,
+      price: updated.price,
+      thumbnail: updated.thumbnail,
+      rating: updated.rating,
+      tags: updated.tags ? updated.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+      releaseYear: updated.releaseYear,
+      featured: updated.featured,
+      trailerUrl: updated.trailerUrl,
+      backdropUrl: updated.backdropUrl,
+    };
+
+    await upsertMovie(movieUpdate, updated.status);
+    await refreshMovies();
 
     // Keep localStorage overlay in sync for backward compat
     applyAdminFilmToMovieStore(updated, originalTitle);

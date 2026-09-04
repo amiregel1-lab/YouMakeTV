@@ -193,6 +193,27 @@ export async function upsertMovie(movie: Movie, status = 'Approved'): Promise<vo
   }
 }
 
+export async function patchMovie(id: number, patch: Record<string, unknown>): Promise<void> {
+  const session = loadAdminSession();
+  if (!session?.token) {
+    throw new Error('Your admin session has expired. Sign in again to save changes.');
+  }
+
+  const res = await fetch('/api/admin/movies', {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-admin-token': session.token,
+    },
+    body: JSON.stringify({ id, patch }),
+  });
+
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(`Failed to update movie ${id}: ${data.error ?? `HTTP ${res.status}`}`);
+  }
+}
+
 /**
  * Seed the movies table from the local catalog (runs once when table is empty).
  */

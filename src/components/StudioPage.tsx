@@ -13,7 +13,7 @@ export default function StudioPage() {
   const { movies, loading } = useMovies();
   const [imgErrors, setImgErrors] = useState<Set<number>>(new Set());
 
-  const studioName = decodeURIComponent(name ?? '');
+  const studioName = name ?? '';
 
   const films = useMemo(
     () => movies.filter((m) => m.creator === studioName),

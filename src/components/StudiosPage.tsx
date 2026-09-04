@@ -275,8 +275,8 @@ export default function StudiosPage() {
   const filtered = useMemo(() => {
     let result = [...studios];
 
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
       result = result.filter((c) => c.name.toLowerCase().includes(q));
     }
 
@@ -301,9 +301,17 @@ export default function StudiosPage() {
         });
         break;
       case 'Recently Active':
-        result.sort(
-          (a, b) => Math.max(...b.films.map((f) => f.id)) - Math.max(...a.films.map((f) => f.id)),
-        );
+        result.sort((a, b) => {
+          const latestA = Math.max(0, ...a.films.map((f) => {
+            const timestamp = Date.parse(f.updatedAt ?? '');
+            return Number.isNaN(timestamp) ? 0 : timestamp;
+          }));
+          const latestB = Math.max(0, ...b.films.map((f) => {
+            const timestamp = Date.parse(f.updatedAt ?? '');
+            return Number.isNaN(timestamp) ? 0 : timestamp;
+          }));
+          return latestB - latestA;
+        });
         break;
     }
 

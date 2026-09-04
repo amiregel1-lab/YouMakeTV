@@ -347,8 +347,8 @@ export default function ViewerHome({ movies, viewer, onSelectMovie, onWatchTrail
     }
 
     // Search
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
       result = result.filter(
         (m) =>
           m.title.toLowerCase().includes(q) ||

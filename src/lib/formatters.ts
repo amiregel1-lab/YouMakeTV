@@ -13,7 +13,7 @@ export function formatNumber(value: number) {
 
 export function subscriberPrice(price: number) {
   if (price === 0) return 0;
-  return Math.floor(price * 100 * 0.5 - 0.001) / 100;
+  return Math.floor(Math.round(price * 100) / 2) / 100;
 }
 
 export function roundToCents(value: number) {

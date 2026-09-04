@@ -235,7 +235,7 @@ export default function CreatorOnboarding({ onComplete }: CreatorOnboardingProps
       return (
         account.fullName.trim().length > 0 &&
         account.studioName.trim().length > 0 &&
-        account.email.trim().includes('@') &&
+        /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(account.email.trim()) &&
         passwordChecks.length &&
         passwordChecks.match
       );

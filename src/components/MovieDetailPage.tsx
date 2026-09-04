@@ -7,6 +7,7 @@ import PurchaseOptions from './PurchaseOptions';
 import { getPosterUrl, fallbackGradient } from '../lib/posters';
 import SEOHead from './SEOHead';
 import { movieSeo } from '../lib/seo';
+import { logEvent } from '../lib/eventService';
 
 interface MovieDetailPageProps {
   viewer?: ViewerAccount | null;
@@ -76,6 +77,7 @@ export default function MovieDetailPage({ viewer, onPurchase, onSubscribe, onWat
 
   const handleWatchTrailer = () => {
     if (movie?.trailerUrl) {
+      logEvent('trailer_play', { movieId: movie.id, title: movie.title });
       setTrailerPlayerUrl(movie.trailerUrl);
       return;
     }
@@ -166,7 +168,7 @@ export default function MovieDetailPage({ viewer, onPurchase, onSubscribe, onWat
                 <div className="rounded-[1.75rem] bg-white/90 p-5 shadow-sm">
                   <p className="text-sm uppercase tracking-[0.28em] text-slate-500 mb-3">Creator</p>
                   <button
-                    onClick={() => navigate('/creators')}
+                    onClick={() => navigate(`/studio/${encodeURIComponent(movie.creator)}`)}
                     className="text-lg font-semibold text-slate-950 hover:text-brand-purple transition"
                   >
                     {movie.creator}
@@ -262,7 +264,7 @@ export default function MovieDetailPage({ viewer, onPurchase, onSubscribe, onWat
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-slate-950">More from {movie.creator}</h2>
             <button
-              onClick={() => navigate('/creators')}
+              onClick={() => navigate(`/studio/${encodeURIComponent(movie.creator)}`)}
               className="text-xs font-semibold text-brand-purple hover:text-brand-indigo transition"
             >
               View creator →

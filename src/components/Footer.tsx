@@ -66,7 +66,7 @@ export default function Footer() {
               {link('Terms of Service', '/terms')}
               {link('Privacy Policy', '/privacy')}
               {link('Copyright & DMCA Policy', '/copyright')}
-              {link('Creator Agreement', '/terms#creator-agreement')}
+              {link('Creator Agreement', '/creator-agreement')}
             </ul>
           </div>
         </div>

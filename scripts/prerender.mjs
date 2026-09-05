@@ -352,6 +352,32 @@ async function main() {
     return '0.7';
   };
 
+  // studioSeo() already builds its canonical with encodeURIComponent, so running
+  // encodeURI over it a second time turned `%20` into `%2520` and every studio
+  // URL in the sitemap 404'd at the edge while the identical single-encoded URL
+  // served a 200.
+  //
+  // Decode once, encode once, per path segment — segment-wise because a `/` is a
+  // separator here, never data, and encodeURIComponent is what produced the
+  // canonical in the first place, so a studio like "Signal & Noise Productions"
+  // round-trips to byte-identical `%26`. Running this over its own output changes
+  // nothing, so it is safe whether the canonical arrives encoded or raw. A segment
+  // decodeURIComponent rejects is malformed percent-escaping, i.e. never encoded.
+  const encodeLoc = (value) =>
+    value
+      .split('/')
+      .map((segment) => {
+        let decoded;
+        try {
+          decoded = decodeURIComponent(segment);
+        } catch {
+          decoded = segment;
+        }
+        return encodeURIComponent(decoded);
+      })
+      .join('/')
+      .replace(/&/g, '&amp;');
+
   const seen = new Set();
   const entries = [];
   for (const route of routes) {
@@ -360,7 +386,7 @@ async function main() {
     const canonical = route.seo.canonical ?? route.path;
     if (seen.has(canonical)) continue;
     seen.add(canonical);
-    const loc = `${BASE_URL}${canonical.startsWith('/') ? '' : '/'}${encodeURI(canonical).replace(/&/g, '&amp;')}`;
+    const loc = `${BASE_URL}${canonical.startsWith('/') ? '' : '/'}${encodeLoc(canonical)}`;
     const lastmod = route.lastmod ? String(route.lastmod).slice(0, 10) : today;
     entries.push(
       `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>${priorityFor(canonical)}</priority>\n  </url>`

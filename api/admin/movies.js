@@ -142,6 +142,25 @@ const WRITABLE = {
   newRelease: ['new_release', bool],
 };
 
+/**
+ * The movie id from a request body, or null if it is not one.
+ *
+ * `Number()` is not enough on its own: Number(null), Number('') and
+ * Number('  ') are all 0, and 0 is a real film — so a body with a missing or
+ * blank id would resolve to the first row in the catalog and delete or patch
+ * it. Only an actual number, or a string of nothing but digits, counts.
+ * Booleans are excluded for the same reason: Number(true) is 1.
+ */
+function readMovieId(value) {
+  if (typeof value === 'number') {
+    return Number.isInteger(value) && value >= 0 ? value : null;
+  }
+  if (typeof value === 'string' && /^\d+$/.test(value)) {
+    return Number(value);
+  }
+  return null;
+}
+
 export default async function handler(req, res) {
   setServiceHeaders(res);
   if (!methodGuard(req, res, ['GET', 'PATCH', 'DELETE'])) return;
@@ -175,8 +194,8 @@ export default async function handler(req, res) {
   // that is still live.
   if (req.method === 'DELETE') {
     const body = readJsonBody(req);
-    const id = Number(body.id);
-    if (!Number.isInteger(id) || id < 0) {
+    const id = readMovieId(body.id);
+    if (id === null) {
       return res.status(400).json({ error: 'A numeric movie id is required.' });
     }
 
@@ -202,8 +221,8 @@ export default async function handler(req, res) {
 
   // ── Write one ───────────────────────────────────────────────────────────
   const body = readJsonBody(req);
-  const id = Number(body.id);
-  if (!Number.isInteger(id) || id < 0) {
+  const id = readMovieId(body.id);
+  if (id === null) {
     return res.status(400).json({ error: 'A numeric movie id is required.' });
   }
 

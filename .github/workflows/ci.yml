@@ -1,0 +1,39 @@
+# Typecheck + full production build on every push to main and every PR.
+#
+# No secrets: without VITE_SUPABASE_* the prerender step falls back to the
+# bundled seed catalog, prints its warning and still exits 0, so CI proves the
+# code compiles and the bundle builds without needing production credentials.
+#
+# `npm ci` is safe here even though the lockfile was generated on Windows:
+# package-lock.json does carry the Linux optional binaries the toolchain needs
+# on ubuntu (@rollup/rollup-linux-x64-gnu, @esbuild/linux-x64,
+# @img/sharp-linux-x64). If that ever stops being true, `npm ci` will fail with
+# a missing-platform-binary error and the fix is `npm install --no-audit
+# --no-fund` here plus a lockfile regenerated on Linux.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build

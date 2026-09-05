@@ -13,9 +13,16 @@
 // empty <div id="root"> on all ~110 routes, so every shared link previewed as
 // the generic homepage and no answer engine could name a single film.
 //
-// The movie catalog is a static 100-row file, so the whole known route set can
-// be enumerated at build time. That is deterministic and debuggable, unlike a
-// headless-render plugin.
+// The catalog is read from the LIVE Supabase table at build time — the same
+// rows the app fetches at runtime — because the bundled seed in src/data has
+// drifted from production, and prerendering from it published the wrong title
+// and the wrong price for films the admin console had since edited. Only rows
+// the public may actually see are prerendered or listed in the sitemap.
+//
+// The whole known route set is still enumerated at build time, which is
+// deterministic and debuggable, unlike a headless-render plugin. If the live
+// catalog cannot be reached the build does NOT fail — it falls back to the
+// bundled seed and shouts about it, so a network blip never blocks a deploy.
 //
 // Head tags are written with Helmet's own `data-rh="true"` marker. On first
 // render react-helmet-async adopts anything carrying that attribute and replaces
@@ -25,7 +32,7 @@
 // Route metadata comes from src/lib/seo.ts, which the React components read too:
 // one table, so the prerendered head and the rendered head cannot drift.
 
-import { createServer } from 'vite';
+import { createServer, loadEnv } from 'vite';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -118,6 +125,42 @@ function noscriptFor(seo, extra) {
     .join('\n');
 }
 
+// ── The live catalog ────────────────────────────────────────────────────────
+
+/** How long to wait for Supabase before giving up and using the seed. */
+const CATALOG_TIMEOUT_MS = 15_000;
+
+/**
+ * Fetch every movie row over PostgREST with the public anon key.
+ *
+ * Read-only and unauthenticated on purpose: the build needs exactly what an
+ * anonymous visitor can see. Returns the raw rows, or throws with a reason
+ * short enough to print on one warning line.
+ */
+async function fetchLiveRows(url, anonKey) {
+  const endpoint = `${url.replace(/\/+$/, '')}/rest/v1/movies?select=*&order=id`;
+  // AbortController, not just the fetch default: an unreachable Supabase would
+  // otherwise hang the build for minutes with no output.
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), CATALOG_TIMEOUT_MS);
+  try {
+    const res = await fetch(endpoint, {
+      headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` },
+      signal: abort.signal,
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`.trim());
+    const rows = await res.json();
+    if (!Array.isArray(rows)) throw new Error('response was not an array');
+    if (rows.length === 0) throw new Error('live catalog is empty');
+    return rows;
+  } catch (err) {
+    if (err?.name === 'AbortError') throw new Error(`timed out after ${CATALOG_TIMEOUT_MS} ms`);
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // ── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -131,22 +174,64 @@ async function main() {
     appType: 'custom',
   });
 
-  let seoModule, movieModule, posterModule, studioModule;
+  let seoModule, movieModule, posterModule, studioModule, rowModule;
   try {
     seoModule = await server.ssrLoadModule('/src/lib/seo.ts');
     movieModule = await server.ssrLoadModule('/src/data/movies.ts');
     posterModule = await server.ssrLoadModule('/src/lib/posters.ts');
     studioModule = await server.ssrLoadModule('/src/lib/studioUtils.ts');
+    // The app's own row mapper and visibility rule, so prerendered metadata is
+    // produced by the same code that renders the page in the browser.
+    rowModule = await server.ssrLoadModule('/src/lib/movieRow.ts');
   } finally {
     await server.close();
   }
 
   const { PAGE_SEO, movieSeo, studioSeo, BASE_URL, SITE_NAME, DEFAULT_OG_IMAGE, TWITTER_HANDLE } =
     seoModule;
-  const { movies } = movieModule;
+  const { movies: seedMovies } = movieModule;
+  const { rowToMovie, isPubliclyVisible } = rowModule;
   const { getPosterUrl } = posterModule;
   const { formatNum } = studioModule;
   const constants = { SITE_NAME, BASE_URL, DEFAULT_OG_IMAGE, TWITTER_HANDLE };
+
+  // ── Resolve the catalog: live if we can reach it, seed if we cannot ───────
+  //
+  // loadEnv rather than process.env alone so a local `.env.local` and a Vercel /
+  // CI environment variable both work, exactly like the app's own build.
+  const env = { ...loadEnv('production', ROOT, 'VITE_'), ...process.env };
+  const supabaseUrl = env.VITE_SUPABASE_URL;
+  const supabaseKey = env.VITE_SUPABASE_ANON_KEY;
+
+  let movies = seedMovies;
+  let source = 'seed';
+  let fallbackReason = null;
+
+  if (!supabaseUrl || !supabaseKey) {
+    fallbackReason = 'VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY not set';
+  } else {
+    try {
+      const rows = await fetchLiveRows(supabaseUrl, supabaseKey);
+      // Hidden and not-yet-approved films must never reach a crawler: the same
+      // predicate the app filters with, so the published HTML and the running
+      // site agree on what exists.
+      const live = rows.map(rowToMovie).filter(isPubliclyVisible);
+      if (live.length === 0) throw new Error('no publicly visible rows');
+      movies = live;
+      source = 'live';
+    } catch (err) {
+      fallbackReason = err?.message ?? String(err);
+    }
+  }
+
+  // Loud on purpose. A silent fallback is how stale titles and prices got
+  // published in the first place; the build still succeeds.
+  if (source === 'seed') {
+    console.warn(
+      `prerender: WARNING — live catalog unavailable (${fallbackReason}); ` +
+        'prerendering from the bundled seed, published metadata may be stale'
+    );
+  }
 
   const built = await readFile(path.join(DIST, 'index.html'), 'utf8');
   if (!built.includes('</head>')) throw new Error('dist/index.html has no </head> — did vite build run?');
@@ -267,6 +352,32 @@ async function main() {
     return '0.7';
   };
 
+  // studioSeo() already builds its canonical with encodeURIComponent, so running
+  // encodeURI over it a second time turned `%20` into `%2520` and every studio
+  // URL in the sitemap 404'd at the edge while the identical single-encoded URL
+  // served a 200.
+  //
+  // Decode once, encode once, per path segment — segment-wise because a `/` is a
+  // separator here, never data, and encodeURIComponent is what produced the
+  // canonical in the first place, so a studio like "Signal & Noise Productions"
+  // round-trips to byte-identical `%26`. Running this over its own output changes
+  // nothing, so it is safe whether the canonical arrives encoded or raw. A segment
+  // decodeURIComponent rejects is malformed percent-escaping, i.e. never encoded.
+  const encodeLoc = (value) =>
+    value
+      .split('/')
+      .map((segment) => {
+        let decoded;
+        try {
+          decoded = decodeURIComponent(segment);
+        } catch {
+          decoded = segment;
+        }
+        return encodeURIComponent(decoded);
+      })
+      .join('/')
+      .replace(/&/g, '&amp;');
+
   const seen = new Set();
   const entries = [];
   for (const route of routes) {
@@ -275,7 +386,7 @@ async function main() {
     const canonical = route.seo.canonical ?? route.path;
     if (seen.has(canonical)) continue;
     seen.add(canonical);
-    const loc = `${BASE_URL}${canonical.startsWith('/') ? '' : '/'}${encodeURI(canonical).replace(/&/g, '&amp;')}`;
+    const loc = `${BASE_URL}${canonical.startsWith('/') ? '' : '/'}${encodeLoc(canonical)}`;
     const lastmod = route.lastmod ? String(route.lastmod).slice(0, 10) : today;
     entries.push(
       `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>${priorityFor(canonical)}</priority>\n  </url>`
@@ -291,7 +402,8 @@ async function main() {
   await writeFile(path.join(DIST, 'sitemap.xml'), sitemap, 'utf8');
 
   console.log(
-    `prerender: ${routes.length} routes written (${movies.length} movies, ${studios.size} studios), sitemap: ${entries.length} URLs`
+    `prerender: source=${source} rows=${movies.length} — ${routes.length} routes written ` +
+      `(${movies.length} movies, ${studios.size} studios), sitemap: ${entries.length} URLs`
   );
 }
 

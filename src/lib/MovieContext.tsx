@@ -9,6 +9,7 @@ import {
 } from 'react';
 import type { Movie } from '../types';
 import { getMovies } from './movieService';
+import { isPubliclyVisible } from './movieRow';
 
 interface MovieContextValue {
   movies: Movie[];
@@ -34,7 +35,7 @@ export function MovieProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const mounted = useRef(true);
   const movies = useMemo(
-    () => allMovies.filter((movie) => movie.visible !== false && (movie.status ?? 'Approved') === 'Approved'),
+    () => allMovies.filter(isPubliclyVisible),
     [allMovies],
   );
 

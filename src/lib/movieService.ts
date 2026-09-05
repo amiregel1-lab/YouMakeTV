@@ -1,42 +1,9 @@
 import { supabase } from './supabase';
 import type { Movie } from '../types';
+// One mapper for the whole codebase — the prerender script loads it too.
+import { rowToMovie } from './movieRow';
 import { movies as localMovies } from '../data/movies';
 import { loadAdminSession } from './storage';
-
-// ── Row ↔ Movie mapping ───────────────────────────────────────────────────────
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function rowToMovie(row: Record<string, any>): Movie {
-  return {
-    id: row.id as number,
-    title: row.title as string,
-    subtitle: (row.subtitle as string) ?? '',
-    description: (row.description as string) ?? '',
-    genre: (row.genre as string) ?? '',
-    genres: (row.genres as string[] | null) ?? [(row.genre as string) ?? ''],
-    duration: (row.duration as string) ?? '',
-    creator: (row.creator_name as string) ?? '',
-    price: (row.price as number) ?? 0,
-    thumbnail: (row.cover_url as string) || `https://picsum.photos/seed/ymtv${row.id}/400/600`,
-    badge: (row.badge as string) ?? '',
-    tools: (row.tools as string[] | null) ?? [],
-    rating: (row.rating as string) ?? '',
-    language: (row.language as string) ?? '',
-    tags: (row.tags as string[] | null) ?? [],
-    releaseYear: row.release_year as number | undefined,
-    views: (row.views as number) ?? 0,
-    trailerViews: (row.trailer_views as number) ?? 0,
-    featured: (row.featured as boolean) ?? false,
-    subscriberDiscountEligible: (row.subscriber_discount_eligible as boolean) ?? false,
-    status: (row.status as string) ?? 'Approved',
-    visible: (row.visible as boolean) ?? true,
-    trailerUrl: (row.trailer_url as string) || undefined,
-    backdropUrl: (row.backdrop_url as string) || undefined,
-    posterPrompt: (row.poster_prompt as string) || undefined,
-    updatedAt: (row.updated_at as string) || undefined,
-    createdAt: (row.created_at as string) || undefined,
-  };
-}
 
 /**
  * The shape /api/admin/movies accepts — camelCase field names, allowlisted

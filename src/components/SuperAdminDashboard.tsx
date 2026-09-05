@@ -19,7 +19,7 @@ import {
 } from '../lib/movieStore';
 import { compressPosterImage, compressBackdropImage } from '../lib/imageUtils';
 import { movies as sourceMovies } from '../data/movies';
-import { getMovies, patchMovie, upsertMovie } from '../lib/movieService';
+import { deleteMovie, getMovies, patchMovie, upsertMovie } from '../lib/movieService';
 import { uploadCover, uploadBackdrop, uploadTrailer } from '../lib/storageService';
 import { useMovies } from '../lib/MovieContext';
 import { getTodayEventCounts, type TodayEventCounts } from '../lib/eventService';
@@ -2033,10 +2033,25 @@ export default function SuperAdminDashboard() {
     addAudit(nf ? 'Featured film' : 'Unfeatured film', f?.title ?? '', 'movie', `Featured status changed to ${nf}.`);
     await refreshMovies();
   };
-  const deleteFilm = (id: string) => {
+  const deleteFilm = async (id: string) => {
     const f = films.find(x => x.id === id);
+    let movieId: number | null = null;
+    try {
+      movieId = f ? resolveMovieId(f) : null;
+      if (movieId === null) throw new Error(`No live movie found for admin id "${id}".`);
+      await deleteMovie(movieId);
+    } catch (err) {
+      addAudit('Failed to delete film', f?.title ?? id, 'movie', `Film deletion did not persist: ${err instanceof Error ? err.message : String(err)}`);
+      return;
+    }
     setFilms(p => p.filter(x => x.id !== id));
+    // Drop the localStorage override too: a stale overlay for this id would put
+    // the film back on the public site even though the catalog row is gone.
+    // Storage objects (cover/backdrop/trailer) are deliberately NOT deleted —
+    // see the note in api/admin/movies.js.
+    resetMovieOverride(movieId);
     addAudit('Deleted film', f?.title ?? '', 'movie', 'Film permanently deleted.');
+    await refreshMovies();
   };
   const saveFilmEdit = async (updated: AdminFilm, originalTitle?: string) => {
     const movieId = resolveMovieId(updated, originalTitle);
@@ -2068,8 +2083,10 @@ export default function SuperAdminDashboard() {
       tags: updated.tags ? updated.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
       releaseYear: updated.releaseYear,
       featured: updated.featured,
-      trailerUrl: updated.trailerUrl,
-      backdropUrl: updated.backdropUrl,
+      // undefined here means "the edit form never touched this", not "clear it" —
+      // the API writes NULL for null, so falling back keeps the stored URL.
+      trailerUrl: updated.trailerUrl ?? liveMovie.trailerUrl,
+      backdropUrl: updated.backdropUrl ?? liveMovie.backdropUrl,
     };
 
     await upsertMovie(movieUpdate, updated.status);

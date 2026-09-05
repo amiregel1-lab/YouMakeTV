@@ -217,6 +217,34 @@ export async function patchMovie(id: number, patch: Record<string, unknown>): Pr
 }
 
 /**
+ * Remove one movie from the catalog for good.
+ *
+ * Same door as patchMovie: the signed admin session, so the service-role key
+ * stays server-side. Resolves only when the row is actually gone — the console
+ * must not drop a film from its table on the strength of a failed request.
+ */
+export async function deleteMovie(id: number): Promise<void> {
+  const session = loadAdminSession();
+  if (!session?.token) {
+    throw new Error('Your admin session has expired. Sign in again to save changes.');
+  }
+
+  const res = await fetch('/api/admin/movies', {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-admin-token': session.token,
+    },
+    body: JSON.stringify({ id }),
+  });
+
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(`Failed to delete movie ${id}: ${data.error ?? `HTTP ${res.status}`}`);
+  }
+}
+
+/**
  * Seed the movies table from the local catalog (runs once when table is empty).
  */
 async function seedMovies(): Promise<void> {

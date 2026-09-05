@@ -9,7 +9,9 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
   defaultCreatorShare: 30,
   premiumCreatorShare: 40,
   platformFeePercent: 3,
-  membershipMonthlyPrice: 9.99,
+  // $4.99 is what SubscriptionPage.tsx actually charges — the console used to
+  // default to 9.99 and disagree with the page the viewer sees.
+  membershipMonthlyPrice: 4.99,
   membershipAnnualPrice: 89.99,
   membershipDiscountPercent: 20,
   freeMovieDailyLimit: 3,

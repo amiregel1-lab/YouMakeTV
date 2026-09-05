@@ -2,6 +2,7 @@
 //
 //   GET                      → every movie in the catalog, admin shape
 //   PATCH  { id, patch:{…} } → write one movie
+//   DELETE { id }            → remove one movie from the catalog
 //
 // Two doors: Growth OS with `x-service-token` against GROWTH_OS_SERVICE_TOKEN,
 // or the browser Super Admin console with its signed session in `x-admin-token`.
@@ -143,7 +144,7 @@ const WRITABLE = {
 
 export default async function handler(req, res) {
   setServiceHeaders(res);
-  if (!methodGuard(req, res, ['GET', 'PATCH'])) return;
+  if (!methodGuard(req, res, ['GET', 'PATCH', 'DELETE'])) return;
   if (!requireServiceOrAdmin(req, res)) return;
   if (!requireSupabase(res)) return;
 
@@ -161,6 +162,42 @@ export default async function handler(req, res) {
       moderationColumns: rows.length === 0 || Object.hasOwn(rows[0], 'moderation_notes'),
       count: rows.length,
     });
+  }
+
+  // ── Delete one ──────────────────────────────────────────────────────────
+  //
+  // The console's Delete button used to drop the film from React state only, so
+  // it reappeared on the next refresh. This is the write that makes it real.
+  //
+  // Known limitation: the row goes, but the cover/backdrop/trailer objects this
+  // film uploaded stay in Storage. Reaping them needs its own pass — a URL can
+  // be shared by more than one row, so deleting blind here could break a film
+  // that is still live.
+  if (req.method === 'DELETE') {
+    const body = readJsonBody(req);
+    const id = Number(body.id);
+    if (!Number.isInteger(id) || id < 0) {
+      return res.status(400).json({ error: 'A numeric movie id is required.' });
+    }
+
+    const result = await pgrest(`/movies?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: { Prefer: 'return=representation' },
+    });
+
+    if (!result.ok) {
+      // The database's own sentence, unedited — a foreign-key violation names
+      // the table still pointing at this film, which is what the desk must read.
+      return res.status(502).json({ error: `Supabase: ${result.error}` });
+    }
+
+    const removed = Array.isArray(result.data) ? result.data : [];
+    if (removed.length === 0) {
+      return res.status(404).json({ error: 'movie not found' });
+    }
+
+    console.log(`movie ${id} deleted by ${req.authActor ?? 'growth-os'}`);
+    return res.status(200).json({ ok: true, id, deleted: rowToMovie(removed[0]) });
   }
 
   // ── Write one ───────────────────────────────────────────────────────────

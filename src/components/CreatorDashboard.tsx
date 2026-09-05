@@ -845,7 +845,9 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
                   <div className="min-w-0">
                     <h3 className="text-xl font-semibold text-slate-950">{creator.studioName}</h3>
                     <div className="flex flex-wrap items-center gap-2 mt-2">
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                      {/* Neutral until it is true: a green pill reading
+                          "Verification coming soon" claims the badge it denies. */}
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${creator.verified ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
                         <span className={`h-1.5 w-1.5 rounded-full flex-none ${creator.verified ? 'bg-emerald-500' : 'bg-slate-300'}`} />
                         {creator.verified ? 'Verified creator' : 'Verification coming soon'}
                       </span>

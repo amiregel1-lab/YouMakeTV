@@ -1,7 +1,7 @@
 # Product Marketing Context
 
-**Document version:** v1
-**Last updated:** 2026-08-21
+**Document version:** v2
+**Last updated:** 2026-09-05
 
 > **Read this first — platform maturity.** YouMakeTV is live at youmaketv.ai with a real
 > catalog, but the money side is not connected. No payment processor is live, no viewer has
@@ -21,7 +21,7 @@
 
 **Business model:**
 - Transactional: films priced free–$4.99 (catalog average $4.24). Platform takes a fee on paid views.
-- Subscription: **YouMake+** — $9.99/month or $89.99/year (~20% saving). Benefits: unlimited free-tier streaming, 50% off every paid film, member pricing.
+- Subscription: **YouMake+** — **$4.99/month**. There is no annual plan on sale; monthly is the only term offered today. Benefits: unlimited free-tier streaming, 50% off every paid film, member pricing.
 - Creator revenue share: 30% standard, up to 40% for the Pro tier. Free to join and publish.
 - *Status: transactional and subscription billing are both **not yet connected**.*
 
@@ -122,7 +122,7 @@
 **Glossary:**
 | Term | Meaning |
 |------|---------|
-| YouMake+ | The viewer subscription — $9.99/mo or $89.99/yr, 50% off paid films, unlimited free streaming |
+| YouMake+ | The viewer subscription — $4.99/mo (monthly only), 50% off paid films, unlimited free streaming |
 | Studio | A creator's branded page and film catalog |
 | Creator beta | Current phase: uploads and profiles are real, billing is not connected |
 | Pro Creator | Higher revenue-share tier (40% vs 30%) |
@@ -167,4 +167,5 @@
 
 ## Changelog
 *Newest first. One line per revision: what changed and why.*
+- v2 (2026-09-05) — corrected YouMake+ to $4.99/month to match the live subscription page; removed the annual figure (no annual plan is offered).
 - v1 (2026-08-21) — Initial context, auto-drafted from the codebase (landing pages, creator portal, subscription page, creator agreement, catalog). Added Honesty Guardrails because billing, payouts and subscriptions are not live while the site is public.

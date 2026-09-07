@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { formatCurrency } from '../lib/formatters';
 import { CreatorFilm } from '../types';
 import PricingSlider from './PricingSlider';
 

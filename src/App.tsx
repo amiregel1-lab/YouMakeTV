@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { useMovies } from './lib/MovieContext';
-import { demoCreatorProfile, demoViewerAccount } from './data/mockData';
+import { demoViewerAccount } from './data/mockData';
 import { CreatorFilm, CreatorProfile, ViewerAccount } from './types';
 import { loadCreator, loadViewer, saveCreator, saveViewer } from './lib/storage';
 import Navbar from './components/Navbar';
@@ -112,16 +112,6 @@ export default function App() {
     setCreator(profile);
     setNewCreatorSession(true);
     navigate('/creator/dashboard');
-  };
-
-  const handleDemoCreator = () => {
-    setCreator(demoCreatorProfile);
-    // Only navigate if not already on the dashboard — pushing the same URL to
-    // history in React Router v6 can cause a render flash on mobile that makes
-    // the button appear to do nothing.
-    if (location.pathname !== '/creator/dashboard') {
-      navigate('/creator/dashboard');
-    }
   };
 
   const handleAddFilm = (film: CreatorFilm) => {

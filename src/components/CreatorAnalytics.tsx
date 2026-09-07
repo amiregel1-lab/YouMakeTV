@@ -176,7 +176,7 @@ export default function CreatorAnalytics({ creator }: CreatorAnalyticsProps) {
   }, [timeRange]);
 
   const allSeries = useMemo(() => {
-    const aggregated = creatorSeries.map((item, index) => ({ ...item }));
+    const aggregated = creatorSeries.map((item) => ({ ...item }));
     creator.films.forEach((film, filmIndex) => {
       const series = buildDailyFilmSeries(film, creatorSeries.length, filmIndex);
       series.forEach((value, dailyIndex) => {

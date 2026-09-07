@@ -4,7 +4,6 @@ import { Movie } from '../types';
 import { getPosterUrl, getBackdropUrl, fallbackGradient } from '../lib/posters';
 import SEOHead from './SEOHead';
 import { PAGE_SEO } from '../lib/seo';
-import { logEvent } from '../lib/eventService';
 
 interface ViewerHomeProps {
   movies: Movie[];

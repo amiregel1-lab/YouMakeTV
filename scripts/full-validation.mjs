@@ -35,7 +35,6 @@ else {
 
   const sample = rows.slice(0, 3);
   for (const r of sample) {
-    const coverOk = r.cover_url && !r.cover_url.startsWith('data:');
     console.log(`     [${String(r.id).padStart(3)}] "${r.title}" | cover_url: ${r.cover_url?.slice(0,55) ?? 'null'}`);
   }
 }

@@ -1,4 +1,4 @@
-import { CreatorProfile, Movie, ViewerAccount } from '../types';
+import { CreatorProfile, ViewerAccount } from '../types';
 
 export const demoViewerAccount: ViewerAccount = {
   username: 'youmaketv',

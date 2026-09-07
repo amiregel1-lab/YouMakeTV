@@ -1,4 +1,11 @@
-# Typecheck + full production build on every push to main and every PR.
+# Lint + typecheck + full production build on every push to main and every PR.
+#
+# `npm run lint` is a real gate, not `--if-present`: the `lint` script and
+# eslint.config.js both exist, so a missing linter would fail the job rather
+# than pass silently. ESLint errors fail the build; the ~12 remaining warnings
+# (loose recharts render-prop types, one Fast Refresh export) are advisory and
+# deliberately not capped with --max-warnings, which would turn any unrelated
+# refactor into a red build on a prototype.
 #
 # No secrets: without VITE_SUPABASE_* the prerender step falls back to the
 # bundled seed catalog, prints its warning and still exits 0, so CI proves the
@@ -21,6 +28,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # The whole job has finished in under a minute every run so far; 15 is a
+    # ceiling for a hang, not a target. Without it a stuck job burns the full
+    # 6-hour GitHub default.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -31,6 +42,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Lint
+        run: npm run lint
 
       - name: Typecheck
         run: npx tsc --noEmit

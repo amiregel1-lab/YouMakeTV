@@ -35,7 +35,7 @@ const supabase = createClient(url, key);
 
 // ── 1. Test basic connection ──────────────────────────────────────────────────
 console.log('\n── 1. Testing connection to movies table…');
-const { data: countData, error: countError, count } = await supabase
+const { error: countError, count } = await supabase
   .from('movies')
   .select('id', { count: 'exact', head: true });
 

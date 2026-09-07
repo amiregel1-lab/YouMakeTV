@@ -55,3 +55,67 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      # ── Report to Growth OS ────────────────────────────────────────────────
+      #
+      # Owner ruling 2026-09-07: every operator message from every business goes
+      # to the Growth OS inbox. Contract: docs/ops-alert-webhook.md in the
+      # growth-os repo. The HMAC is the whole credential — there is no session —
+      # and it covers "<timestamp>.<raw body>", so the body must be signed and
+      # sent as the SAME bytes: `printf` (not `echo`, which appends a newline
+      # the signature does not cover) and `--data-binary` (not `--data`, which
+      # re-encodes). A timestamp more than 300s off the server clock is refused
+      # however good the signature is.
+      #
+      # Both steps are main-only (a PR is not an operator event), skip cleanly
+      # when the secret is absent so a fork or an unconfigured repo is not a red
+      # build, and carry continue-on-error so the reporting channel can never
+      # itself change the verdict of the job.
+      - name: Report CI failure to Growth OS
+        if: failure() && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        env:
+          SECRET: ${{ secrets.OPS_ALERT_SECRET_YOUMAKETV }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$SECRET" ]; then
+            echo "OPS_ALERT_SECRET_YOUMAKETV is not set - skipping the Growth OS alert."
+            exit 0
+          fi
+          ts=$(date +%s)
+          printf '{"event":"ops.alert","alert":{"severity":"error","kind":"ci.failed","category":"alert","source":"github.actions.ci","title":"CI failed on main - YouMakeTV","dedupeKey":"ci.failed:youmaketv:main","detail":{"runUrl":"%s","attempt":%s,"target":"main"},"site":"youmaketv","environment":"production","commit":"%s","occurredAt":"%s"}}' \
+            "$RUN_URL" "${{ github.run_attempt }}" "${{ github.sha }}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > alert.json
+          sig=$( { printf '%s.' "$ts"; cat alert.json; } | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $NF}')
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST \
+            'https://growth-os-sand.vercel.app/api/webhooks/ops-alert' \
+            -H 'content-type: application/json' \
+            -H "x-timestamp: $ts" -H "x-signature: $sig" --data-binary @alert.json)
+          rm -f alert.json
+          echo "Growth OS ops-alert responded $code (202 = filed)."
+
+      # Heartbeat. `job.ran` is NOT in the Growth OS catalogue yet — §8.1 of the
+      # contract accepts an unknown kind rather than dropping it, files it as
+      # ops.alert and surfaces the name as detail.unknownKind. HQ asked for this
+      # name explicitly and has been told to add it; change nothing here when
+      # they do, the name is already right.
+      - name: Heartbeat to Growth OS
+        if: success() && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        env:
+          SECRET: ${{ secrets.OPS_ALERT_SECRET_YOUMAKETV }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$SECRET" ]; then
+            echo "OPS_ALERT_SECRET_YOUMAKETV is not set - skipping the Growth OS heartbeat."
+            exit 0
+          fi
+          ts=$(date +%s)
+          printf '{"event":"ops.alert","alert":{"severity":"info","kind":"job.ran","category":"agent","source":"github.actions.ci","title":"CI green on main - YouMakeTV","dedupeKey":"job.ran:youmaketv:ci","detail":{"runUrl":"%s","target":"main"},"site":"youmaketv","environment":"production","commit":"%s","occurredAt":"%s"}}' \
+            "$RUN_URL" "${{ github.sha }}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > heartbeat.json
+          sig=$( { printf '%s.' "$ts"; cat heartbeat.json; } | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $NF}')
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST \
+            'https://growth-os-sand.vercel.app/api/webhooks/ops-alert' \
+            -H 'content-type: application/json' \
+            -H "x-timestamp: $ts" -H "x-signature: $sig" --data-binary @heartbeat.json)
+          rm -f heartbeat.json
+          echo "Growth OS ops-alert responded $code (202 = filed)."

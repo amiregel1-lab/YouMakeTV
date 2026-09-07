@@ -44,6 +44,10 @@ jobs:
           node-version: '20'
           cache: npm
 
+      # Start of the run, for the heartbeat's durationMs.
+      - name: Mark start
+        run: echo "CI_START_MS=$(date +%s%3N)" >> "$GITHUB_ENV"
+
       - name: Install dependencies
         run: npm ci
 
@@ -93,29 +97,44 @@ jobs:
           rm -f alert.json
           echo "Growth OS ops-alert responded $code (202 = filed)."
 
-      # Heartbeat. `job.ran` is NOT in the Growth OS catalogue yet — §8.1 of the
-      # contract accepts an unknown kind rather than dropping it, files it as
-      # ops.alert and surfaces the name as detail.unknownKind. HQ asked for this
-      # name explicitly and has been told to add it; change nothing here when
-      # they do, the name is already right.
+      # Heartbeat, one per run, whatever the outcome — `agent.run.completed` on
+      # green and `agent.run.failed` on red, per HQ's correction of 2026-09-07
+      # (there is no `job.ran` kind). The red build therefore emits TWO rows and
+      # that is deliberate: `ci.failed` above is the thing a person must act on,
+      # this is the run record, and a monitor watching for a missing heartbeat
+      # must not read a failed run as silence. Their dedupeKeys differ, so they
+      # do not collapse into each other.
+      #
+      # `detail` is flat scalars only (contract §8.2). `counts` is omitted
+      # rather than faked: a typecheck-and-build has nothing meaningful to count.
       - name: Heartbeat to Growth OS
-        if: success() && github.ref == 'refs/heads/main'
+        if: always() && github.ref == 'refs/heads/main'
         continue-on-error: true
         env:
           SECRET: ${{ secrets.OPS_ALERT_SECRET_YOUMAKETV }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          OUTCOME: ${{ job.status }}
         run: |
           if [ -z "$SECRET" ]; then
             echo "OPS_ALERT_SECRET_YOUMAKETV is not set - skipping the Growth OS heartbeat."
             exit 0
           fi
+          if [ "$OUTCOME" = "success" ]; then
+            kind="agent.run.completed"; severity="info";    title="CI green on main - YouMakeTV"
+          else
+            kind="agent.run.failed";    severity="warning"; title="CI run did not pass on main - YouMakeTV"
+          fi
+          now_ms=$(date +%s%3N)
+          duration=$(( now_ms - ${CI_START_MS:-$now_ms} ))
           ts=$(date +%s)
-          printf '{"event":"ops.alert","alert":{"severity":"info","kind":"job.ran","category":"agent","source":"github.actions.ci","title":"CI green on main - YouMakeTV","dedupeKey":"job.ran:youmaketv:ci","detail":{"runUrl":"%s","target":"main"},"site":"youmaketv","environment":"production","commit":"%s","occurredAt":"%s"}}' \
-            "$RUN_URL" "${{ github.sha }}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > heartbeat.json
+          ran_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          printf '{"event":"ops.alert","alert":{"severity":"%s","kind":"%s","category":"agent","source":"github.actions.ci","title":"%s","dedupeKey":"agent.run:youmaketv:ci:%s:%s","detail":{"jobName":"ci","outcome":"%s","durationMs":%s,"ranAt":"%s","runUrl":"%s"},"site":"youmaketv","environment":"production","commit":"%s","occurredAt":"%s"}}' \
+            "$severity" "$kind" "$title" "${{ github.run_id }}" "${{ github.run_attempt }}" \
+            "$OUTCOME" "$duration" "$ran_at" "$RUN_URL" "${{ github.sha }}" "$ran_at" > heartbeat.json
           sig=$( { printf '%s.' "$ts"; cat heartbeat.json; } | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $NF}')
           code=$(curl -s -o /dev/null -w '%{http_code}' -X POST \
             'https://growth-os-sand.vercel.app/api/webhooks/ops-alert' \
             -H 'content-type: application/json' \
             -H "x-timestamp: $ts" -H "x-signature: $sig" --data-binary @heartbeat.json)
           rm -f heartbeat.json
-          echo "Growth OS ops-alert responded $code (202 = filed)."
+          echo "Growth OS ops-alert responded $code for $kind (202 = filed)."

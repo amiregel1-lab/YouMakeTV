@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { CreatorProfile } from '../types';
 import BetaNotice from './BetaNotice';
@@ -206,6 +207,8 @@ export default function CreatorOnboarding({ onComplete }: CreatorOnboardingProps
   });
   const agreementRef = useRef<HTMLDivElement>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
   const pendingProfileRef = useRef<CreatorProfile | null>(null);
   const [showGoogleModal, setShowGoogleModal] = useState(false);
 
@@ -253,7 +256,15 @@ export default function CreatorOnboarding({ onComplete }: CreatorOnboardingProps
     if (el.scrollTop + el.clientHeight >= el.scrollHeight - 20) setHasScrolledToBottom(true);
   };
 
-  const createProfile = () => {
+  const createProfile = async () => {
+    if (saving) return;
+    setSaving(true); setSaveMessage('');
+    try {
+    const { data, error } = await supabase.auth.signUp({ email: account.email.trim(), password: account.password,
+      options: { emailRedirectTo: `${location.origin}/creatorsLogin`, data: { account_type: 'creator', full_name: account.fullName.trim(), studio_name: account.studioName.trim(), agreement_version: '2026-09', agreement_accepted_at: new Date().toISOString() } } });
+    setSaving(false);
+    if (error) { setSaveMessage(error.message); return; }
+    if (!data.session) { setSaveMessage('Check your email to confirm your account, then sign in.'); return; }
     const dateLabel = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
     // Nothing here is verified, so nothing here claims to be. Identity
     // verification arrives with billing; until then the profile says so rather
@@ -269,6 +280,9 @@ export default function CreatorOnboarding({ onComplete }: CreatorOnboardingProps
     };
     pendingProfileRef.current = profile;
     setShowSuccess(true);
+    } catch (error) {
+      setSaveMessage(error instanceof Error ? error.message : 'Could not create your account. Please try again.');
+    } finally { setSaving(false); }
   };
 
   const inputClass = 'w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 placeholder-slate-400 outline-none focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/20';
@@ -309,6 +323,7 @@ export default function CreatorOnboarding({ onComplete }: CreatorOnboardingProps
   return (
     <div className="min-h-[calc(100vh-200px)] flex items-center justify-center py-10">
 
+      {saveMessage && <p role="status" className="rounded-xl bg-white p-4 text-slate-800">{saveMessage}</p>}
       {/* Google sign-up coming-soon modal */}
       {showGoogleModal && (
         <div
@@ -547,11 +562,11 @@ export default function CreatorOnboarding({ onComplete }: CreatorOnboardingProps
                   </button>
                   <button
                     type="button"
-                    disabled={!canContinue}
+                    disabled={!canContinue || saving}
                     onClick={createProfile}
                     className="flex-1 rounded-full bg-brand-purple py-3 text-sm font-semibold text-white transition hover:bg-brand-indigo disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    Create Creator Account →
+                    {saving ? 'Creating account…' : 'Create Creator Account →'}
                   </button>
                 </div>
               </>

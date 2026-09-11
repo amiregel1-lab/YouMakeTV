@@ -174,8 +174,10 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: `Supabase: ${result.error}` });
     }
     const rows = Array.isArray(result.data) ? result.data : [];
+    const privateMedia = await pgrest('/creator_movie_owners?select=movie_id,film_url&limit=2000');
+    if (!privateMedia.ok) return res.status(503).json({ error: 'Creator submissions are unavailable.' });
     return res.status(200).json({
-      movies: rows.map(rowToMovie),
+      movies: rows.map(row => ({ ...rowToMovie(row), filmUrl: privateMedia.data.find(p => p.movie_id === row.id)?.film_url || null })),
       // The desk needs to know whether 005 has run before it offers a moderation
       // control that would fail — so it is told, from the shape of a real row.
       moderationColumns: rows.length === 0 || Object.hasOwn(rows[0], 'moderation_notes'),

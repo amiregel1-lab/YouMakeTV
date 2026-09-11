@@ -6,7 +6,7 @@ import { PAGE_SEO } from '../lib/seo';
 
 interface LoginPageProps {
   viewer?: ViewerAccount | null;
-  onSignIn: (username: string, password: string) => void;
+  onSignIn: (email: string, password: string, signup?: boolean) => Promise<'signed-in' | 'confirm-email'>;
 }
 
 export default function LoginPage({ viewer, onSignIn }: LoginPageProps) {
@@ -14,13 +14,15 @@ export default function LoginPage({ viewer, onSignIn }: LoginPageProps) {
   const [password, setPassword] = useState('');
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [error, setError] = useState('');
+  const [signup, setSignup] = useState(false);
+  const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
 
   const buttonLabel = useMemo(() => {
     if (viewer?.premium) return 'You are already signed in';
     if (viewer) return 'Continue as signed in user';
-    return 'Sign in';
-  }, [viewer]);
+    return busy ? 'Please wait…' : signup ? 'Create account' : 'Sign in';
+  }, [viewer, signup, busy]);
 
   return (
     <section className="overflow-hidden rounded-[2.5rem] border border-slate-200/70 bg-white shadow-soft">
@@ -34,7 +36,7 @@ export default function LoginPage({ viewer, onSignIn }: LoginPageProps) {
             </span>
             <h1 className="text-4xl font-semibold tracking-tight text-slate-950">Sign in to YouMake+ access</h1>
             <p className="max-w-2xl text-base leading-8 text-slate-600">
-              A seeded premium account exists at <span className="font-semibold text-slate-950">youmaketv</span> / <span className="font-semibold text-slate-950">1234</span>. Sign in to unlock premium pricing.
+              Sign in with your email, or create a viewer account.
             </p>
             {viewer ? (
               <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 text-slate-700">
@@ -45,28 +47,35 @@ export default function LoginPage({ viewer, onSignIn }: LoginPageProps) {
           </div>
 
           <form
-            onSubmit={(event) => {
+            onSubmit={async (event) => {
               event.preventDefault();
+              if (busy) return;
               if (!username || !password) {
-                setError('Enter both username and password.');
+                setError('Enter your email and password.');
                 return;
               }
               if (!ageConfirmed) {
                 setError('Please confirm your age to continue.');
                 return;
               }
-              onSignIn(username.trim(), password.trim());
-              navigate('/');
+              setBusy(true); setError('');
+              try {
+                const result = await onSignIn(username.trim(), password, signup);
+                if (result === 'confirm-email') setError('Check your email to confirm your account, then sign in.');
+                else navigate('/');
+              } catch (failure) { setError(failure instanceof Error ? failure.message : 'Unable to sign in.'); }
+              finally { setBusy(false); }
             }}
             className="space-y-5 rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm"
           >
             <div>
-              <label className="block text-sm font-medium text-slate-700">Username</label>
+              <label className="block text-sm font-medium text-slate-700">Email</label>
               <input
                 value={username}
+                type="email" required autoComplete="email"
                 onChange={(event) => setUsername(event.target.value)}
                 className="input-field mt-2"
-                placeholder="youmaketv"
+                placeholder="you@example.com"
               />
             </div>
             <div>
@@ -75,8 +84,9 @@ export default function LoginPage({ viewer, onSignIn }: LoginPageProps) {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 type="password"
+                required minLength={6} autoComplete={signup ? 'new-password' : 'current-password'}
                 className="input-field mt-2"
-                placeholder="1234"
+                placeholder="Your password"
               />
             </div>
             {/* Age affirmation — the catalog includes R-rated films. */}
@@ -94,11 +104,12 @@ export default function LoginPage({ viewer, onSignIn }: LoginPageProps) {
             {error ? <p className="text-sm text-pink-600">{error}</p> : null}
             <button
               type="submit"
-              disabled={!ageConfirmed}
+              disabled={!ageConfirmed || busy}
               className="w-full rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {buttonLabel}
             </button>
+            <button type="button" className="text-sm text-brand-purple underline" onClick={() => { setSignup(!signup); setError(''); }}>{signup ? 'Already registered? Sign in' : 'New here? Create an account'}</button>
             <p className="text-sm text-slate-600">
               Don’t have a premium account? <Link to="/subscribe" className="font-semibold text-brand-purple hover:text-brand-indigo">Try YouMake+</Link> for instant savings.
             </p>

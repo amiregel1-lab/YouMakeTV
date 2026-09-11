@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { supabase } from '../lib/supabase';
 
 interface CreatorLoginPageProps {
   onSignIn: () => void;
@@ -26,14 +27,20 @@ export default function CreatorLoginPage({ onSignIn, onStart, onViewDemo }: Crea
   const [showPass, setShowPass] = useState(false);
   const [remember, setRemember] = useState(false);
   const [form, setForm] = useState({ email: '', password: '' });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Creator sign-in only. The admin shortcut that used to live here (admin
-    // credentials typed into this form granted the Super Admin dashboard) was a
-    // second copy of the credentials in the public bundle — admins sign in at
-    // /superadmin, which authenticates server-side.
-    onSignIn();
+    if (busy) return;
+    setBusy(true); setError('');
+    try {
+      const { data, error: failure } = await supabase.auth.signInWithPassword({ email: form.email.trim(), password: form.password });
+      if (failure) throw failure;
+      if (data.user?.user_metadata.account_type !== 'creator') throw new Error('Please sign in with your creator account.');
+      onSignIn();
+    } catch (failure) { setError(failure instanceof Error ? failure.message : 'Unable to sign in.'); }
+    finally { setBusy(false); }
   };
 
   return (
@@ -43,6 +50,8 @@ export default function CreatorLoginPage({ onSignIn, onStart, onViewDemo }: Crea
         {/* ── Left: Login Form ─────────────────────────────────────────────── */}
         <div className="bg-white px-8 py-12 sm:px-12 space-y-7">
 
+          {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+          {busy && <p role="status">Signing in…</p>}
           {/* Header */}
           <div>
             <span className="inline-flex rounded-full bg-brand-purple/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] text-brand-purple mb-4">

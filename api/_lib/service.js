@@ -170,6 +170,7 @@ export async function pgrest(path, init = {}) {
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
       ...init,
+      signal: init.signal ?? AbortSignal.timeout(8000),
       headers: restHeaders(init.headers ?? {}),
     });
     const text = await res.text();

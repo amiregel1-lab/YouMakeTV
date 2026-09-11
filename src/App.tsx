@@ -3,7 +3,9 @@ import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { useMovies } from './lib/MovieContext';
 import { demoViewerAccount } from './data/mockData';
 import { CreatorFilm, CreatorProfile, ViewerAccount } from './types';
-import { loadCreator, loadViewer, saveCreator, saveViewer } from './lib/storage';
+import { loadCreator, saveCreator, saveViewer } from './lib/storage';
+import { supabase } from './lib/supabase';
+import type { User } from '@supabase/supabase-js';
 import Navbar from './components/Navbar';
 import ViewerHome from './components/ViewerHome';
 import MovieDetailPage from './components/MovieDetailPage';
@@ -33,11 +35,13 @@ import NotFoundPage from './components/NotFoundPage';
 import ConsentBanner from './components/ConsentBanner';
 import { trackPageView } from './lib/analytics';
 import { logEvent } from './lib/eventService';
+import { creatorFilmsRequest } from './lib/creatorFilms';
 
 export default function App() {
   const { movies } = useMovies();
   const [viewer, setViewer] = useState<ViewerAccount | null>(null);
   const [creator, setCreator] = useState<CreatorProfile | null>(null);
+  const [filmError, setFilmError] = useState('');
   const [newCreatorSession, setNewCreatorSession] = useState(false);
   const [modal, setModal] = useState<{ type: 'transaction' | 'subscription' | 'trailer'; title: string; details: string } | null>(null);
   const [trailerModal, setTrailerModal] = useState<{ title: string; url: string } | null>(null);
@@ -45,9 +49,17 @@ export default function App() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setViewer(loadViewer());
-    setCreator(loadCreator());
-    // Analytics are started by <ConsentBanner>, and only with consent.
+    function restore(user: User | null) {
+      setViewer(user ? { username: user.email || 'Viewer', premium: false } : null);
+      if (user?.user_metadata.account_type === 'creator') {
+        const cached = loadCreator();
+        setCreator({ fullName: user.user_metadata.full_name || '', studioName: user.user_metadata.studio_name || 'My Studio', email: user.email || '', verified: false, kycCompleted: false, createdAt: user.created_at, films: cached && cached.email === user.email ? cached.films : [] });
+        void creatorFilmsRequest().then(result => setCreator(current => current && current.email === user.email ? { ...current, films: [...(result.films || []), ...current.films.filter(f => !/^\d+$/.test(f.id))] } : current)).catch(error => setFilmError(error.message));
+      } else setCreator(null);
+    }
+    void supabase.auth.getSession().then(({ data }) => restore(data.session?.user ?? null));
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => restore(session?.user ?? null));
+    return () => data.subscription.unsubscribe();
   }, []);
 
   // CTRL+SHIFT+A → Super Admin login (hidden keyboard shortcut for demos)
@@ -71,7 +83,8 @@ export default function App() {
   }, [viewer]);
 
   useEffect(() => {
-    saveCreator(creator);
+    // Preserve old local drafts until their owner signs in and can review them.
+    if (creator) saveCreator(creator);
   }, [creator]);
 
   const activeRoute = useMemo(() => {
@@ -88,14 +101,18 @@ export default function App() {
     return 'home';
   }, [location.pathname]);
 
-  const handleSignIn = (username: string, password: string) => {
-    const premium = username.toLowerCase() === 'youmaketv' && password === '1234';
-    setViewer({ username, premium });
-    logEvent('signup');
+  const handleSignIn = async (email: string, password: string, signup = false): Promise<'signed-in' | 'confirm-email'> => {
+    const result = signup
+      ? await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/login`, data: { account_type: 'viewer', age_confirmed: true } } })
+      : await supabase.auth.signInWithPassword({ email, password });
+    if (result.error) throw result.error;
+    return result.data.session ? 'signed-in' : 'confirm-email';
   };
 
   const handleSignOut = () => {
+    void supabase.auth.signOut();
     setViewer(null);
+    setCreator(null);
   };
 
   const handleSubscribe = () => {
@@ -114,20 +131,24 @@ export default function App() {
     navigate('/creator/dashboard');
   };
 
-  const handleAddFilm = (film: CreatorFilm) => {
-    setCreator((current) => (current ? { ...current, films: [...current.films, film] } : current));
+  const handleAddFilm = async (film: CreatorFilm) => {
+    const saved = await creatorFilmsRequest('POST', { requestId: film.id, film });
+    if (!saved.film) throw new Error('The saved film was not returned. Please retry.');
+    setCreator((current) => (current ? { ...current, films: [...current.films.filter(f => f.id !== saved.film!.id), saved.film!] } : current));
   };
 
-  const handleDeleteFilm = (filmId: string) => {
+  const handleDeleteFilm = async (filmId: string) => {
+    try {
+    if (/^\d+$/.test(filmId)) await creatorFilmsRequest('DELETE', { id: filmId });
     setCreator((current) => (current ? { ...current, films: current.films.filter((film) => film.id !== filmId) } : current));
+    } catch (error) { setFilmError(error instanceof Error ? error.message : 'Film could not be deleted.'); }
   };
 
-  const handleEditFilm = (filmId: string, changes: Partial<import('./types').CreatorFilm>) => {
-    setCreator((current) =>
-      current
-        ? { ...current, films: current.films.map((f) => (f.id === filmId ? { ...f, ...changes } : f)) }
-        : current
-    );
+  const handleEditFilm = async (filmId: string, changes: Partial<import('./types').CreatorFilm>) => {
+    if (!/^\d+$/.test(filmId)) throw new Error('This is an old local draft. Upload it through the new film form to save it to your account.');
+    const result = await creatorFilmsRequest('PATCH', { id: filmId, changes });
+    if (!result.film) throw new Error('The saved film was not returned.');
+    setCreator(current => current ? { ...current, films: current.films.map(f => f.id === filmId ? result.film! : f) } : current);
   };
 
   const openTrailerModal = (title?: string) => {
@@ -191,6 +212,7 @@ export default function App() {
       />
 
       <main id="main-content" className="mx-auto max-w-[1560px] px-4 pb-24 pt-8 sm:px-6 lg:px-8 lg:pb-16">
+        {filmError && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-3 text-red-700">{filmError}</p>}
         <Routes>
           <Route
             path="/"

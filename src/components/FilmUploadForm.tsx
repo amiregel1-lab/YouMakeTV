@@ -4,11 +4,13 @@ import PricingSlider from './PricingSlider';
 
 interface FilmUploadFormProps {
   creatorName: string;
-  onSubmit: (film: Omit<CreatorFilm, 'id' | 'status' | 'views' | 'trailerViews' | 'paidWatches' | 'freeWatches' | 'uploadDate' | 'updatedDate'>) => void;
+  onSubmit: (film: Omit<CreatorFilm, 'id' | 'status' | 'views' | 'trailerViews' | 'paidWatches' | 'freeWatches' | 'uploadDate' | 'updatedDate'>) => Promise<void>;
   onCancel: () => void;
 }
 
 export default function FilmUploadForm({ creatorName, onSubmit, onCancel }: FilmUploadFormProps) {
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
   const [form, setForm] = useState({
     title: '',
     subtitle: '',
@@ -166,7 +168,7 @@ export default function FilmUploadForm({ creatorName, onSubmit, onCancel }: Film
         <div className="flex flex-wrap items-center gap-4">
           <button
             type="button"
-            onClick={() => onSubmit({
+            onClick={async () => { if (saving) return; setSaving(true); setError(''); try { await onSubmit({
               title: form.title,
               subtitle: form.subtitle,
               description: form.description,
@@ -181,16 +183,17 @@ export default function FilmUploadForm({ creatorName, onSubmit, onCancel }: Film
               tools: form.tools.split(',').map((tool) => tool.trim()).filter(Boolean),
               trailerUrl: form.trailer.trim() || undefined,
               filmUrl: form.filmFile.trim() || undefined,
-            })}
-            disabled={!canSubmit}
+            }); } catch (error) { setError(error instanceof Error ? error.message : 'Your film was not saved. Please retry.'); } finally { setSaving(false); } }}
+            disabled={!canSubmit || saving}
             className="rounded-full bg-cyan-500 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Save film draft
+            {saving ? 'Saving…' : 'Save film draft'}
           </button>
           <button type="button" onClick={onCancel} className="rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100">
             Cancel
           </button>
         </div>
+        {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
       </div>
     </div>
   );

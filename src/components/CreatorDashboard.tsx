@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { CreatorFilm, CreatorProfile } from '../types';
@@ -15,11 +15,11 @@ type Tab = 'dashboard' | 'content' | 'payouts' | 'analytics' | 'settings' | 'stu
 
 interface CreatorDashboardProps {
   creator: CreatorProfile | null;
-  onAddFilm: (film: CreatorFilm) => void;
+  onAddFilm: (film: CreatorFilm) => Promise<void>;
   onCreateDemo: () => void;
   onStartOnboarding: () => void;
   onDeleteFilm: (filmId: string) => void;
-  onEditFilm?: (filmId: string, changes: Partial<CreatorFilm>) => void;
+  onEditFilm?: (filmId: string, changes: Partial<CreatorFilm>) => Promise<void>;
   showWelcome?: boolean;
   onDismissWelcome?: () => void;
 }
@@ -107,10 +107,12 @@ function FilmCard({ film, onAnalytics, onDelete, onEdit }: {
   film: CreatorFilm;
   onAnalytics: (f: CreatorFilm) => void;
   onDelete: (id: string) => void;
-  onEdit?: (id: string, changes: Partial<CreatorFilm>) => void;
+  onEdit?: (id: string, changes: Partial<CreatorFilm>) => Promise<void>;
 }) {
   const [imgError, setImgError] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [saving, setSaving] = useState(false);
   const [editFields, setEditFields] = useState({ title: film.title, price: film.price, genre: film.genre, description: film.description });
   const revenue = film.price * film.paidWatches;
 
@@ -121,8 +123,11 @@ function FilmCard({ film, onAnalytics, onDelete, onEdit }: {
     'Rejected': 'bg-red-100 text-red-700',
   };
 
-  const handleSave = () => {
-    onEdit?.(film.id, {
+  const handleSave = async () => {
+    if (saving) return;
+    setSaving(true); setSaveError('');
+    try {
+    await onEdit?.(film.id, {
       title: editFields.title.trim() || film.title,
       price: Math.max(0, editFields.price),
       genre: editFields.genre,
@@ -130,6 +135,8 @@ function FilmCard({ film, onAnalytics, onDelete, onEdit }: {
       updatedDate: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
     });
     setEditing(false);
+    } catch (error) { setSaveError(error instanceof Error ? error.message : 'The film was not saved.'); }
+    finally { setSaving(false); }
   };
 
   const handleCancel = () => {
@@ -189,9 +196,10 @@ function FilmCard({ film, onAnalytics, onDelete, onEdit }: {
           <div className="flex gap-2 pt-1">
             <button
               onClick={handleSave}
+              disabled={saving}
               className="flex-1 rounded-full bg-brand-purple py-2.5 text-xs font-semibold text-white transition hover:bg-brand-indigo"
             >
-              Save Changes
+              {saving ? 'Saving…' : 'Save Changes'}
             </button>
             <button
               onClick={handleCancel}
@@ -200,6 +208,7 @@ function FilmCard({ film, onAnalytics, onDelete, onEdit }: {
               Cancel
             </button>
           </div>
+          {saveError && <p role="alert" className="text-sm text-red-600">{saveError}</p>}
         </div>
       </div>
     );
@@ -263,6 +272,7 @@ function FilmCard({ film, onAnalytics, onDelete, onEdit }: {
               Edit
             </button>
           )}
+          {onEdit && (film.status === 'Draft' || film.status === 'Rejected') && <button disabled={saving} onClick={async () => { setSaving(true); setSaveError(''); try { await onEdit(film.id, { status: 'Pending Review' }); } catch (error) { setSaveError(error instanceof Error ? error.message : 'Submission failed.'); } finally { setSaving(false); } }} className="rounded-full bg-brand-purple px-3.5 py-2 text-xs font-semibold text-white">{saving ? 'Submitting…' : 'Submit for review'}</button>}
           <button
             onClick={() => onDelete(film.id)}
             className="rounded-full border border-red-200 bg-red-50 px-3.5 py-2 text-xs font-semibold text-red-600 hover:bg-red-100 transition"
@@ -270,6 +280,7 @@ function FilmCard({ film, onAnalytics, onDelete, onEdit }: {
             Delete
           </button>
         </div>
+        {saveError && <p role="alert" className="mt-2 text-sm text-red-600">{saveError}</p>}
       </div>
     </div>
   );
@@ -304,6 +315,7 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedFilm, setSelectedFilm] = useState<CreatorFilm | null>(null);
+  const uploadRequest = useRef<string | null>(null);
 
   // ── No creator state ──────────────────────────────────────────────────────
   if (!creator) {
@@ -390,8 +402,9 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
     { id: 'studio',     label: 'Studio Profile',  icon: <IconStudio /> },
   ];
 
-  const handleAddFilm = (payload: Parameters<typeof onAddFilm>[0]) => {
-    onAddFilm(payload);
+  const handleAddFilm = async (payload: Parameters<typeof onAddFilm>[0]) => {
+    await onAddFilm(payload);
+    uploadRequest.current = null;
     setIsUploadOpen(false);
   };
 
@@ -946,10 +959,11 @@ export default function CreatorDashboard({ creator, onAddFilm, onCreateDemo, onS
             <FilmUploadForm
               creatorName={creator.studioName}
               onCancel={() => setIsUploadOpen(false)}
-              onSubmit={(payload) => {
+              onSubmit={async (payload) => {
                 const dateLabel = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-                handleAddFilm({
-                  id: `film-${Date.now()}`,
+                uploadRequest.current ??= crypto.randomUUID();
+                await handleAddFilm({
+                  id: uploadRequest.current,
                   title: payload.title,
                   subtitle: payload.subtitle,
                   description: payload.description,

@@ -1,5 +1,6 @@
 -- Real registrations are read from the authentication service, never browser
 -- analytics. Only the existing server service role can call this read API.
+BEGIN;
 CREATE OR REPLACE FUNCTION public.hq_account_activity(since_at timestamptz, page_offset integer DEFAULT 0)
 RETURNS TABLE(id uuid, created_at timestamptz, account_type text, display_name text)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
@@ -12,3 +13,4 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
 $$;
 REVOKE ALL ON FUNCTION public.hq_account_activity(timestamptz, integer) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.hq_account_activity(timestamptz, integer) TO service_role;
+COMMIT;

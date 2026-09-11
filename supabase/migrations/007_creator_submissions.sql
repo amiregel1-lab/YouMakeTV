@@ -1,6 +1,8 @@
 -- Creator uploads use the existing moderated catalog; private ownership and
 -- full-film URLs are accessible only to the server, never the public anon key.
 begin;
+set local lock_timeout = '5s';
+set local statement_timeout = '30s';
 lock table public.movies in share row exclusive mode;
 create sequence if not exists public.movies_id_seq;
 select setval('public.movies_id_seq', greatest(coalesce((select max(id) from public.movies), 0), (select last_value from public.movies_id_seq)), true);
@@ -18,6 +20,10 @@ grant all on public.creator_movie_owners to service_role;
 create index if not exists creator_movie_owners_owner_idx on public.creator_movie_owners(owner_user_id);
 drop policy if exists "Public read" on public.movies;
 create policy "Public read" on public.movies for select using (status = 'Approved' and visible = true);
+-- Catalog changes go through the authenticated server APIs. The legacy
+-- anonymous DELETE policy would bypass creator ownership checks.
+drop policy if exists "Anon delete" on public.movies;
+revoke insert, update, delete on public.movies from anon, authenticated;
 
 create or replace function public.create_creator_draft(owner_id uuid, request_id_input uuid, film jsonb)
 returns integer language plpgsql security definer set search_path = public as $$

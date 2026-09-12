@@ -70,7 +70,7 @@ export default tseslint.config(
 
   // ── Vercel serverless functions ───────────────────────────────────────────
   {
-    files: ['api/**/*.js'],
+    files: ['api/**/*.js', 'middleware.js'],
     extends: [js.configs.recommended],
     languageOptions: {
       ecmaVersion: 2022,

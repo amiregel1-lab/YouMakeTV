@@ -57,6 +57,9 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
+      - name: Private-site access checks
+        run: node --test scripts/site-gate.test.mjs
+
       - name: Build
         run: npm run build
 
